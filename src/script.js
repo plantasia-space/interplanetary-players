@@ -20,12 +20,12 @@ scene.background = null; // Transparent background
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
-    75,
+    45, // Narrower FOV to get a closer initial view
     window.innerWidth / window.innerHeight,
     0.1,
     1000
 );
-camera.position.set(0, 1.5, 3);
+camera.position.set(0, 0, 2.5); // Closer initial position
 
 // Renderer
 const canvas = document.querySelector('.webgl');
@@ -46,8 +46,13 @@ scene.add(directionalLight);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.enablePan = true;
-controls.enableZoom = true;
+controls.enablePan = false; // Disable panning
+controls.minDistance = 1.5; // Minimum zoom distance
+controls.maxDistance = 5; // Maximum zoom distance
+
+// Restrict rotation range (optional, if you want to limit rotation)
+// controls.minPolarAngle = Math.PI / 3; // Tilt up limit (optional)
+// controls.maxPolarAngle = Math.PI / 1.5; // Tilt down limit (optional)
 
 // Load Texture
 const textureLoader = new THREE.TextureLoader();
