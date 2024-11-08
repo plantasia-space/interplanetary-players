@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
+const MAX_RETRIES = 3; // Maximum number of retry attempts
+
 // Helper function to get URL parameters
 function getUrlParameter(name) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -19,12 +21,7 @@ const scene = new THREE.Scene();
 scene.background = null; // Transparent background
 
 // Camera
-const camera = new THREE.PerspectiveCamera(
-    45, // Narrower FOV to get a closer initial view
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 0, 2.5); // Closer initial position
 
 // Renderer
@@ -50,25 +47,59 @@ controls.enablePan = false; // Disable panning
 controls.minDistance = 1.5; // Minimum zoom distance
 controls.maxDistance = 5; // Maximum zoom distance
 
-// Restrict rotation range (optional, if you want to limit rotation)
-// controls.minPolarAngle = Math.PI / 3; // Tilt up limit (optional)
-// controls.maxPolarAngle = Math.PI / 1.5; // Tilt down limit (optional)
+// Load Texture with Error Handling
+function loadTextureWithRetry(url, retries = MAX_RETRIES) {
+    return new Promise((resolve, reject) => {
+        const textureLoader = new THREE.TextureLoader();
+        function attemptLoad(retryCount) {
+            const texture = textureLoader.load(
+                url,
+                () => resolve(texture),
+                undefined,
+                (error) => {
+                    console.warn(`Texture load failed, attempt ${retryCount + 1}/${retries}`);
+                    if (retryCount < retries - 1) {
+                        attemptLoad(retryCount + 1);
+                    } else {
+                        reject(new Error('Failed to load texture after multiple attempts'));
+                    }
+                }
+            );
+        }
+        attemptLoad(0);
+    });
+}
 
-// Load Texture
-const textureLoader = new THREE.TextureLoader();
-const texture = textureLoader.load(
-    texturePath,
-    () => console.log('Texture loaded successfully.'),
-    undefined,
-    (err) => console.error('An error occurred loading the texture:', err)
-);
+// Load OBJ Model with Retry Logic
+function loadModelWithRetry(url, retries = MAX_RETRIES) {
+    return new Promise((resolve, reject) => {
+        const loader = new OBJLoader();
+        function attemptLoad(retryCount) {
+            loader.load(
+                url,
+                (object) => resolve(object),
+                undefined,
+                (error) => {
+                    console.warn(`Model load failed, attempt ${retryCount + 1}/${retries}`);
+                    if (retryCount < retries - 1) {
+                        attemptLoad(retryCount + 1);
+                    } else {
+                        reject(new Error('Failed to load model after multiple attempts'));
+                    }
+                }
+            );
+        }
+        attemptLoad(0);
+    });
+}
 
-// Load OBJ Model
-const loader = new OBJLoader();
-loader.load(
-    modelPath,
-    (object) => {
-        object.traverse((child) => {
+// Load and Display Model with Texture
+async function loadAndDisplayModel() {
+    try {
+        const texture = await loadTextureWithRetry(texturePath);
+        const model = await loadModelWithRetry(modelPath);
+
+        model.traverse((child) => {
             if (child.isMesh) {
                 child.material = new THREE.MeshStandardMaterial({
                     map: texture,
@@ -76,13 +107,16 @@ loader.load(
                 });
             }
         });
-        object.position.set(0, 0, 0); // Center the object
-        scene.add(object);
-        console.log('OBJ model loaded successfully.');
-    },
-    (xhr) => console.log(`${(xhr.loaded / xhr.total) * 100}% loaded`),
-    (error) => console.error('An error happened while loading the OBJ model:', error)
-);
+        model.position.set(0, 0, 0); // Center the object
+        scene.add(model);
+        console.log('Model and texture loaded successfully.');
+    } catch (error) {
+        console.error('Failed to load model or texture:', error);
+    }
+}
+
+// Call function to load and display model
+loadAndDisplayModel();
 
 // Handle Window Resize
 window.addEventListener('resize', () => {
