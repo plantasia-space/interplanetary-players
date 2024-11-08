@@ -32,6 +32,7 @@ const canvas = document.querySelector('.webgl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0); // Fully transparent background
 
 // Lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);

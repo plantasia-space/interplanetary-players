@@ -8,3 +8,15 @@ body {
     display: block;
     background: transparent;
 }
+/* Ensure that body and html elements are transparent and fill the viewport */
+html, body {
+    background-color: transparent !important;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Style the canvas for full transparency */
+canvas.webgl {
+    display: block;
+    background: transparent;
+}
