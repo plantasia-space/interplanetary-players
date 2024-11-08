@@ -39,11 +39,10 @@ controls.enablePan = true
 controls.enableZoom = true
 
 // Load OBJ Model with Texture
-const loader = new OBJLoader()
 
-// Define paths to model and texture
-const modelPath = '/models/d6fbd28b1af1_a_spherical_exoplan.obj'
-const texturePath = '/public/textures/d6fbd28b1af1_a_spherical_exoplan_texture_kd.jpg'
+// Use `import.meta.env.BASE_URL` to dynamically adjust paths
+const modelPath = `${import.meta.env.BASE_URL}models/d6fbd28b1af1_a_spherical_exoplan.obj`
+const texturePath = `${import.meta.env.BASE_URL}textures/d6fbd28b1af1_a_spherical_exoplan_texture_kd.jpg`
 
 // Load the texture first
 const textureLoader = new THREE.TextureLoader()
@@ -59,6 +58,7 @@ const texture = textureLoader.load(
 )
 
 // Load the OBJ model
+const loader = new OBJLoader()
 loader.load(
     modelPath,
     (object) => {
@@ -82,15 +82,12 @@ loader.load(
 
 // Handle Window Resize
 window.addEventListener('resize', () => {
-    // Update sizes
     const width = window.innerWidth
     const height = window.innerHeight
 
-    // Update camera
     camera.aspect = width / height
     camera.updateProjectionMatrix()
 
-    // Update renderer
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
@@ -99,14 +96,8 @@ window.addEventListener('resize', () => {
 const clock = new THREE.Clock()
 
 function animate() {
-    const delta = clock.getDelta()
-
-    // Update controls
     controls.update()
-
-    // Render
     renderer.render(scene, camera)
-
     requestAnimationFrame(animate)
 }
 
