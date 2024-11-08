@@ -1,15 +1,12 @@
-# Simple workflow for deploying Vite static content to GitHub Pages
+# .github/workflows/deploy.yml
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes to the main branch
   push:
     branches: ["main"]
 
-  # Allows manual trigger from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -25,6 +22,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    env:
+      VITE_BASE_URL: '/interplanetary-player-loader/' # Set the base path for GitHub Pages deployment
 
     steps:
       - name: Checkout repository
@@ -44,7 +43,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          # Upload only the build output (dist folder)
           path: './dist'
 
       - name: Deploy to GitHub Pages
