@@ -1,8 +1,8 @@
 // src/script.js
 
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 // Helper function to get URL parameters
 function getUrlParameter(name) {
@@ -16,7 +16,7 @@ const texturePath = getUrlParameter('texture') || `${import.meta.env.BASE_URL}te
 
 // Scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xdddddd);
+scene.background = null; // Transparent background
 
 // Camera
 const camera = new THREE.PerspectiveCamera(
@@ -29,7 +29,7 @@ camera.position.set(0, 1.5, 3);
 
 // Renderer
 const canvas = document.querySelector('.webgl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -70,7 +70,9 @@ loader.load(
                 });
             }
         });
+        object.position.set(0, 0, 0); // Center the object
         scene.add(object);
+        console.log('OBJ model loaded successfully.');
     },
     (xhr) => console.log(`${(xhr.loaded / xhr.total) * 100}% loaded`),
     (error) => console.error('An error happened while loading the OBJ model:', error)

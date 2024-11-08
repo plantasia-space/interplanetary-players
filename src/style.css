@@ -1,10 +1,10 @@
-/* src/style.css */
-
 body {
     margin: 0;
     overflow: hidden;
+    background: transparent;
 }
 
 .webgl {
     display: block;
+    background: transparent;
 }
