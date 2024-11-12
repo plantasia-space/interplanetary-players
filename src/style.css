@@ -10,7 +10,7 @@ body {
 }
 /* Ensure that body and html elements are transparent and fill the viewport */
 html, body {
-    background-color: transparent !important;
+    background-color: black !important;
     margin: 0;
     overflow: hidden;
 }
