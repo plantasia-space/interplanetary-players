@@ -1,16 +1,16 @@
-import { defineConfig } from 'vite'
-import restart from 'vite-plugin-restart'
+import { defineConfig } from 'vite';
+import restart from 'vite-plugin-restart';
 
 export default defineConfig({
-    base: '/', // Set to '/' to match the deployment root
+    base: '/', // Ensure this matches the deployment root
     root: '.', // Root directory where index.html is located
-    publicDir: 'public', // Serve static assets from 'public' folder
+    publicDir: 'public', // Static assets directory
     server: {
-        host: true, 
+        host: true,
         open: true,
     },
     build: {
-        outDir: 'dist',
+        outDir: 'dist', // Ensure the output is `dist`
         emptyOutDir: true,
         sourcemap: true,
     },
@@ -19,4 +19,4 @@ export default defineConfig({
             restart: ['public/**'],
         }),
     ],
-})
+});

@@ -38,7 +38,16 @@ jobs:
         run: npm run build
 
       - name: Debug build output
-        run: ls -la ./dist
+        run: |
+          ls -R ./dist
+          ls -R ./src
+
+      - name: Verify Main.js inclusion
+        run: |
+          if [ ! -f "./dist/src/Main.js" ]; then
+            echo "Main.js not found in build output. Aborting."
+            exit 1
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
