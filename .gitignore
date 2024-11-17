@@ -1,12 +1,2 @@
-*~
-~*
 node_modules/
-static/ 
-
-dist
-
-.idea/
-.vscode/
-
 .DS_Store
-vite.config.min.js
