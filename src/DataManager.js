@@ -25,7 +25,7 @@ export class DataManager {
         }
 
         // Fetch from the server
-        const BASE_URL = 'https://media.maar.world:443/api';
+        const BASE_URL = 'https://media.maar.world:3001/api';
         try {
             const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`);
             if (!response.ok) {
