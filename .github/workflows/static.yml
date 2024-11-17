@@ -38,10 +38,7 @@ jobs:
         run: npm run build
 
       - name: Debug build output
-        run: |
-          ls -R ./dist
-          ls -R ./src
-
+        run: ls -la ./dist
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
