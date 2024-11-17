@@ -23,7 +23,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     env:
-      VITE_BASE_URL: '/interplanetary-player-loader/' # Set the base path for GitHub Pages deployment
+      VITE_BASE_URL: '/interplanetary-players/' # Set the base path for GitHub Pages deployment
 
     steps:
       - name: Checkout repository
