@@ -1,8 +1,15 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { Constants } from './Constants.js';
 
 const MAX_RETRIES = 3;
 
+/**
+ * Retry loading a texture from a URL.
+ * @param {string} url - The URL of the texture.
+ * @param {number} retries - Maximum number of retries.
+ * @returns {Promise<THREE.Texture>}
+ */
 async function loadTextureWithRetry(url, retries = MAX_RETRIES) {
     const textureLoader = new THREE.TextureLoader();
     for (let attempt = 0; attempt < retries; attempt++) {
@@ -18,6 +25,12 @@ async function loadTextureWithRetry(url, retries = MAX_RETRIES) {
     throw new Error('Failed to load texture after multiple attempts');
 }
 
+/**
+ * Retry loading a 3D model from a URL.
+ * @param {string} url - The URL of the model.
+ * @param {number} retries - Maximum number of retries.
+ * @returns {Promise<THREE.Group>}
+ */
 async function loadModelWithRetry(url, retries = MAX_RETRIES) {
     const loader = new OBJLoader();
     for (let attempt = 0; attempt < retries; attempt++) {
@@ -33,31 +46,38 @@ async function loadModelWithRetry(url, retries = MAX_RETRIES) {
     throw new Error('Failed to load model after multiple attempts');
 }
 
-export async function loadAndDisplayModel(scene) {
-    const modelPath = getUrlParameter('object') || `${import.meta.env.BASE_URL}models/d6fbd28b1af1_a_spherical_exoplan.obj`;
-    const texturePath = getUrlParameter('texture') || `${import.meta.env.BASE_URL}textures/d6fbd28b1af1_a_spherical_exoplan_texture_kd.jpg`;
-    
-    console.log('Model Path:', modelPath);
-    console.log('Texture Path:', texturePath);
-    
-    const texture = await loadTextureWithRetry(texturePath);
-    const model = await loadModelWithRetry(modelPath);
+/**
+ * Loads and displays the model and texture using the interplanetaryPlayer data.
+ * @param {THREE.Scene} scene - The THREE.js scene to add the model to.
+ */
+export async function loadAndDisplayModel(scene, trackData) {
+    try {
+        const { interplanetaryPlayer } = trackData;
+        const { modelURL, textureURL } = interplanetaryPlayer;
 
-    model.traverse((child) => {
-        if (child.isMesh) {
-            child.material = new THREE.MeshStandardMaterial({
-                map: texture,
-                flatShading: true,
-            });
+        if (!modelURL || !textureURL) {
+            throw new Error('Missing modelURL or textureURL in interplanetaryPlayer data.');
         }
-    });
 
-    model.position.set(0, 0, 0);
-    scene.add(model);
-    console.log('Model and texture loaded successfully.');
-}
+        console.log('[ModelLoader] Loading model and texture...');
+        const model = await loadModelWithRetry(modelURL);
+        const texture = await loadTextureWithRetry(textureURL);
 
-function getUrlParameter(name) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
+        model.traverse((child) => {
+            if (child.isMesh) {
+                child.material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    flatShading: true,
+                });
+            }
+        });
+
+        model.position.set(0, 0, 0);
+        scene.add(model);
+
+        console.log('[ModelLoader] Model and texture loaded successfully.');
+    } catch (error) {
+        console.error('[ModelLoader] Error loading model or texture:', error);
+        throw error;
+    }
 }
