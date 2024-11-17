@@ -1,6 +1,8 @@
-# Interplanetary Players 3D Preview
+# Interplanetary Players
 
-A lightweight and fast 3D OBJ model preview built with Three.js.
+Modernizing Interplanetary Players for the Web.
+
+This project features a complete refactor and rewrite of the Interplanetary Players code, incorporating a new architecture for better performance and maintainability.
 
 ## Getting Started
 
