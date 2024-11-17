@@ -1,5 +1,5 @@
-import { initScene, initRenderer, addLights } from './scene.js';
-import { loadAndDisplayModel } from './loaders.js';
+import { initScene, initRenderer, addLights } from './Scene.js';
+import { loadAndDisplayModel } from './Loaders.js';
 import { DataManager } from './DataManager.js';
 import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
