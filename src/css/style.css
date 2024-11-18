@@ -1,0 +1,90 @@
+/* General resets */
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: black !important;
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Base canvas styling */
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+}
+
+/* Three.js canvas styling */
+#canvas3D {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: transparent;
+}
+
+/* UI overlay container */
+.ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* Allow clicks to pass through except for child elements */
+}
+
+/* Sub-frame for the UI */
+.sub-frame {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    border-radius: 40px;
+    pointer-events: auto; /* Enable pointer events for UI elements */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.5); /* Optional: Add semi-transparent background */
+}
+
+/* UI Controls */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+/* Buttons */
+button {
+    margin: 0;
+    padding: 10px 20px;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive Text */
+.responsive-title {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.responsive-paragraph {
+    color: #fff;
+    font-size: 1rem;
+    margin: 5px 0;
+}

@@ -1,3 +1,5 @@
+// src/Scene.js
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -5,17 +7,22 @@ export function initScene(canvas) {
     const scene = new THREE.Scene();
     scene.background = null; // Transparent background
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+        45, 
+        window.innerWidth / window.innerHeight, 
+        0.1, 
+        1000
+    );
     camera.position.set(0, 0, 10); // Initial position
 
+    // Ensure you're passing the correct element to OrbitControls
     const controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.enablePan = false; // Disable panning
-    controls.enableZoom = true; // Ensure zoom is enabled
-    controls.minDistance = 0.1; // Minimum zoom distance
-    controls.maxDistance = 50; // Maximum zoom distance
-
+    controls.enablePan = false;
+    controls.enableZoom = true;
+    controls.minDistance = 0.1;
+    controls.maxDistance = 50;
 
     return { scene, camera, controls };
 }
@@ -39,7 +46,7 @@ export function initRenderer(canvas) {
     });
     renderer.setSize(window.innerWidth, window.innerHeight); // Tamaño del renderizado
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Relación de píxeles
-    renderer.setClearColor(0x000000, 0); // Fondo transparente (color negro, 0 opacidad)
+    renderer.setClearColor(0x000000, 1); // Fondo transparente (color negro, 0 opacidad)
     return renderer;
 }
 
