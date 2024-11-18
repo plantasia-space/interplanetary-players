@@ -1,4 +1,21 @@
 /* General resets */
+
+/*
+	•	2D UI Elements:
+	•	Only the UI elements (buttons, sliders, etc.) receive pointer events.
+	•	Positioned appropriately to not obstruct interactions with the 3D scene.
+	•	3D Scene:
+	•	Receives all pointer events when clicking outside the UI elements.
+	•	OrbitControls and other interactions function without interference.
+*/
+/* Define the main color variables at the root */
+:root {
+    --col1: white; /* Default color1 */
+    --col2: pink;  /* Default color2 */
+}
+
+
+/* General resets */
 html, body {
     margin: 0;
     padding: 0;
@@ -38,31 +55,45 @@ canvas {
 /* Sub-frame for the UI */
 .sub-frame {
     position: absolute;
-    top: 5%; /* Adjust as needed */
-    left: 5%; /* Adjust as needed */
-    width: auto; /* Adjust to fit content */
-    height: auto; /* Adjust to fit content */
-    border-radius: 10px; /* Adjust as needed */
-    pointer-events: none; /* Prevent sub-frame from intercepting pointer events */
+    top: 4%;
+    left: 4%;
+    width: 92%;
+    height: 92%;
+    border: 2px solid var(--col1); /* Use col1 for the border */
+    border-radius: 40px;
+    pointer-events: none;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 20px;
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    background: none;
 }
 
-/* Ensure only interactive elements receive pointer events */
-.sub-frame .controls,
-.sub-frame .controls * {
-    pointer-events: auto; /* Enable pointer events for controls */
+/* Heading 1 with Inter Ultra Light, centered horizontally, and vertically offset */
+/* Heading 1 with Inter Ultra Light, centered horizontally, and vertically offset */
+h1.responsive-title {
+    font-family: 'Inter Display', sans-serif;
+    font-weight: 200; /* Ultra Light */
+    font-size: 5vw;
+    color: var(--col2); /* Use col2 for the title */
+    text-align: center;
+    position: absolute;
+    top: 2%;
+    width: 100%;
+    margin: 0;
+    pointer-events: none;
 }
 
-.sub-frame .text-container,
-.sub-frame .text-container * {
-    pointer-events: auto; /* Enable pointer events for text container if needed */
+/* Paragraph with Inter Light */
+p.responsive-paragraph {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 3vw;
+    color: var(--col1); /* Use col1 for paragraphs */
+    text-align: center;
+    margin: 10px 0;
+    pointer-events: none;
 }
-
 /* UI Controls */
 .controls {
     display: flex;
@@ -70,32 +101,19 @@ canvas {
     gap: 15px;
 }
 
-/* Buttons */
 button {
     margin: 0;
     padding: 10px 20px;
-    color: #fff;
-    background-color: #007bff;
-    border: none;
+    color: var(--col1); /* Use col1 for button text */
+    background-color: transparent; /* Transparent background */
+    border: 2px solid var(--col1); /* Use col1 for the border */
     border-radius: 5px;
     cursor: pointer;
     font-size: 1rem;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 button:hover {
-    background-color: #0056b3;
-}
-
-/* Responsive Text */
-.responsive-title {
-    color: #fff;
-    font-size: 2rem;
-    margin-bottom: 10px;
-}
-
-.responsive-paragraph {
-    color: #fff;
-    font-size: 1rem;
-    margin: 5px 0;
+    background-color: var(--col1); /* On hover, use col1 as background */
+    color: black; /* Contrast text color */
 }

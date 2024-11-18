@@ -66,6 +66,9 @@ async function initializeApp() {
         Constants.TRACK_ID = trackId;
         Constants.TRACK_DATA = trackData;
 
+        // Apply colors based on track data
+        Constants.applyColorsFromTrackData();
+
         await loadAndDisplayModel(scene, trackData);
         console.log('[APP] Model loaded successfully.');
     } catch (error) {

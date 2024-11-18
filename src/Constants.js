@@ -5,7 +5,27 @@ export const Constants = {
     TRACK_ID: null, // Current track ID
     CACHE_EXPIRY_MINUTES: 10, // Cache expiry time in minutes
     TRACK_DATA: null, // Current track data
+    /**
+     * Sets CSS variables for color1 and color2 from TRACK_DATA.
+     */
+    applyColorsFromTrackData() {
+        if (!this.TRACK_DATA || !this.TRACK_DATA.soundEngine || !this.TRACK_DATA.soundEngine.soundEngineColors) {
+            console.warn('[COLORS] No color data available in TRACK_DATA.');
+            return;
+        }
 
+        const { color1, color2 } = this.TRACK_DATA.soundEngine.soundEngineColors;
+
+        if (color1) {
+            document.documentElement.style.setProperty('--col1', color1);
+            console.log(`[COLORS] Set --col1 to ${color1}`);
+        }
+
+        if (color2) {
+            document.documentElement.style.setProperty('--col2', color2);
+            console.log(`[COLORS] Set --col2 to ${color2}`);
+        }
+    },
     /**
      * Sets and caches track data for the specified trackId.
      * @param {string} trackId - The track ID.
