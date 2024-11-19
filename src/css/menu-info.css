@@ -1,23 +1,5 @@
 /* menu-info-info.css */
 
-/* Grid container for layout */
-.container-grid {
-    display: grid;
-    grid-template-columns: auto 1fr; /* Icons column + placeholders area */
-    gap: 2vw; /* Space between the icons and the placeholders */
-    align-items: start; /* Align items at the top */
-}
-
-/* Icons Column: Ensure pointer interactions */
-.icons-column {
-    display: flex;
-    flex-direction: column;
-    gap: 2vw; /* Space between icons */
-    justify-content: flex-start;
-    align-items: center;
-    pointer-events: auto; /* Enable pointer events */
-    border-left: 0.2vw solid var(--col2); /* Dynamic border size */
-}
 
 .menu-info-toggle {
     display: flex; /* Make the container a flexbox */
@@ -30,8 +12,12 @@
     color: var(--col1);
     pointer-events: auto; /* Ensure the icon is interactive */
 }
+.menu-info-toggle-icon:hover {
+    transform: scale(1.1); /* Slight hover zoom */
+    color: var(--col2);
+}
 
-/* Menu info icons: Style and interaction */
+
 /* Menu info icons: Style and interaction */
 .menu-info-icon {
     display: flex; /* Make the container a flexbox */
@@ -53,6 +39,27 @@
 .menu-info-icon > * {
     pointer-events: none; /* Prevent interfering with the button interaction */
 }
+
+
+/* Grid container for layout */
+.container-grid {
+    display: grid;
+    grid-template-columns: auto 1fr; /* Icons column + placeholders area */
+    gap: 2vw; /* Space between the icons and the placeholders */
+    align-items: start; /* Align items at the top */
+}
+
+/* Icons Column: Ensure pointer interactions */
+.icons-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2vw; /* Space between icons */
+    justify-content: flex-start;
+    align-items: center;
+    pointer-events: auto; /* Enable pointer events */
+    border-left: 0.2vw solid var(--col2); /* Dynamic border size */
+}
+
 /* Main Grid Layout */
 /* Main Grid Layout */
 .grid-content {

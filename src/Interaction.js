@@ -1,103 +1,68 @@
-/**
- * Sets up click handlers for UI buttons.
- * @param {Object} options - Configuration options.
- * @param {Function} options.onPlay - Callback for Play button.
- * @param {Function} options.onPause - Callback for Pause button.
- */
-export function setupInteractions({ onPlay, onPause }) {
-    // Select UI buttons
+export function setupInteractions() {
+    // Verify Bootstrap integration
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded. Please ensure bootstrap.bundle.min.js is included.');
+        return;
+    }
 
+    // Collapse toggle button and content
+    const toggleButton = document.querySelector('.menu-info-toggle');
+    const collapseContent = document.getElementById('collapseInfoMenu');
+    const toggleIcon = document.getElementById('toggleIcon'); // Icon inside the button
 
-    // Menu interactions
-    const toggleButton = document.querySelector('.btn-toggle');
-    const toggleIcon = document.getElementById('toggleIcon');
-    const menuIcons = document.querySelectorAll('.menu-info-icon');
-    const infoContainer = document.querySelector('.info-container');
-    const menuContent = document.getElementById('menuContent');
+    if (!toggleButton || !collapseContent) {
+        console.error('Toggle button or collapsible content not found.');
+        return;
+    }
 
-    // Toggle the arrow icon on menu collapse/expand
-    menuContent.addEventListener('show.bs.collapse', () => {
-        toggleIcon.src = '/assets/icons/arrow_up.svg';
-        infoContainer.style.display = 'grid'; // Show info container when menu expands
+    // Initialize Bootstrap Collapse instance
+    const collapseInstance = new bootstrap.Collapse(collapseContent, {
+        toggle: false,
     });
 
-    menuContent.addEventListener('hide.bs.collapse', () => {
-        toggleIcon.src = '/assets/icons/arrow_down.svg';
-        infoContainer.style.display = 'none'; // Hide info container when menu collapses
+    // Update aria-expanded attribute on button click
+    toggleButton.addEventListener('click', () => {
+        collapseInstance.toggle();
+        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+        toggleButton.setAttribute('aria-expanded', (!isExpanded).toString());
     });
 
-    
-    // Toggle active state for menu icons
-    menuIcons.forEach((icon) => {
-        icon.addEventListener('click', () => {
-            // Remove active state from all icons
-            menuIcons.forEach((icon) => icon.classList.remove('active'));
-
-            // Add active state to clicked icon
-            icon.classList.add('active');
-
-            // Display placeholder info in the grid
-            const targetId = icon.dataset.target;
-            const targetParagraph = document.getElementById(targetId);
-            if (targetParagraph) {
-                targetParagraph.style.display = 'block';
-            }
-        });
+    // Update the toggle icon based on collapse events
+    collapseContent.addEventListener('show.bs.collapse', () => {
+        console.log('Collapse is expanding.');
+        if (toggleIcon) {
+            toggleIcon.src = '/assets/icons/arrow_up.svg'; // Change to "up" icon
+        }
     });
-}
-document.addEventListener('DOMContentLoaded', () => {
-    // Interacción del Ícono de Toggle
-    const toggleButton = document.querySelector('.btn-toggle');
-    const toggleIcon = document.getElementById('toggleIcon');
-    const menuContent = document.getElementById('menuContent');
-    const infoContainer = document.querySelector('.info-container');
 
-    // Interacciones de los Íconos del Menú
-    const menuIcons = document.querySelectorAll('.menu-info-icon');
-    const infoDivs = document.querySelectorAll('.grid-placeholder > div');
-
-    menuIcons.forEach((icon) => {
-        icon.addEventListener('click', () => {
-            // Remover la clase 'active' de todos los íconos
-            menuIcons.forEach((icon) => icon.classList.remove('active'));
-            // Añadir la clase 'active' al ícono clicado
-            icon.classList.add('active');
-            // Ocultar todos los divs de información
-            infoDivs.forEach((div) => div.style.display = 'none');
-            // Mostrar el div de información correspondiente
-            const targetId = icon.dataset.target;
-            const targetInfo = document.getElementById(targetId);
-            if (targetInfo) {
-                targetInfo.style.display = 'block';
-            }
-        });
+    collapseContent.addEventListener('hide.bs.collapse', () => {
+        console.log('Collapse is collapsing.');
+        if (toggleIcon) {
+            toggleIcon.src = '/assets/icons/arrow_down.svg'; // Change to "down" icon
+        }
     });
-});
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Select all elements with a data-src attribute (icons and toggle button)
+    // Load dynamic SVG icons
     const dynamicIcons = document.querySelectorAll('[data-src]');
-
-    dynamicIcons.forEach(icon => {
-        const src = icon.getAttribute('data-src'); // Get the SVG file path
+    dynamicIcons.forEach((icon) => {
+        const src = icon.getAttribute('data-src');
         if (src) {
             fetch(src)
-                .then(response => {
+                .then((response) => {
                     if (!response.ok) {
                         throw new Error(`Failed to load SVG: ${src}`);
                     }
                     return response.text();
                 })
-                .then(svgContent => {
-                    icon.innerHTML = svgContent; // Insert the SVG content inline
-                    // Ensure the SVG inherits currentColor for styling
+                .then((svgContent) => {
+                    icon.innerHTML = svgContent; // Inline SVG content
                     const svgElement = icon.querySelector('svg');
                     if (svgElement) {
-                        svgElement.setAttribute('fill', 'currentColor');
-                        svgElement.classList.add('icon-svg'); // Optional for additional styling
+                        svgElement.setAttribute('fill', 'currentColor'); // Dynamic coloring
+                        svgElement.classList.add('icon-svg'); // Optional for styling
                     }
                 })
-                .catch(error => console.error(error));
+                .catch((error) => console.error(error));
         }
     });
-});
+}

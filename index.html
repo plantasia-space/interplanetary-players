@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <title>Interplanetary Players</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Incluir Bootstrap CSS -->
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/node_modules/bootstrap/dist/css/bootstrap.min.css">
-    <!-- Incluir CSS Personalizado -->
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/src/css/style.css">
 </head>
 <body>
-    <!-- Canvas de Three.js -->
+    <!-- Canvas for Three.js -->
     <canvas id="canvas3D" class="webgl"></canvas>
 
     <!-- UI Overlay -->
@@ -22,67 +22,53 @@
                 <h1 class="responsive-title">Interplanetary Jam</h1>
             </div>
             <p class="d-inline-flex gap-1">
-
-                <button class="btn menu-info-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInfoMenu" aria-expanded="false" aria-controls="collapseInfoMenu">
+                <button class="btn menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu">
                     INFO
-                </button>
-              </p>
-              <div class="collapse" id="collapseInfoMenu">
-        
-              
-            <!-- Grid Layout -->
-            <div class="container-grid">
-                <!-- Column 1: Icons -->
-                <div class="icons-column">
-                    <div class="menu-info-icon" data-target="controlMonitorInfo" data-src="assets/icons/control_monitor.svg">
-                        <!-- SVG dynamically loaded here -->
+                </button>            
+            </p>
+            <div class="collapse" id="collapseInfoMenu">
+                <!-- Grid Layout -->
+                <div class="container-grid">
+                    <!-- Column 1: Icons -->
+                    <div class="icons-column">
+                        <div class="menu-info-icon" data-target="controlMonitorInfo" data-src="assets/icons/control_monitor.svg">
+                            <!-- SVG dynamically loaded here -->
+                        </div>
+                        <div class="menu-info-icon" data-target="trackInfo" data-src="assets/icons/track.svg">
+                            <!-- SVG dynamically loaded here -->
+                        </div>
+                        <div class="menu-info-icon" data-target="interplanetaryPlayerInfo" data-src="assets/icons/interplanetary-player.svg">
+                            <!-- SVG dynamically loaded here -->
+                        </div>
+                        <div class="menu-info-icon" data-target="soundEngineInfo" data-src="assets/icons/sound_engine.svg">
+                            <!-- SVG dynamically loaded here -->
+                        </div>
                     </div>
-                    <div class="menu-info-icon" data-target="trackInfo" data-src="assets/icons/track.svg">
-                        <!-- SVG dynamically loaded here -->
+                    <div class="grid-content">
+                        <!-- Grid Rows -->
+                        <div>Control Monitor Information</div>
+                        <div>Placeholder 8</div>
+                        <div>Track Information</div>
+                        <div>Placeholder 9</div>
+                        <div>Interplanetary Player Information</div>
+                        <div>Placeholder 10</div>
+                        <div>Sound Engine Information</div>
+                        <div>Placeholder 11</div>
+                        <div>Placeholder 5</div>
+                        <div>Placeholder 12</div>
+                        <div>Placeholder 6</div>
+                        <div>Placeholder 13</div>
+                        <div>Placeholder 7</div>
+                        <div>Placeholder 14</div>
                     </div>
-                    <div class="menu-info-icon" data-target="interplanetaryPlayerInfo" data-src="assets/icons/interplanetary-player.svg">
-                        <!-- SVG dynamically loaded here -->
-                    </div>
-                    <div class="menu-info-icon" data-target="soundEngineInfo" data-src="assets/icons/sound_engine.svg">
-                        <!-- SVG dynamically loaded here -->
-                    </div>
-                </div>
-                <div class="grid-content">
-                    <!-- Row 1 -->
-                    <div>Control Monitor Information</div>
-                    <div>Placeholder 8</div>
-                
-                    <!-- Row 2 -->
-                    <div>Track Information</div>
-                    <div>Placeholder 9</div>
-                
-                    <!-- Row 3 -->
-                    <div>Interplanetary Player Information</div>
-                    <div>Placeholder 10</div>
-                
-                    <!-- Row 4 -->
-                    <div>Sound Engine Information</div>
-                    <div>Placeholder 11</div>
-                
-                    <!-- Row 5 -->
-                    <div>Placeholder 5</div>
-                    <div>Placeholder 12</div>
-                
-                    <!-- Row 6 -->
-                    <div>Placeholder 6</div>
-                    <div>Placeholder 13</div>
-                
-                    <!-- Row 7 -->
-                    <div>Placeholder 7</div>
-                    <div>Placeholder 14</div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-    <!-- Include Bootstrap JS and Interaction Scripts -->
+    <!-- Bootstrap JS -->
     <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Scripts -->
     <script type="module" src="/src/Main.js"></script>
     <script type="module" src="/src/Interaction.js"></script>
 </body>
