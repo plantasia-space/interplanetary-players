@@ -1,5 +1,4 @@
 // src/Main.js
-
 import { initScene, initRenderer, addLights } from './Scene.js';
 import { loadAndDisplayModel } from './Loaders.js';
 import { DataManager } from './DataManager.js';

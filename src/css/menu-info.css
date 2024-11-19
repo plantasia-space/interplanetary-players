@@ -1,0 +1,124 @@
+/* menu-info-info.css */
+
+
+/* Menu info-and text container */
+.menu-info-text-container {
+    display: flex;
+    align-items: flex-start;
+    pointer-events: auto; /* Ensure UI interactions */
+}
+
+/* Menu info-container */
+.menu-info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4vw;
+    margin-right: 20px;
+}
+
+/* Toggle button */
+.btn-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    pointer-events: auto; /* Interactive */
+}
+
+/* Toggle icon */
+#toggleIcon {
+    width: 4vw;
+    height: 4vw;
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: var(--col1);
+}
+
+#toggleIcon {
+    width: 50px;
+    height: 50px;
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: var(--col1);
+}
+
+#toggleIcon.expanded {
+    transform: rotate(180deg);
+    color: var(--col2); /* Change color when expanded */
+}
+
+/* Menu info-icons */
+.menu-info-icons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto; /* Allow menu info-interactions */
+}
+
+/* Each menu info-icon */
+.menu-info-icon {
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: var(--col1);
+}
+
+.menu-info-icon:hover {
+    transform: scale(1.1);
+    color: var(--col2);
+}
+
+.menu-info-icon.active {
+    color: var(--col2);
+}
+
+/* Ensure SVG uses currentColor */
+.icon-svg {
+    display: inline-block;
+    vertical-align: middle;
+    color: inherit; /* Ensures the icons inherit the parent element's color */
+    transition: color 0.3s ease; /* Optional for smooth color transitions */
+    width: 100%;
+    height: 100%;
+    display: block;
+    fill: currentColor;
+}
+
+/* Information container */
+.info-container {
+    display: none;
+    position: relative;
+    color: var(--col1);
+    font-family: 'Inter', sans-serif;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    pointer-events: auto; /* Ensure interactions */
+}
+
+/* Info container title */
+.info-title {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+/* Grid placeholders */
+.grid-placeholder {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    grid-template-rows: repeat(7, auto);   /* 7 rows */
+    gap: 10px;
+    pointer-events: none; /* Placeholder grid is not interactive */
+}
+
+/* Placeholder content */
+.grid-placeholder > div {
+    color: var(--col1);
+    display: none;
+}
+
+/* Show the first placeholder by default */
+.grid-placeholder > div:first-child {
+    display: block;
+}
