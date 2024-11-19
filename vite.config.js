@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import restart from 'vite-plugin-restart'
 
 export default defineConfig({
-    base: '/', // Set to '/' to match the deployment root
+    base: '/interplanetary-players', // Set to '/' to match the deployment root
     root: '.', // Root directory where index.html is located
     publicDir: 'public', // Serve static assets from 'public' folder
     server: {

@@ -1,14 +1,17 @@
 // src/Interaction.js
 
-
-// Function to load SVGs dynamically
 function loadDynamicSVGs() {
     if (!document.body.dataset.iconsLoaded) {
         console.log('Loading dynamic SVGs...');
+        const baseUrl = import.meta.env.BASE_URL; // Obtener la URL base
         const dynamicIcons = document.querySelectorAll('[data-src]');
         dynamicIcons.forEach((icon) => {
-            const src = icon.getAttribute('data-src');
+            let src = icon.getAttribute('data-src');
             if (src) {
+                // Asegurar que la ruta sea relativa a la base
+                if (!src.startsWith('http')) {
+                    src = baseUrl + src.replace(/^\//, ''); // Elimina la barra inicial si existe
+                }
                 fetch(src)
                     .then((response) => {
                         if (!response.ok) {
@@ -17,22 +20,20 @@ function loadDynamicSVGs() {
                         return response.text();
                     })
                     .then((svgContent) => {
-                        // Parse the SVG content
+                        // Procesar el SVG como antes
                         const parser = new DOMParser();
                         const svgDocument = parser.parseFromString(svgContent, 'image/svg+xml');
                         const svgElement = svgDocument.documentElement;
 
                         if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
-                            // Set desired attributes
                             svgElement.setAttribute('fill', 'currentColor');
                             svgElement.classList.add('icon-svg');
 
-                            // Remove existing child nodes
+                            // Eliminar nodos hijos existentes
                             while (icon.firstChild) {
                                 icon.removeChild(icon.firstChild);
                             }
 
-                            // Append the SVG element
                             icon.appendChild(svgElement);
                         } else {
                             console.error(`Invalid SVG content in ${src}`);
@@ -42,7 +43,7 @@ function loadDynamicSVGs() {
             }
         });
 
-        // Mark that the icons have been loaded
+        // Marcar que los iconos han sido cargados
         document.body.dataset.iconsLoaded = 'true';
     } else {
         console.log('SVGs have already been loaded.');
