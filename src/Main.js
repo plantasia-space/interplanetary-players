@@ -4,8 +4,6 @@ import { loadAndDisplayModel } from './Loaders.js';
 import { DataManager } from './DataManager.js';
 import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { setupInteractions } from './Interaction.js'; // Import Interaction.js
 
 // Initialize the scene
@@ -96,7 +94,4 @@ animate();
 initializeApp();
 
 // Setup Interactions for UI Buttons
-setupInteractions({
-    onPlay: handlePlay,
-    onPause: handlePause,
-});
+setupInteractions();
