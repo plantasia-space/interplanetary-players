@@ -1,124 +1,88 @@
 /* menu-info-info.css */
 
-
-/* Menu info-and text container */
-.menu-info-text-container {
-    display: flex;
-    align-items: flex-start;
-    pointer-events: auto; /* Ensure UI interactions */
-}
-
-/* Menu info-container */
-.menu-info-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4vw;
-    margin-right: 20px;
-}
-
-/* Toggle button */
-.btn-toggle {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    pointer-events: auto; /* Interactive */
-}
-
-/* Toggle icon */
-#toggleIcon {
-    width: 4vw;
-    height: 4vw;
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: var(--col1);
-}
-
-#toggleIcon {
-    width: 50px;
-    height: 50px;
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: var(--col1);
-}
-
-#toggleIcon.expanded {
-    transform: rotate(180deg);
-    color: var(--col2); /* Change color when expanded */
-}
-
-/* Menu info-icons */
-.menu-info-icons {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    pointer-events: auto; /* Allow menu info-interactions */
-}
-
-/* Each menu info-icon */
-.menu-info-icon {
-    width: 50px;
-    height: 50px;
-    cursor: pointer;
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: var(--col1);
-}
-
-.menu-info-icon:hover {
-    transform: scale(1.1);
-    color: var(--col2);
-}
-
-.menu-info-icon.active {
-    color: var(--col2);
-}
-
-/* Ensure SVG uses currentColor */
-.icon-svg {
-    display: inline-block;
-    vertical-align: middle;
-    color: inherit; /* Ensures the icons inherit the parent element's color */
-    transition: color 0.3s ease; /* Optional for smooth color transitions */
-    width: 100%;
-    height: 100%;
-    display: block;
-    fill: currentColor;
-}
-
-/* Information container */
-.info-container {
-    display: none;
-    position: relative;
-    color: var(--col1);
-    font-family: 'Inter', sans-serif;
-    padding: 20px;
-    border-radius: 10px;
-    margin-top: 20px;
-    pointer-events: auto; /* Ensure interactions */
-}
-
-/* Info container title */
-.info-title {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-}
-
-/* Grid placeholders */
-.grid-placeholder {
+/* Grid container for layout */
+.container-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 columns */
-    grid-template-rows: repeat(7, auto);   /* 7 rows */
-    gap: 10px;
-    pointer-events: none; /* Placeholder grid is not interactive */
+    grid-template-columns: auto 1fr; /* Icons column + placeholders area */
+    gap: 2vw; /* Space between the icons and the placeholders */
+    align-items: start; /* Align items at the top */
 }
 
-/* Placeholder content */
-.grid-placeholder > div {
+/* Icons Column: Ensure pointer interactions */
+.icons-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2vw; /* Space between icons */
+    justify-content: flex-start;
+    align-items: center;
+    pointer-events: auto; /* Enable pointer events */
+    border-left: 0.2vw solid var(--col2); /* Dynamic border size */
+}
+
+.menu-info-toggle {
+    display: flex; /* Make the container a flexbox */
+    justify-content: center; /* Horizontally center the icon */
+    align-items: center; /* Align the icon to the top */
+    width: clamp(50px, 8vw, 100px); /* Minimum 50px, scalable to 8vw, maximum 100px */
+    height: clamp(50px, 8vw, 100px); /* Maintain the same proportions */
+    cursor: pointer; /* Make it clear that this is clickable */
+    transition: transform 0.3s ease, color 0.3s ease;
     color: var(--col1);
-    display: none;
+    pointer-events: auto; /* Ensure the icon is interactive */
 }
 
-/* Show the first placeholder by default */
-.grid-placeholder > div:first-child {
-    display: block;
+/* Menu info icons: Style and interaction */
+/* Menu info icons: Style and interaction */
+.menu-info-icon {
+    display: flex; /* Make the container a flexbox */
+    justify-content: center; /* Horizontally center the icon */
+    align-items: center; /* Align the icon to the top */
+    width: clamp(50px, 8vw, 100px); /* Minimum 50px, scalable to 8vw, maximum 100px */
+    height: clamp(50px, 8vw, 100px); /* Maintain the same proportions */
+    cursor: pointer; /* Make it clear that this is clickable */
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: var(--col1);
+    pointer-events: auto; /* Ensure the icon is interactive */
 }
+.menu-info-icon:hover {
+    transform: scale(1.1); /* Slight hover zoom */
+    color: var(--col2);
+}
+
+/* Ensure SVG or other elements inside the icon inherit pointer behavior */
+.menu-info-icon > * {
+    pointer-events: none; /* Prevent interfering with the button interaction */
+}
+/* Main Grid Layout */
+/* Main Grid Layout */
+.grid-content {
+    display: grid;
+    grid-template-columns: minmax(min-content, clamp(150px, 30%, 600px)) 1fr; /* Column 2 adapts, column 3 fills */
+    grid-auto-rows: auto; /* Rows adjust dynamically based on the tallest content */
+    gap: 2vw; /* Space between columns */
+    align-items: start; /* Align content to the top of each cell */
+    
+}
+
+/* Placeholder Styles for Items in the Grid */
+.grid-content div {
+    display: flex; /* Flexbox for alignment inside the cell */
+    flex-direction: column; /* Ensure content flows top-to-bottom */
+    align-items: flex-start; /* Align content to the start (left) horizontally */
+    justify-content: flex-start; /* Align content to the start (top) vertically */
+    background-color: var(--col1-light); /* Apply background color */
+    font-family: 'Inter Display', sans-serif;
+    font-weight: 200; /* Light */
+    font-size: clamp(12px, 3vw, 32px); /* Minimum 12px, scalable with viewport, max 32px */
+    padding: clamp(5px, 1vw, 15px); /* Dynamic padding */
+    text-align: left; /* Align text to the left */
+    color: var(--col1); /* Text color */
+    border-radius: 0.5vw; /* Rounded corners */
+    white-space: normal; /* Allow text to wrap */
+    overflow-wrap: break-word; /* Handle long words gracefully */
+    transition: transform 0.3s ease, color 0.3s ease; /* Smooth transitions */
+    box-sizing: border-box; /* Include padding and borders */
+    height: 100%; /* Stretch to match row height */
+}
+
+

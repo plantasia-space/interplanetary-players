@@ -13,85 +13,75 @@
     <!-- Canvas de Three.js -->
     <canvas id="canvas3D" class="webgl"></canvas>
 
-    <!-- Superposición de UI -->
+    <!-- UI Overlay -->
     <div class="ui-overlay">
         <div class="sub-frame">
-            <!-- Contenedor del Menú y Texto -->
-            <div class="menu-info-text-container">
-                <!-- Contenedor del Menú -->
-                <div class="menu-info-container">
-                    <!-- Botón de Toggle -->    
-                    <button
-                    class="btn btn-toggle"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#menuContent"
-                    aria-expanded="false"
-                    aria-controls="menuContent"
-                >
-                    <!-- Toggle Icon dynamically loaded -->
-                    <div id="toggleIconContainer" data-src="assets/icons/toogle_icon.svg" class="icon-svg">
-                        <!-- SVG will be dynamically loaded here -->
-                    </div>
-                </button>
 
-                    <!-- Menú Colapsable -->
-                    <!-- Collapsible Menu -->
-                    <div class="collapse" id="menuContent">
-                        <div class="menu-info-icons">
-                            <!-- Control Monitor Icon -->
-                            <div class="menu-info-icon" data-target="controlMonitorInfo" data-src="assets/icons/control_monitor.svg">
-                                <!-- SVG will be dynamically loaded here -->
-                            </div>
-
-                            <!-- Track Icon -->
-                            <div class="menu-info-icon" data-target="trackInfo" data-src="assets/icons/track.svg">
-                                <!-- SVG will be dynamically loaded here -->
-                            </div>
-
-                            <!-- Interplanetary Player Icon -->
-                            <div class="menu-info-icon" data-target="interplanetaryPlayerInfo" data-src="assets/icons/interplanetary-player.svg">
-                                <!-- SVG will be dynamically loaded here -->
-                            </div>
-
-                            <!-- Sound Engine Icon -->
-                            <div class="menu-info-icon" data-target="soundEngineInfo" data-src="assets/icons/sound_engine.svg">
-                                <!-- SVG will be dynamically loaded here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contenedor de Texto -->
-                <div class="text-container">
-                    <h1 class="responsive-title">Interplanetary Jam</h1>
-                </div>
+            <!-- Text Container -->
+            <div class="text-container">
+                <h1 class="responsive-title">Interplanetary Jam</h1>
             </div>
+            <p class="d-inline-flex gap-1">
 
-            <!-- Contenedor de Información -->
-            <div class="info-container">
-                <h2 class="info-title">Información</h2>
-                <div class="grid-placeholder">
-                    <div id="controlMonitorInfo">Control Monitor Information</div>
-                    <div id="trackInfo">Track Information</div>
-                    <div id="interplanetaryPlayerInfo">Interplanetary Player Information</div>
-                    <div id="soundEngineInfo">Sound Engine Information</div>
-                    <div>Placeholder 5</div>
-                    <div>Placeholder 6</div>
-                    <div>Placeholder 7</div>
+                <button class="btn menu-info-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInfoMenu" aria-expanded="false" aria-controls="collapseInfoMenu">
+                    INFO
+                </button>
+              </p>
+              <div class="collapse" id="collapseInfoMenu">
+        
+              
+            <!-- Grid Layout -->
+            <div class="container-grid">
+                <!-- Column 1: Icons -->
+                <div class="icons-column">
+                    <div class="menu-info-icon" data-target="controlMonitorInfo" data-src="assets/icons/control_monitor.svg">
+                        <!-- SVG dynamically loaded here -->
+                    </div>
+                    <div class="menu-info-icon" data-target="trackInfo" data-src="assets/icons/track.svg">
+                        <!-- SVG dynamically loaded here -->
+                    </div>
+                    <div class="menu-info-icon" data-target="interplanetaryPlayerInfo" data-src="assets/icons/interplanetary-player.svg">
+                        <!-- SVG dynamically loaded here -->
+                    </div>
+                    <div class="menu-info-icon" data-target="soundEngineInfo" data-src="assets/icons/sound_engine.svg">
+                        <!-- SVG dynamically loaded here -->
+                    </div>
+                </div>
+                <div class="grid-content">
+                    <!-- Row 1 -->
+                    <div>Control Monitor Information</div>
                     <div>Placeholder 8</div>
+                
+                    <!-- Row 2 -->
+                    <div>Track Information</div>
                     <div>Placeholder 9</div>
+                
+                    <!-- Row 3 -->
+                    <div>Interplanetary Player Information</div>
                     <div>Placeholder 10</div>
+                
+                    <!-- Row 4 -->
+                    <div>Sound Engine Information</div>
                     <div>Placeholder 11</div>
+                
+                    <!-- Row 5 -->
+                    <div>Placeholder 5</div>
                     <div>Placeholder 12</div>
+                
+                    <!-- Row 6 -->
+                    <div>Placeholder 6</div>
                     <div>Placeholder 13</div>
+                
+                    <!-- Row 7 -->
+                    <div>Placeholder 7</div>
                     <div>Placeholder 14</div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Incluir Bootstrap JS y JavaScript de Interacción -->
+    <!-- Include Bootstrap JS and Interaction Scripts -->
     <script src="/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="/src/Main.js"></script>
     <script type="module" src="/src/Interaction.js"></script>

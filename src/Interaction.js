@@ -26,6 +26,7 @@ export function setupInteractions({ onPlay, onPause }) {
         infoContainer.style.display = 'none'; // Hide info container when menu collapses
     });
 
+    
     // Toggle active state for menu icons
     menuIcons.forEach((icon) => {
         icon.addEventListener('click', () => {
@@ -50,17 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleIcon = document.getElementById('toggleIcon');
     const menuContent = document.getElementById('menuContent');
     const infoContainer = document.querySelector('.info-container');
-
-    // Escuchar los eventos de Bootstrap Collapse
-    menuContent.addEventListener('shown.bs.collapse', () => {
-        toggleIcon.classList.add('expanded');
-        infoContainer.style.display = 'block'; // Mostrar el contenedor de información al expandir el menú
-    });
-
-    menuContent.addEventListener('hidden.bs.collapse', () => {
-        toggleIcon.classList.remove('expanded');
-        infoContainer.style.display = 'none'; // Ocultar el contenedor de información al colapsar el menú
-    });
 
     // Interacciones de los Íconos del Menú
     const menuIcons = document.querySelectorAll('.menu-info-icon');
