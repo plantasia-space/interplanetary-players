@@ -71,7 +71,7 @@ canvas {
     justify-content: flex-start;
     box-sizing: border-box;
     background: none;
-    padding: 20px;
+    padding: 3% 6%;    
     pointer-events: none; /* Pass-through for the 3D scene */
 }
 

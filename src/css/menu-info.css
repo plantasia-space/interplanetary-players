@@ -1,22 +1,50 @@
 /* menu-info-info.css */
 
 
-.menu-info-toggle {
-    display: flex; /* Make the container a flexbox */
-    justify-content: center; /* Horizontally center the icon */
-    align-items: center; /* Align the icon to the top */
-    width: clamp(50px, 8vw, 100px); /* Minimum 50px, scalable to 8vw, maximum 100px */
-    height: clamp(50px, 8vw, 100px); /* Maintain the same proportions */
-    cursor: pointer; /* Make it clear that this is clickable */
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: var(--col1);
-    pointer-events: auto; /* Ensure the icon is interactive */
-}
-.menu-info-toggle-icon:hover {
-    transform: scale(1.1); /* Slight hover zoom */
-    color: var(--col2);
+/* Toggle Button */
+button.menu-info-toggle {
+    display: flex; /* Flexbox container */
+    justify-content: center; /* Center the content horizontally */
+    align-items: center; /* Center the content vertically */
+    width: clamp(50px, 8vw, 100px); /* Match width from reference */
+    height: clamp(50px, 8vw, 100px); /* Match height for square proportion */
+    cursor: pointer; /* Show pointer cursor for interactivity */
+    background-color: transparent; /* Transparent background */
+    border: 2px solid var(--col1); /* Use reference border color */
+    border-radius: 50%; /* Match circular shape */
+    font-size: 1.5rem; /* Adjust size of the toggle icon */
+    color: var(--col1); /* Default icon color */
+    pointer-events: auto; /* Ensure the button is interactive */
+    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
 }
 
+/* Rotate icon using pseudo-element */
+button.menu-info-toggle::after {
+    content: "i"; /* Use the same content for the toggle icon */
+    display: inline-block; /* Proper block-level behavior */
+    font-size: 3rem; /* Adjust icon size */
+    transition: transform 0.3s ease, color 0.3s ease; /* Smooth rotation */
+}
+
+/* Hover State */
+button.menu-info-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle background effect on hover */
+    transform: scale(1.1); /* Slight zoom effect */
+    color: var(--col2); /* Match hover color from reference */
+    border-color: var(--col2); /* Change border color on hover */
+}
+
+/* Expanded State */
+button.menu-info-toggle[aria-expanded="true"]::after {
+    transform: rotate(180deg); /* Rotate arrow for expanded state */
+    color: var(--col2); /* Change color when expanded */
+}
+
+/* Collapsed State */
+button.menu-info-toggle[aria-expanded="false"]::after {
+    transform: rotate(0deg); /* Default position pointing right */
+    color: var(--col1); /* Default icon color */
+}
 
 /* Menu info icons: Style and interaction */
 .menu-info-icon {
