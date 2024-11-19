@@ -1,93 +1,102 @@
-// src/Interaction.js
+import { DataManager } from './DataManager.js';
 
-// Función para cargar SVGs dinámicamente
-// src/Interaction.js
+const dataManager = new DataManager();
 
-// Function to load SVGs dynamically
+/**
+ * Function to load SVGs dynamically.
+ */
 function loadDynamicSVGs() {
     if (!document.body.dataset.iconsLoaded) {
-        console.log('Loading dynamic SVGs...');
         const dynamicIcons = document.querySelectorAll('[data-src]');
         dynamicIcons.forEach((icon) => {
             const src = icon.getAttribute('data-src');
             if (src) {
                 fetch(src)
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw new Error(`Error loading SVG: ${src}`);
-                        }
-                        return response.text();
-                    })
+                    .then((response) => response.text())
                     .then((svgContent) => {
-                        // Parse the SVG content
                         const parser = new DOMParser();
                         const svgDocument = parser.parseFromString(svgContent, 'image/svg+xml');
                         const svgElement = svgDocument.documentElement;
 
                         if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
-                            // Set desired attributes
                             svgElement.setAttribute('fill', 'currentColor');
                             svgElement.classList.add('icon-svg');
-
-                            // Remove existing child nodes
-                            while (icon.firstChild) {
-                                icon.removeChild(icon.firstChild);
-                            }
-
-                            // Append the SVG element
+                            icon.innerHTML = ''; // Clear existing content
                             icon.appendChild(svgElement);
-                        } else {
-                            console.error(`Invalid SVG content in ${src}`);
                         }
                     })
-                    .catch((error) => console.error(error));
+                    .catch(console.error);
             }
         });
-
-        // Mark that the icons have been loaded
         document.body.dataset.iconsLoaded = 'true';
-    } else {
-        console.log('SVGs have already been loaded.');
     }
 }
 
-// Execute the function immediately
-loadDynamicSVGs();
-
-
-// Función para configurar interacciones
+/**
+ * Setup interactions for dynamic placeholder updates.
+ */
 export function setupInteractions() {
-    // Verificar integración de Bootstrap
     if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap no está cargado. Asegúrate de incluir bootstrap.bundle.min.js.');
+        console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
         return;
     }
 
-    // Seleccionar elementos
     const toggleButton = document.querySelector('.menu-info-toggle');
     const collapseContent = document.getElementById('collapseInfoMenu');
 
     if (!toggleButton || !collapseContent) {
-        console.error('No se encontró el botón de toggle o el contenido colapsable.');
+        console.error('Required elements not found.');
         return;
     }
 
-    // Verificar si los event listeners ya están agregados
-    if (!toggleButton.dataset.listenerAdded) {
-        // No es necesario inicializar manualmente el colapso si usas data-bs-toggle
-        // Pero si lo haces, asegúrate de no duplicar la instancia
-        const collapseInstance = new bootstrap.Collapse(collapseContent, {
-            toggle: false,
-        });
+    const collapseInstance = new bootstrap.Collapse(collapseContent, { toggle: false });
 
-        // Agregar evento al botón
-        toggleButton.addEventListener('click', () => {
-            collapseInstance.toggle();
-            const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
-            toggleButton.setAttribute('aria-expanded', (!isExpanded).toString());
-        });
+    // Handle toggle button click
+    toggleButton.addEventListener('click', () => {
+        const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
 
-        // Marcar que el listener ha sido agregado
-        toggleButton.dataset.listenerAdded = 'true';
-    }
+        if (isExpanded) {
+            collapseInstance.hide(); // Collapse the menu
+            dataManager.clearPlaceholders(); // Clear placeholders when collapsed
+        } else {
+            collapseInstance.show(); // Expand the menu
+        }
+
+        toggleButton.setAttribute('aria-expanded', (!isExpanded).toString());
+    });
+
+    // Handle icon clicks
+    document.querySelectorAll('.menu-info-icon').forEach((icon) => {
+        icon.addEventListener('click', () => {
+            const target = icon.dataset.target;
+
+            if (target) {
+                // Ensure the menu is expanded when an icon is clicked
+                if (!collapseContent.classList.contains('show')) {
+                    collapseInstance.show();
+                    toggleButton.setAttribute('aria-expanded', 'true');
+                }
+
+                // Populate placeholders dynamically
+                dataManager.populatePlaceholders(target);
+            } else {
+                console.warn('No data-target attribute found on the clicked icon.');
+            }
+        });
+    });
+
+    // Clear placeholders when menu is hidden
+    collapseContent.addEventListener('hidden.bs.collapse', () => {
+        dataManager.clearPlaceholders();
+        toggleButton.setAttribute('aria-expanded', 'false');
+    });
+
+    // Ensure aria-expanded is updated when menu is shown
+    collapseContent.addEventListener('shown.bs.collapse', () => {
+        toggleButton.setAttribute('aria-expanded', 'true');
+    });
 }
+
+// Initialize SVG loading and interactions
+loadDynamicSVGs();
+setupInteractions();

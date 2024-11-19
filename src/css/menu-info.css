@@ -6,16 +6,15 @@ button.menu-info-toggle {
     display: flex; /* Flexbox container */
     justify-content: center; /* Center the content horizontally */
     align-items: center; /* Center the content vertically */
-    width: clamp(50px, 8vw, 100px); /* Match width from reference */
-    height: clamp(50px, 8vw, 100px); /* Match height for square proportion */
+    width: clamp(50px, 4vw, 100px); /* Match width from reference */
+    height: clamp(50px, 4vw, 100px); /* Match height for square proportion */
     cursor: pointer; /* Show pointer cursor for interactivity */
     background-color: transparent; /* Transparent background */
-    border: 2px solid var(--col1); /* Use reference border color */
     border-radius: 50%; /* Match circular shape */
-    font-size: 1.5rem; /* Adjust size of the toggle icon */
-    color: var(--col1); /* Default icon color */
+    font-size: .5rem; /* Adjust size of the toggle icon */
     pointer-events: auto; /* Ensure the button is interactive */
     transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
+
 }
 
 /* Rotate icon using pseudo-element */
@@ -24,26 +23,27 @@ button.menu-info-toggle::after {
     display: inline-block; /* Proper block-level behavior */
     font-size: 3rem; /* Adjust icon size */
     transition: transform 0.3s ease, color 0.3s ease; /* Smooth rotation */
+
 }
 
 /* Hover State */
 button.menu-info-toggle:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Subtle background effect on hover */
     transform: scale(1.1); /* Slight zoom effect */
     color: var(--col2); /* Match hover color from reference */
-    border-color: var(--col2); /* Change border color on hover */
 }
 
 /* Expanded State */
 button.menu-info-toggle[aria-expanded="true"]::after {
     transform: rotate(180deg); /* Rotate arrow for expanded state */
     color: var(--col2); /* Change color when expanded */
+
 }
 
 /* Collapsed State */
 button.menu-info-toggle[aria-expanded="false"]::after {
-    transform: rotate(0deg); /* Default position pointing right */
-    color: var(--col1); /* Default icon color */
+    transform: rotate(0deg); 
+    color: var(--col1); 
+
 }
 
 /* Menu info icons: Style and interaction */

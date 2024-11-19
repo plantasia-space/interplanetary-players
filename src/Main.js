@@ -65,6 +65,7 @@ async function initializeApp() {
 
         // Apply colors based on track data
         Constants.applyColorsFromTrackData();
+        dataManager.populatePlaceholders('monitorInfo');
 
         await loadAndDisplayModel(scene, trackData);
         console.log('[APP] Model loaded successfully.');
@@ -93,5 +94,3 @@ function animate() {
 animate();
 initializeApp();
 
-// Setup Interactions for UI Buttons
-setupInteractions();
