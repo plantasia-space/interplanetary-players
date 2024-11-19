@@ -47,32 +47,33 @@ async function initializeApp() {
 
         console.log(`[APP] Using trackId: ${trackId}`);
 
-        let trackData = lscache.get(trackId);
-        if (!trackData) {
-            console.log('[APP] Track data not in cache. Fetching from server...');
-            trackData = await dataManager.fetchTrackData(trackId);
-            lscache.set(trackId, trackData, Constants.CACHE_EXPIRY_MINUTES);
-        } else {
-            console.log('[APP] Track data retrieved from cache:', trackData);
+        // Usar el DataManager para manejar fetch y configuración
+        await dataManager.fetchAndUpdateConfig(trackId);
+
+        // Verificar si los datos necesarios están completos
+        if (!Constants.TRACK_DATA?.track || 
+            !Constants.TRACK_DATA?.soundEngine || 
+            !Constants.TRACK_DATA?.interplanetaryPlayer) {
+            throw new Error('Missing required data fields in TRACK_DATA.');
         }
 
-        if (!trackData.track || !trackData.soundEngine || !trackData.interplanetaryPlayer) {
-            throw new Error('Missing required data fields in trackData.');
-        }
+        console.log('[APP] TRACK_DATA confirmed:', Constants.TRACK_DATA);
 
-        Constants.TRACK_ID = trackId;
-        Constants.TRACK_DATA = trackData;
-
-        // Apply colors based on track data
+        // Aplicar colores basados en TRACK_DATA
         Constants.applyColorsFromTrackData();
+
+        // Llenar placeholders usando el tipo 'monitorInfo' por defecto (o el que necesites)
+        setupInteractions(dataManager);
         dataManager.populatePlaceholders('monitorInfo');
 
-        await loadAndDisplayModel(scene, trackData);
+        // Cargar el modelo y mostrarlo en la escena
+        await loadAndDisplayModel(scene, Constants.TRACK_DATA);
         console.log('[APP] Model loaded successfully.');
     } catch (error) {
         console.error('[APP] Error during application initialization:', error);
     }
 }
+
 
 window.addEventListener('resize', () => {
     const width = window.innerWidth;

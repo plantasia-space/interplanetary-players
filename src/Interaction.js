@@ -1,7 +1,9 @@
-import { DataManager } from './DataManager.js';
+// Interaction.js
 
-const dataManager = new DataManager();
+import { Constants } from './Constants.js';
 
+// Elimina o comenta esta línea
+// const dataManager = new DataManager();
 /**
  * Function to load SVGs dynamically.
  */
@@ -35,7 +37,10 @@ function loadDynamicSVGs() {
 /**
  * Setup interactions for dynamic placeholder updates.
  */
-export function setupInteractions() {
+/**
+ * Setup interactions for dynamic placeholder updates.
+ */
+export function setupInteractions(dataManager) {
     if (typeof bootstrap === 'undefined') {
         console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
         return;
@@ -69,6 +74,7 @@ export function setupInteractions() {
     document.querySelectorAll('.menu-info-icon').forEach((icon) => {
         icon.addEventListener('click', () => {
             const target = icon.dataset.target;
+            console.log("target", target);
 
             if (target) {
                 // Ensure the menu is expanded when an icon is clicked
@@ -77,14 +83,23 @@ export function setupInteractions() {
                     toggleButton.setAttribute('aria-expanded', 'true');
                 }
 
-                // Populate placeholders dynamically
+                // Validate and populate placeholders dynamically
+                if (!Constants.TRACK_DATA) {
+                    console.error('[Interactions] TRACK_DATA is not loaded. Ensure fetchAndUpdateConfig is called.');
+                    return;
+                }
+
+                console.log(`[Interactions] Populating placeholders for target: ${target}`);
                 dataManager.populatePlaceholders(target);
             } else {
                 console.warn('No data-target attribute found on the clicked icon.');
             }
         });
     });
-
+    if (!Constants.TRACK_DATA) {
+        console.error('[Interactions] TRACK_DATA is not loaded. Ensure fetchAndUpdateConfig is called.');
+        return;
+    }
     // Clear placeholders when menu is hidden
     collapseContent.addEventListener('hidden.bs.collapse', () => {
         dataManager.clearPlaceholders();
@@ -96,7 +111,5 @@ export function setupInteractions() {
         toggleButton.setAttribute('aria-expanded', 'true');
     });
 }
-
 // Initialize SVG loading and interactions
 loadDynamicSVGs();
-setupInteractions();

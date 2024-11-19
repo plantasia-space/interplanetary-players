@@ -92,7 +92,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
 /* Main Grid Layout */
 .grid-content {
     display: grid;
-    grid-template-columns: minmax(min-content, clamp(150px, 30%, 600px)) 1fr; /* Column 2 adapts, column 3 fills */
+    grid-template-columns: minmax(min-content, clamp(150px, 30%, 300px)) 1fr; /* Column 2 adapts, column 3 fills */
     grid-auto-rows: auto; /* Rows adjust dynamically based on the tallest content */
     gap: 2vw; /* Space between columns */
     align-items: start; /* Align content to the top of each cell */
