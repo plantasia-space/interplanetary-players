@@ -58,6 +58,12 @@ export class DataManager {
                 placeholder_6: track?.releaseDate ? new Date(track.releaseDate).toLocaleDateString("en-GB") : "Unknown Date",
                 placeholder_7: "Tags:",
                 placeholder_8: track?.tags || "No Tags",
+                placeholder_9: "",
+                placeholder_10: "",
+                placeholder_11: "",
+                placeholder_12: "",
+                placeholder_13: "",
+                placeholder_14: "",
             },
             interplanetaryPlayerInfo: {
                 placeholder_1: "Scientific Name:",
@@ -70,6 +76,10 @@ export class DataManager {
                 placeholder_8: interplanetaryPlayer?.dddArtist || "Unknown Artist",
                 placeholder_9: "Orbital Period:",
                 placeholder_10: interplanetaryPlayer?.orbitalPeriod || "Unknown Period",
+                placeholder_11: "",
+                placeholder_12: "",
+                placeholder_13: "",
+                placeholder_14: "",
             },
             soundEngineInfo: {
                 placeholder_1: "Name:",
@@ -80,6 +90,12 @@ export class DataManager {
                 placeholder_6: soundEngine?.availability || "Private",
                 placeholder_7: "Credits:",
                 placeholder_8: soundEngine?.credits || "No Credits",
+                placeholder_9: "",
+                placeholder_10: "",
+                placeholder_11: "",
+                placeholder_12: "",
+                placeholder_13: "",
+                placeholder_14: "",
             },
         };
 
