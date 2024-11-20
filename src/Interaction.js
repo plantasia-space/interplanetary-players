@@ -113,3 +113,5 @@ export function setupInteractions(dataManager) {
 }
 // Initialize SVG loading and interactions
 loadDynamicSVGs();
+
+

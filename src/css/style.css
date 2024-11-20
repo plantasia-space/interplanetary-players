@@ -65,7 +65,7 @@ canvas {
     width: 92%;
     height: 92%;
     border: 2px solid var(--col1);
-    border-radius: 40px;
+    border-radius: 5px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;

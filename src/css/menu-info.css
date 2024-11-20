@@ -6,67 +6,121 @@ button.menu-info-toggle {
     display: flex; /* Flexbox container */
     justify-content: center; /* Center the content horizontally */
     align-items: center; /* Center the content vertically */
-    width: clamp(50px, 4vw, 100px); /* Match width from reference */
-    height: clamp(50px, 4vw, 100px); /* Match height for square proportion */
-    cursor: pointer; /* Show pointer cursor for interactivity */
+    width: 80px; /* Match width for consistency */
+    height: 80px; /* Slightly rectangular proportions */
+    cursor: pointer; /* Pointer cursor for interactivity */
     background-color: transparent; /* Transparent background */
-    border-radius: 50%; /* Match circular shape */
-    font-size: .5rem; /* Adjust size of the toggle icon */
+    border: 2px solid var(--col1); /* Border with dynamic color */
+    border-radius: 10%; /* Rounded corners (10% of dimensions) */
+    font-size: 1rem; /* Adjust size of the toggle icon */
     pointer-events: auto; /* Ensure the button is interactive */
-    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
-
+    color: var(--col1); /* Default text/icon color */
+    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Rotate icon using pseudo-element */
 button.menu-info-toggle::after {
-    content: "i"; /* Use the same content for the toggle icon */
-    display: inline-block; /* Proper block-level behavior */
-    font-size: 3rem; /* Adjust icon size */
+    content: "i"; /* Placeholder for toggle icon */
+    display: inline-block; /* Block-level behavior */
+    font-size: 2rem; /* Adjust icon size */
     transition: transform 0.3s ease, color 0.3s ease; /* Smooth rotation */
-
+    color: inherit; /* Match button's color */
 }
 
 /* Hover State */
 button.menu-info-toggle:hover {
     transform: scale(1.1); /* Slight zoom effect */
-    color: var(--col2); /* Match hover color from reference */
+    background-color: rgba(0, 0, 0, 0); /* Transparent on hover */
+    border-color: var(--col2); /* Change border color on hover */
+    color: var(--col2); /* Change text/icon color on hover */
 }
 
 /* Expanded State */
-button.menu-info-toggle[aria-expanded="true"]::after {
-    transform: rotate(180deg); /* Rotate arrow for expanded state */
-    color: var(--col2); /* Change color when expanded */
+button.menu-info-toggle[aria-expanded="true"] {
+    background-color: var(--col2-light); /* Background color for expanded state */
+    border-color: var(--col2); /* Change border color */
+    color: var(--col2); /* Change text/icon color */
+}
 
+button.menu-info-toggle[aria-expanded="true"]::after {
+    transform: rotate(180deg); /* Rotate icon for expanded state */
 }
 
 /* Collapsed State */
-button.menu-info-toggle[aria-expanded="false"]::after {
-    transform: rotate(0deg); 
-    color: var(--col1); 
-
+button.menu-info-toggle[aria-expanded="false"] {
+    background-color: transparent; /* Transparent background for collapsed state */
+    border-color: var(--col1); /* Default border color */
+    color: var(--col1); /* Default text/icon color */
 }
 
-/* Menu info icons: Style and interaction */
+button.menu-info-toggle[aria-expanded="false"]::after {
+    transform: rotate(0deg); /* Reset icon rotation */
+}
+
+
 .menu-info-icon {
-    display: flex; /* Make the container a flexbox */
-    justify-content: center; /* Horizontally center the icon */
-    align-items: center; /* Align the icon to the top */
-    width: clamp(50px, 8vw, 100px); /* Minimum 50px, scalable to 8vw, maximum 100px */
-    height: clamp(50px, 8vw, 100px); /* Maintain the same proportions */
-    cursor: pointer; /* Make it clear that this is clickable */
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    width: 80%; 
+    height: 80%; 
+    cursor: pointer; 
     transition: transform 0.3s ease, color 0.3s ease;
     color: var(--col1);
     pointer-events: auto; /* Ensure the icon is interactive */
+
 }
+
+
 .menu-info-icon:hover {
-    transform: scale(1.1); /* Slight hover zoom */
     color: var(--col2);
 }
 
-/* Ensure SVG or other elements inside the icon inherit pointer behavior */
-.menu-info-icon > * {
-    pointer-events: none; /* Prevent interfering with the button interaction */
+
+
+/* Default Layout: Vertical (for taller screens) */
+.btn-group-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem; /* Space between buttons */
 }
+
+
+/* Remove default focus outline and shadow */
+.btn-check:focus + .btn {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Base button style */
+.btn-outline-primary {
+    background-color: rgba(0, 0, 0, 0); 
+    border-color: var(--col1); 
+    color: var(--col1); 
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover state */
+.btn-check:hover + .btn-outline-primary,
+.btn-outline-primary:hover {
+    background-color: rgba(0, 0, 0, 0); 
+    border-color: var(--col2); 
+    color: var(--col2); 
+}
+
+/* Customize the focus border */
+.btn-check:focus + .btn-outline-primary {
+    border: 2px solid var(--col2); /* Replace with your desired color */
+}
+
+/* Customize the selected button */
+.btn-check:checked + .btn-outline-primary {
+    background-color: rgba(255, 0, 0, 0); 
+    border-color: var(--col1); 
+    color: var(--col2); 
+}
+
 
 
 /* Grid container for layout */
@@ -77,16 +131,6 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     align-items: start; /* Align items at the top */
 }
 
-/* Icons Column: Ensure pointer interactions */
-.icons-column {
-    display: flex;
-    flex-direction: column;
-    gap: 2vw; /* Space between icons */
-    justify-content: flex-start;
-    align-items: center;
-    pointer-events: auto; /* Enable pointer events */
-    border-left: 0.2vw solid var(--col2); /* Dynamic border size */
-}
 
 /* Main Grid Layout */
 /* Main Grid Layout */
