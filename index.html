@@ -16,141 +16,130 @@
 
             
     <!-- Canvas para Three.js -->
-    <canvas id="canvas3D" class="webgl"></canvas>
+        <canvas id="canvas3D" class="webgl"></canvas>
 
-    <!-- UI Overlay -->
-    <div class="ui-overlay">
-        <div class="sub-frame">
-            <div class="container">
-                <div class="row align-items-center">
-                    <!-- Info Button (Left, 2 Columns) -->
-                    <div class="col-2 text-start">
-                        <button class="btn btn-outline-primary menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu" data-src="/assets/icons/info.svg">
-                            <!-- SVG dynamically loaded here -->
-                        </button>
-                    </div>
-    
-                    <!-- Title (Center) -->
-                    <div class="col-8 text-center">
-                        <h1 class="responsive-title"> jamming</h1>
-                    </div>
-    
-                    <!-- Phantom Tutor Button (Right, 2 Columns) -->
-                    <div class="col-2 text-end">
-                        <button class="btn btn-outline-primary tutor-button" disabled>
-                            <span>Tutor</span>
-                        </button>
-                    </div>
+            <!-- UI Overlay -->
+            <div class="ui-overlay">
+                <div class="sub-frame">
+                    <div class="container">
+                        <div class="row justify-content-center align-items-center">
+                            <!-- Info Button (Left, 2 Columns) -->
+                            <div class="col-2 text-start">
+                                <button class="btn btn-outline-primary menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu" data-src="/assets/icons/info.svg">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+            
+                            <!-- Title (Center) -->
+                            <div class="col-8 text-center">
+                                <h1 class="responsive-title"> jamming</h1>
+                            </div>
+            
+                            <!-- Phantom Tutor Button (Right, 2 Columns) -->
+                            <div class="col-2 text-end">
+                                <button class="btn btn-outline-primary tutor-button" disabled>
+                                    <span>Tutor</span>
+                                </button>
+                            </div>
+                            <div class="collapse" id="collapseInfoMenu">
+                                <!-- Grid Layout -->
+                                <div class="container-grid">
+                                    <!-- Column 1: Icons -->
 
-    
-            <div class="collapse" id="collapseInfoMenu">
-                <!-- Grid Layout -->
-                <div class="container-grid">
-                    <!-- Column 1: Icons -->
+                                    <div class="btn-group-vertical" role="group" aria-label="Menu Info Icon Group">
+                                        <input type="radio" class="btn-check" name="iconGroup" id="monitorInfo" autocomplete="off" checked>
+                                        <label class="btn btn-outline-primary menu-info-icon" for="monitorInfo" data-target="monitorInfo" data-src="/assets/icons/control_monitor.svg">
+                                            <!-- SVG dynamically loaded here -->
+                                        </label>
+                                    
+                                        <input type="radio" class="btn-check" name="iconGroup" id="trackInfo" autocomplete="off">
+                                        <label class="btn btn-outline-primary menu-info-icon" for="trackInfo" data-target="trackInfo" data-src="/assets/icons/track.svg">
+                                            <!-- SVG dynamically loaded here -->
+                                        </label>
+                                    
+                                        <input type="radio" class="btn-check" name="iconGroup" id="interplanetaryPlayerInfo" autocomplete="off">
+                                        <label class="btn btn-outline-primary menu-info-icon" for="interplanetaryPlayerInfo" data-target="interplanetaryPlayerInfo" data-src="/assets/icons/interplanetary-player.svg">
+                                            <!-- SVG dynamically loaded here -->
+                                        </label>
+                                    
+                                        <input type="radio" class="btn-check" name="iconGroup" id="soundEngineInfo" autocomplete="off">
+                                        <label class="btn btn-outline-primary menu-info-icon" for="soundEngineInfo" data-target="soundEngineInfo" data-src="/assets/icons/sound_engine.svg">
+                                            <!-- SVG dynamically loaded here -->
+                                        </label>
+                                    </div>
 
-                    <div class="btn-group-vertical" role="group" aria-label="Menu Info Icon Group">
-                        <input type="radio" class="btn-check" name="iconGroup" id="monitorInfo" autocomplete="off" checked>
-                        <label class="btn btn-outline-primary menu-info-icon" for="monitorInfo" data-target="monitorInfo" data-src="/assets/icons/control_monitor.svg">
-                            <!-- SVG dynamically loaded here -->
-                        </label>
+                                    <div class="grid-content">
+                                        <!-- Grid Rows -->
+                                        <div id="placeholder_1"> </div>
+                                        <div id="placeholder_2"> </div>
+                                        <div id="placeholder_3"> </div>
+                                        <div id="placeholder_4"> </div>
+                                        <div id="placeholder_5"> </div>
+                                        <div id="placeholder_6"> </div>
+                                        <div id="placeholder_7"> </div>
+                                        <div id="placeholder_8"> </div>
+                                        <div id="placeholder_9"> </div>
+                                        <div id="placeholder_10"> </div>
+                                        <div id="placeholder_11"> </div>
+                                        <div id="placeholder_12"> </div>
+                                        <div id="placeholder_13"> </div>
+                                        <div id="placeholder_14"> </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="container text-center mt-auto">
+                        <!-- Row for Circles -->
+                        <div class="row align-items-center" style="height: 20%;"> <!-- Adjust height as needed -->
+                            <div class="col-2"></div>
+                            <div class="col d-flex justify-content-center">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 1">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col d-flex justify-content-center">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 2">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col d-flex justify-content-center">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 3">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col-2"></div>
+                        </div>
                     
-                        <input type="radio" class="btn-check" name="iconGroup" id="trackInfo" autocomplete="off">
-                        <label class="btn btn-outline-primary menu-info-icon" for="trackInfo" data-target="trackInfo" data-src="/assets/icons/track.svg">
-                            <!-- SVG dynamically loaded here -->
-                        </label>
-                    
-                        <input type="radio" class="btn-check" name="iconGroup" id="interplanetaryPlayerInfo" autocomplete="off">
-                        <label class="btn btn-outline-primary menu-info-icon" for="interplanetaryPlayerInfo" data-target="interplanetaryPlayerInfo" data-src="/assets/icons/interplanetary-player.svg">
-                            <!-- SVG dynamically loaded here -->
-                        </label>
-                    
-                        <input type="radio" class="btn-check" name="iconGroup" id="soundEngineInfo" autocomplete="off">
-                        <label class="btn btn-outline-primary menu-info-icon" for="soundEngineInfo" data-target="soundEngineInfo" data-src="/assets/icons/sound_engine.svg">
-                            <!-- SVG dynamically loaded here -->
-                        </label>
+                        <!-- Row for Balance Buttons -->
+                        <div class="row align-items-center" style="height: 20%;"> <!-- Adjust height as needed -->
+                            <div class="col-2 d-flex justify-content-start">
+                                <button class="btn btn-outline-primary action-button toggle-play-pause" data-src="/assets/icons/play_circle.svg" data-state="paused" aria-label="Play">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col d-flex justify-content-center">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/balance.svg" aria-label="Balance 1">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col d-flex justify-content-center">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/balance.svg" aria-label="Balance 2">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col d-flex justify-content-center">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/balance.svg" aria-label="Balance 3">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                            <div class="col-2 d-flex justify-content-end">
+                                <button class="btn btn-outline-primary action-button" data-src="/assets/icons/regen.svg" aria-label="Regen">
+                                    <!-- SVG dynamically loaded here -->
+                                </button>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="grid-content">
-                        <!-- Grid Rows -->
-                        <div id="placeholder_1"> </div>
-                        <div id="placeholder_2"> </div>
-                        <div id="placeholder_3"> </div>
-                        <div id="placeholder_4"> </div>
-                        <div id="placeholder_5"> </div>
-                        <div id="placeholder_6"> </div>
-                        <div id="placeholder_7"> </div>
-                        <div id="placeholder_8"> </div>
-                        <div id="placeholder_9"> </div>
-                        <div id="placeholder_10"> </div>
-                        <div id="placeholder_11"> </div>
-                        <div id="placeholder_12"> </div>
-                        <div id="placeholder_13"> </div>
-                        <div id="placeholder_14"> </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        </div>
-
-        <div class="container text-center mt-auto">
-            <div class="row align-items-end">
-                <div class="col-2">
-
-                </div>
-                <div class="col">
-                    <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 1">
-                        <!-- SVG dynamically loaded here -->
-                    </button>
-                </div>
-                <div class="col">
-                    <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 2">
-                        <!-- SVG dynamically loaded here -->
-                    </button>
-                </div>
-                <div class="col">
-                    <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 3">
-                        <!-- SVG dynamically loaded here -->
-                    </button>
-                </div>
-                <div class="col-2">
-                        <!-- SVG dynamically loaded here -->
-                </div>
-            </div>
-                <div class="row align-items-end">
-                    <div class="col-2">
-                            <button
-                            class="btn btn-outline-primary action-button toggle-play-pause"
-                            data-src="/assets/icons/play_circle.svg"
-                            data-state="paused"
-                            aria-label="Play"
-                        >
-                            <!-- SVG dynamically loaded here -->
-                        </button>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-outline-primary action-button" data-src="/assets/icons/balance.svg" aria-label="Balance 1">
-                            <!-- SVG dynamically loaded here -->
-                        </button>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-outline-primary action-button" data-src="/assets/icons/balance.svg" aria-label="Balance 2">
-                            <!-- SVG dynamically loaded here -->
-                        </button>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-outline-primary action-button" data-src="/assets/icons/balance.svg" aria-label="Balance 3">
-                            <!-- SVG dynamically loaded here -->
-                        </button>
-                    </div>
-                    <div class="col-2">
-                        <button class="btn btn-outline-primary action-button" data-src="/assets/icons/regen.svg" aria-label="Regen">
-                            <!-- SVG dynamically loaded here -->
-                        </button>
-                    </div>
-                </div>
-            </div>
-              
         </div>
     </div>
 </div>
