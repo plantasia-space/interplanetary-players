@@ -1,44 +1,22 @@
 import * as THREE from 'three';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { Constants } from './Constants.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const MAX_RETRIES = 3;
 
 /**
- * Retry loading a texture from a URL.
- * @param {string} url - The URL of the texture.
- * @param {number} retries - Maximum number of retries.
- * @returns {Promise<THREE.Texture>}
- */
-async function loadTextureWithRetry(url, retries = MAX_RETRIES) {
-    const textureLoader = new THREE.TextureLoader();
-    for (let attempt = 0; attempt < retries; attempt++) {
-        try {
-            const texture = await new Promise((resolve, reject) => {
-                textureLoader.load(url, resolve, undefined, reject);
-            });
-            return texture;
-        } catch {
-            console.warn(`Retrying texture load (${attempt + 1}/${retries})`);
-        }
-    }
-    throw new Error('Failed to load texture after multiple attempts');
-}
-
-/**
  * Retry loading a 3D model from a URL.
- * @param {string} url - The URL of the model.
+ * @param {string} url - The URL of the GLB model.
  * @param {number} retries - Maximum number of retries.
  * @returns {Promise<THREE.Group>}
  */
-async function loadModelWithRetry(url, retries = MAX_RETRIES) {
-    const loader = new OBJLoader();
+async function loadGLBModelWithRetry(url, retries = MAX_RETRIES) {
+    const loader = new GLTFLoader();
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
-            const model = await new Promise((resolve, reject) => {
+            const gltf = await new Promise((resolve, reject) => {
                 loader.load(url, resolve, undefined, reject);
             });
-            return model;
+            return gltf.scene;
         } catch {
             console.warn(`Retrying model load (${attempt + 1}/${retries})`);
         }
@@ -47,37 +25,27 @@ async function loadModelWithRetry(url, retries = MAX_RETRIES) {
 }
 
 /**
- * Loads and displays the model and texture using the interplanetaryPlayer data.
+ * Loads and displays the GLB model using the interplanetaryPlayer data.
  * @param {THREE.Scene} scene - The THREE.js scene to add the model to.
  */
 export async function loadAndDisplayModel(scene, trackData) {
     try {
         const { interplanetaryPlayer } = trackData;
-        const { modelURL, textureURL } = interplanetaryPlayer;
+        const { modelURL } = interplanetaryPlayer;
 
-        if (!modelURL || !textureURL) {
-            throw new Error('Missing modelURL or textureURL in interplanetaryPlayer data.');
+        if (!modelURL) {
+            throw new Error('Missing modelURL in interplanetaryPlayer data.');
         }
 
-        console.log('[ModelLoader] Loading model and texture...');
-        const model = await loadModelWithRetry(modelURL);
-        const texture = await loadTextureWithRetry(textureURL);
-
-        model.traverse((child) => {
-            if (child.isMesh) {
-                child.material = new THREE.MeshStandardMaterial({
-                    map: texture,
-                    flatShading: true,
-                });
-            }
-        });
+        console.log('[ModelLoader] Loading GLB model...');
+        const model = await loadGLBModelWithRetry(modelURL);
 
         model.position.set(0, 0, 0);
         scene.add(model);
 
-        console.log('[ModelLoader] Model and texture loaded successfully.');
+        console.log('[ModelLoader] GLB model loaded successfully.');
     } catch (error) {
-        console.error('[ModelLoader] Error loading model or texture:', error);
+        console.error('[ModelLoader] Error loading GLB model:', error);
         throw error;
     }
 }

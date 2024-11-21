@@ -74,7 +74,6 @@ async function initializeApp() {
     }
 }
 
-
 window.addEventListener('resize', () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -94,4 +93,3 @@ function animate() {
 
 animate();
 initializeApp();
-
