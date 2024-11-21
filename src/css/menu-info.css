@@ -1,11 +1,20 @@
 /* Define size variables for button groups */
 :root {
-    --size-upper-buttons: clamp(30px, 5vmin, 80px); /* Upper part (info, radio group) */
-    --size-middle-buttons: clamp(40px, 6vmin, 100px); /* Middle part (circles) */
-    --size-lower-buttons: clamp(50px, 7vmin, 120px); /* Lower part (play, balance, regen) */
+    --size-upper-buttons: clamp(30px, 8vmin, 80px); /* Upper part (info, radio group) */
+    --size-middle-buttons: clamp(40px, 12vmin, 100px); /* Middle part (circles) */
+    --size-lower-buttons: clamp(50px, 14vmin, 120px); /* Lower part (play, balance, regen) */
     --col1: white; /* Default color */
     --col2: rgba(0, 0, 0, 0.613); /* Hover and active color */
     --col2-light: rgba(255, 255, 255, 0.3); /* Expanded state color */
+}
+button, .btn {
+    outline: none; /* Remove browser default focus outline */
+    box-shadow: none; /* Prevent any default box shadows */
+    background: none; /* Ensure transparent background */
+    border: none; /* Prevent default borders */
+    padding: 0; /* Reset padding */
+    margin: 0; /* Reset margin */
+    appearance: none; /* Normalize button appearance across browsers */
 }
 
 /* Reset general */
@@ -190,7 +199,7 @@ h1.responsive-title {
     font-size: calc(var(--size-middle-buttons) / 2.5);
     color: var(--col1);
     background-color: transparent;
-    border: 2px solid var(--col1);
+    border: none;
     transition: transform 0.3s ease, color 0.3s ease;
     pointer-events: auto;
     border-radius: 50%;
@@ -213,7 +222,7 @@ h1.responsive-title {
     font-size: calc(var(--size-lower-buttons) / 2.5);
     color: var(--col1);
     background-color: transparent;
-    border: 2px solid var(--col1);
+    border: none;
     transition: transform 0.3s ease, color 0.3s ease;
     pointer-events: auto;
     border-radius: 50%;
