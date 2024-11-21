@@ -12,11 +12,13 @@
 
 @import "fonts.css";
 @import "menu-info.css";
+@import "action-gui.css";
+
 
 /* Color Variables */
 :root {
     --col1: white; /* Default color */
-    --col2: pink;  /* Hover and active color */
+    --col2: rgba(255, 255, 255, 0.613);  /* Hover and active color */
 }
 
 /* Reset general */
