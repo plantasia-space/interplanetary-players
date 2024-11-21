@@ -1,4 +1,3 @@
-
 /* General resets */
 
 /*
@@ -14,7 +13,6 @@
 @import "menu-info.css";
 @import "action-gui.css";
 
-
 /* Color Variables */
 :root {
     --col1: white; /* Default color */
@@ -29,6 +27,19 @@ html, body {
     background-color: black !important;
     height: 100%;
     font-family: 'Inter', sans-serif;
+}
+
+/* Square Frame: Centered and fixed size */
+.ratio-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vmin; /* Use the smallest dimension of the viewport */
+    height: 100vmin; /* Maintain square aspect ratio */
+    background-color: #000; /* Optional for debugging */
+    overflow: hidden;
+    box-sizing: border-box; /* Prevent padding/borders affecting size */
 }
 
 /* Base canvas styling */
@@ -48,7 +59,7 @@ canvas {
     pointer-events: auto; /* Ensure 3D interactions */
 }
 
-/* UI overlay */
+/* UI overlay: Positioned over the canvas */
 .ui-overlay {
     position: absolute;
     top: 0;
@@ -75,15 +86,6 @@ canvas {
     background: none;
     padding: 3% 6%;    
     pointer-events: none; /* Pass-through for the 3D scene */
-}
-
-/* Text container: Center title horizontally */
-.text-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-    width: 100%;
 }
 
 /* Title styling */

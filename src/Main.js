@@ -75,13 +75,17 @@ async function initializeApp() {
 }
 
 window.addEventListener('resize', () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // Get the smaller dimension to maintain a square aspect ratio
+    const size = Math.min(window.innerWidth, window.innerHeight);
 
-    camera.aspect = width / height;
+    // Set the camera's aspect ratio to 1 for a square view
+    camera.aspect = 1; 
     camera.updateProjectionMatrix();
 
-    renderer.setSize(width, height);
+    // Resize the renderer to be square
+    renderer.setSize(size, size);
+
+    // Set the pixel ratio for high-DPI screens, but limit to 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
@@ -91,5 +95,4 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-animate();
-initializeApp();
+initializeApp().then(animate);

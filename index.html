@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="/src/css/style.css">
 </head>
 <body>
+
+<div class="ratio-frame">
+    <div class="interface-content">
+
+            
     <!-- Canvas para Three.js -->
     <canvas id="canvas3D" class="webgl"></canvas>
 
@@ -20,19 +25,19 @@
                 <div class="row align-items-center">
                     <!-- Info Button (Left, 2 Columns) -->
                     <div class="col-2 text-start">
-                        <button class="btn menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu" data-src="/assets/icons/info.svg">
+                        <button class="btn btn-outline-primary menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu" data-src="/assets/icons/info.svg">
                             <!-- SVG dynamically loaded here -->
                         </button>
                     </div>
     
                     <!-- Title (Center) -->
                     <div class="col-8 text-center">
-                        <h1 class="responsive-title">Interplanetary Jam</h1>
+                        <h1 class="responsive-title"> jamming</h1>
                     </div>
     
                     <!-- Phantom Tutor Button (Right, 2 Columns) -->
                     <div class="col-2 text-end">
-                        <button class="btn btn-outline-secondary tutor-button" disabled>
+                        <button class="btn btn-outline-primary tutor-button" disabled>
                             <span>Tutor</span>
                         </button>
                     </div>
@@ -88,8 +93,30 @@
         </div>
         </div>
 
+        <div class="container text-center mt-auto">
+            <div class="row align-items-end">
+                <div class="col-2">
 
-            <div class="container text-center mt-auto">
+                </div>
+                <div class="col">
+                    <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 1">
+                        <!-- SVG dynamically loaded here -->
+                    </button>
+                </div>
+                <div class="col">
+                    <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 2">
+                        <!-- SVG dynamically loaded here -->
+                    </button>
+                </div>
+                <div class="col">
+                    <button class="btn btn-outline-primary action-button" data-src="/assets/icons/circle.svg" aria-label="circle 3">
+                        <!-- SVG dynamically loaded here -->
+                    </button>
+                </div>
+                <div class="col-2">
+                        <!-- SVG dynamically loaded here -->
+                </div>
+            </div>
                 <div class="row align-items-end">
                     <div class="col-2">
                             <button
@@ -126,8 +153,9 @@
               
         </div>
     </div>
+</div>
 
-
+</div>
 
       
 <!-- Bootstrap JS desde CDN -->

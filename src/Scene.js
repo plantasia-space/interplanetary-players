@@ -9,7 +9,7 @@ export function initScene(canvas) {
 
     const camera = new THREE.PerspectiveCamera(
         45, 
-        window.innerWidth / window.innerHeight, 
+        1, 
         0.1, 
         1000
     );
@@ -28,9 +28,11 @@ export function initScene(canvas) {
 }
 
 export function initCamera() {
+
+
     const camera = new THREE.PerspectiveCamera(
         45, // Ángulo de visión
-        window.innerWidth / window.innerHeight, // Relación de aspecto
+        1, // Relación de aspecto
         0.1, // Distancia mínima visible
         1000 // Distancia máxima visible
     );
@@ -44,7 +46,11 @@ export function initRenderer(canvas) {
         antialias: true, // Suavizado de bordes
         alpha: true, // Fondo transparente
     });
-    renderer.setSize(window.innerWidth, window.innerHeight); // Tamaño del renderizado
+
+    const size = Math.min(window.innerWidth, window.innerHeight);
+
+    // Resize the renderer to be square
+    renderer.setSize(size, size);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Relación de píxeles
     renderer.setClearColor(0x000000, 1); // Fondo transparente (color negro, 0 opacidad)
     return renderer;
@@ -58,3 +64,4 @@ export function addLights(scene) {
     directionalLight.position.set(5, 10, 7.5); // Posición de la luz direccional
     scene.add(directionalLight);
 }
+
