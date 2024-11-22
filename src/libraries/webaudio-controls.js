@@ -444,74 +444,50 @@ ${this.basestyle}
         window.webAudioControlsWidgetManager.addWidget(this);
     }
     disconnectedCallback(){}
-    setupImage(){
-      this.kw=this._width||this._diameter||opt.knobWidth||opt.knobDiameter;
-      this.kh=this._height||this._diameter||opt.knobHeight||opt.knobDiameter;
-      if(!this.src){
-        if(this.colors)
-          this.coltab = this.colors.split(";");
-        if(!this.coltab)
-          this.coltab=["#e00","#000","#000"];
-        let svg=
-`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="6464" preserveAspectRatio="none">
-<defs>
-  <filter id="f1">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
-  </filter>
-  <radialGradient id="g1" cx="50%" cy="10%">
-    <stop offset="0%" stop-color="${this.coltab[2]}"/>
-    <stop offset="100%" stop-color="${this.coltab[1]}"/>
-  </radialGradient>
-  <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
-    <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-    <stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
-  </linearGradient>
-  <g id="B">
-    <circle cx="32" cy="32" r="31" fill="#000"/>
-    <circle cx="32" cy="32" r="29" fill="url(#g1)"/>
-    <circle cx="32" cy="32" r="29" fill="url(#g2)"/>
-    <circle cx="32" cy="32" r="25" fill="${this.coltab[1]}" filter="url(#f1)"/>
-    <circle cx="32" cy="32" r="29" fill="url(#g2)"/>
-  </g>
-  <line id="K" x1="32" y1="25" x2="32" y2="11" stroke-linecap="round" stroke-width="6" stroke="${this.coltab[0]}"/>
-</defs>`;
-        for(let i=0;i<101;++i){
-          svg += `<use href="#B" y="${64*i}"/><use href="#K" y="${64*i}" transform="rotate(${(-135+270*i/101).toFixed(2)},32,${64*i+32})"/>`;
-        }
-        svg += "</svg>";
-        this.elem.style.backgroundImage = "url(data:image/svg+xml;base64,"+btoa(svg)+")";
-        if(this.kw==null) this.kw=64;
-        if(this.kh==null) this.kh=64;
-        this.elem.style.backgroundSize = `${this.kw}px ${this.kh*101}px`;
-        this.elem.style.width=this.kw+"px";
-        this.elem.style.height=this.kh+"px";
-        this.style.height=this.kh+"px";
-        this.fireflag=true;
-        this.redraw();
-        return;
+    setupImage() {
+      if (this.src) {
+          fetch(this.src)
+              .then(response => response.text())
+              .then(svgText => {
+                  const parser = new DOMParser();
+                  const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+                  const paths = svgDoc.querySelectorAll('path, circle, rect');
+  
+                  // Introduce a delay before setting the colors
+                  setTimeout(() => {
+                      // Access the CSS custom properties after the delay
+                      const rootStyles = getComputedStyle(document.documentElement);
+                      const col1 = rootStyles.getPropertyValue('--col1').trim();
+  
+                      // Apply the colors to the SVG paths
+                      paths.forEach(path => {
+                          path.setAttribute("stroke", col1 || "#000000"); // Fallback to default
+                          path.setAttribute("fill", col1 || "none"); // Fallback to default
+                      });
+  
+                      // Serialize the modified SVG and inject it
+                      const serializedSVG = new XMLSerializer().serializeToString(svgDoc);
+                      this.elem.innerHTML = serializedSVG;
+  
+                      // Apply styles
+                      Object.assign(this.elem.style, {
+                          width: `${this.width}px`,
+                          height: `${this.height}px`,
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          background: 'none',
+                      });
+  
+                      // Redraw the knob
+                      this.redraw();
+                  }, 300); // Delay of 2 seconds
+              })
+              .catch(error => console.error("Error fetching SVG:", error));
       }
-      else{
-        this.img=new Image();
-        this.img.onload=()=>{
-          this.elem.style.backgroundImage = "url("+(this.src)+")";
-          if(this._sprites==null)
-            this._sprites=this.img.height/this.img.width - 1;
-          else
-            this._sprites=+this._sprites;
-          if(this.kw==null) this.kw=this.img.width;
-          if(this.kh==null) this.kh=this.img.height/(this.sprites+1);
-          if(!this.sprites)
-            this.elem.style.backgroundSize = "100% 100%";
-          else
-            this.elem.style.backgroundSize = `${this.kw}px ${this.kh*(this.sprites+1)}px`;
-          this.elem.style.width=this.kw+"px";
-          this.elem.style.height=this.kh+"px";
-          this.style.height=this.kh+"px";
-          this.redraw();
-        };
-        this.img.src=this.src;
-      }
-    }
+  }
+
+    
     redraw() {
       let ratio;
       this.digits=0;
