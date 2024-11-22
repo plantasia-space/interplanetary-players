@@ -114,6 +114,9 @@
     box-sizing: border-box;
 }
 
+
+
+
 /* Bottom-aligned container */
 .container.text-center.mt-auto {
     margin-top: auto;
@@ -148,4 +151,18 @@
     flex: 0 0 auto;
     max-width: var(--size-lower-buttons-side);
     text-align: center;
+}
+
+
+.knob-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.knob-pointer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.1s ease-in-out; /* Smooth rotation */
 }

@@ -29,7 +29,11 @@ html, body {
     font-family: 'Inter', sans-serif;
 }
 
+webaudio-knob, webaudio-param {
+    pointer-events: auto;
+  }
 
+  
 /* Square Frame: Centered and fixed size */
 /* Responsive Frame: Centered and flexible size */
 .ratio-frame {
