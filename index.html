@@ -87,27 +87,17 @@
                         <div class="row align-items-center">
                             <div class="col d-flex justify-content-center"></div> 
                             <div class="col d-flex justify-content-center">
-                            <webaudio-knob 
-                                id="xKnob" 
-                                src="/assets/icons/toggle_icon.svg" 
-                                data-src-pointer="/assets/icons/track.svg" 
-                                colors="#fc0;#fff;#fff" 
-                                min="-100" 
-                                max="100">
-                            </webaudio-knob>
-                            <webaudio-param link="xKnob"></webaudio-param>
-                    
-
-
+                                <webaudio-knob id="xKnob" src="/assets/icons/knob.svg" min="-100" max="100"></webaudio-knob>
+                                <webaudio-param link="xKnob"></webaudio-param>
 
                             </div>
                             <div class="col d-flex justify-content-center">
-                                <webaudio-knob id="yKnob" src="/assets/icons/circle.svg" min="-100" max="100"></webaudio-knob>
+                                <webaudio-knob id="yKnob" src="/assets/icons/knob.svg" min="-100" max="100"></webaudio-knob>
                                 <webaudio-param link="yKnob"></webaudio-param>
 
                             </div>
                             <div class="col d-flex justify-content-center">
-                                <webaudio-knob id="zKnob" src="/assets/icons/circle.svg" min="-100" max="100"></webaudio-knob>
+                                <webaudio-knob id="zKnob" src="/assets/icons/knob.svg" min="-100" max="100"></webaudio-knob>
                                 <webaudio-param link="zKnob"></webaudio-param>
 
                             </div>
@@ -142,11 +132,11 @@
     WebAudioControlsOptions={
       useMidi:1,
       preserveMidiLearn:1,
-      knobDiameter:80,
+      knobDiameter:120,
       switchWidth:40,
       switchHeight:20,
     };
-</script>
+    </script>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
