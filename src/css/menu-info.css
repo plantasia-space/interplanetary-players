@@ -117,7 +117,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     display: flex; /* Enable horizontal alignment */
     flex-direction: row; /* Align items side by side */
     align-items: flex-start; /* Align items to the top */
-    gap: 2rem; /* Add spacing between button group and grid content */
+    gap: 0rem; /* Add spacing between button group and grid content */
     width: 100%; /* Full width within the parent container */
     
     box-sizing: border-box; /* Include padding in width */
@@ -208,7 +208,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     flex-direction: column;
     align-items: center;
     width: 100%; /* Full width */
-    max-width: calc(var(--size-upper-buttons) *2);; /* Match width to heading */
+    max-width: calc(var(--size-upper-buttons) *1.5);; /* Match width to heading */
 }
 
 
@@ -231,7 +231,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     background-color: var(--col1-light);
     font-family: 'Inter Display', sans-serif;
     font-weight: 250; /* Default for larger screens */
-    font-size: clamp(3px, 2.5vmin, 36px); /* Responsive font size */
+    font-size: clamp(10px, 2.5vmin, 36px); /* Responsive font size */
     padding: clamp(2px, 0.5vmin, 10px);
     color: var(--col1);
     border-radius: 0.5vmin; /* Smooth corners */
