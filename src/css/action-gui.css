@@ -1,3 +1,11 @@
+/* Define size variables for responsiveness */
+:root {
+    --size-xyz-knobs: clamp(9vmin, 14vmin, 140vmin); /* Middle part (circles) */
+    --size-lower-buttons: clamp(5vmin, 10vmin, 100vmin); /* General lower buttons */
+    --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
+    --col1: white; /* Default color */
+    --col2: rgba(0, 0, 0, 1); /* Hover and active color */
+}
 
 /* Middle Part Buttons (Circles) */
 .action-knob {
@@ -19,7 +27,8 @@
     color: var(--col2);
     transform: scale(1.1);
 }
-/* low Part  */
+
+/* General Action Button Styling */
 .action-button {
     display: flex;
     justify-content: center;
@@ -40,53 +49,101 @@
     transform: scale(1.1);
 }
 
-/* Lower Part Buttons (Play, Balance, Regen) */
-.toggle-play-pause,
-.balance-button,
+/* Specific Button Adjustments */
+
+/* Play/Pause Button */
+.toggle-play-pause {
+    width: var(--size-lower-buttons-side);
+    height: var(--size-lower-buttons-side);
+}
+
+.toggle-play-pause svg {
+    width: 80%; /* Scale SVG */
+    height: 80%;
+}
+
+.toggle-play-pause:hover svg {
+    width: 85%;
+    height: 85%;
+}
+
+/* Regen Button */
 .regen-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: var(--size-lower-buttons-side);
+    height: var(--size-lower-buttons-side);
+}
+
+.regen-button svg {
+    width: 90%; /* Scale SVG */
+    height: 90%;
+}
+
+.regen-button:hover svg {
+    width: 95%;
+    height: 95%;
+}
+
+/* Balance Buttons */
+.balance-button {
     width: var(--size-lower-buttons);
     height: var(--size-lower-buttons);
-    font-size: calc(var(--size-lower-buttons) / 2.5);
-    color: var(--col1);
-    background-color: transparent;
-    border: none;
-    transition: transform 0.3s ease, color 0.3s ease;
-    pointer-events: auto;
-    border-radius: 50%;
 }
 
-.toggle-play-pause:hover,
-.balance-button:hover,
-.regen-button:hover {
-    color: var(--col2);
-    transform: scale(1.1);
+.balance-button svg {
+    width: 70%; /* Scale SVG */
+    height: 70%;
 }
 
-
-/* Vertical Spacing and Row Control */
-.row {
-    min-height: 7vmin; /* Row height scales with vmin */
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-}
-/* Grid container for layout */
-.container-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 4vmin;
-    align-items: start;
+.balance-button:hover svg {
+    width: 75%;
+    height: 75%;
 }
 
-/* Vertical Spacing and Row Control */
-.container.text-center {
+/* Layout Rules */
+
+/* Container Within Sub-frame */
+.container {
+    width: 100%;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 4vmin;
+    gap: 2vmin;
+    box-sizing: border-box;
 }
 
+/* Bottom-aligned container */
+.container.text-center.mt-auto {
+    margin-top: auto;
+    margin-bottom: 0;
+    align-self: stretch;
+    padding: 0 2vmin;
+    box-sizing: border-box;
+}
 
+/* Row Styling */
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 0 2vw;
+}
 
+/* Column Styling */
+.col {
+    flex: 1;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.col-2 {
+    flex: 0 0 10%;
+    max-width: 10%;
+}
+
+.col-auto {
+    flex: 0 0 auto;
+}

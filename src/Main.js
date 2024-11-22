@@ -75,23 +75,24 @@ async function initializeApp() {
 }
 
 window.addEventListener('resize', () => {
-    // Define the minimum size
-    const MIN_SIZE = 320;
+    const MIN_SIZE = 320; // Minimum frame size
 
-    // Get the smaller dimension of the viewport
-    const size = Math.min(window.innerWidth, window.innerHeight);
+    // Get the current viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
-    // Clamp the size to ensure it doesn't go below the minimum size
-    const clampedSize = Math.max(size, MIN_SIZE);
+    // Determine the width and height for the frame
+    const frameWidth = Math.max(viewportWidth, MIN_SIZE);
+    const frameHeight = Math.max(viewportHeight, MIN_SIZE);
 
-    // Set the camera's aspect ratio to 1 for a square view
-    camera.aspect = 1;
+    // Resize the renderer to fit the current window size, respecting minimums
+    renderer.setSize(frameWidth, frameHeight);
+
+    // Adjust the camera's aspect ratio to match the new dimensions
+    camera.aspect = frameWidth / frameHeight;
     camera.updateProjectionMatrix();
 
-    // Resize the renderer to be square, but with a minimum size
-    renderer.setSize(clampedSize, clampedSize);
-
-    // Set the pixel ratio for high-DPI screens, but limit to 2 for performance
+    // Set the pixel ratio for high-DPI screens, capped at 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 

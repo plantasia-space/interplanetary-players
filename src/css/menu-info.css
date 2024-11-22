@@ -1,8 +1,6 @@
 /* Define size variables for button groups */
 :root {
     --size-upper-buttons: clamp(7vmin, 1vmin, 70vmin); /* Upper part (info, radio group) 90 */
-    --size-xyz-knobs: clamp(9vmin, 14vmin, 140vmin); /* Middle part (circles) 100 */
-    --size-lower-buttons: clamp(5vmin, 10vmin, 100vmin); /* Lower part (play, balance, regen) 140 */
     --col1: white; /* Default color */
     --col2: rgba(0, 0, 0 ); /* Hover and active color */
 }
@@ -97,7 +95,15 @@ button.menu-info-toggle[aria-expanded="false"]::after {
 .menu-info-icon:hover {
     color: var(--col2);
 }
-
+/* Flex Container for Button Group and Grid Content */
+.flex-container {
+    display: flex; /* Enable horizontal alignment */
+    flex-direction: row; /* Align items side by side */
+    align-items: flex-start; /* Align items to the top */
+    gap: 2rem; /* Add spacing between button group and grid content */
+    width: 100%; /* Full width within the parent container */
+    box-sizing: border-box; /* Include padding in width */
+}
 /* Button group vertical layout */
 .btn-group-vertical {
     display: flex;
@@ -184,48 +190,31 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     max-width: var(--size-upper-buttons); /* Match width to heading */
 }
 
-
-/* Main Grid Layout */
-.grid-content div {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    background-color: var(--col1-light);
-    font-family: 'Inter Display', sans-serif;
-    font-weight: 200;
-
-    /* Updated font size for better small-screen scaling */
-    font-size: clamp(3px, 2.5vmin, 36px);
-
-    /* Ensure padding scales with small screens */
-    padding: clamp(2px, 0.5vmin, 10px);
-
-    text-align: left;
-    color: var(--col1);
-    border-radius: 0.5vmin; /* Updated for smaller scaling */
-    white-space: normal;
-    overflow-wrap: break-word; /* Ensure long words wrap */
-    transition: transform 0.3s ease, color 0.3s ease;
-    box-sizing: border-box;
-    height: 100%;
-}
-
-/* Main Grid Layout */
 /* Main Grid Layout */
 .grid-content {
     display: grid;
-    /* Adjust column widths for better balance */
-    grid-template-columns: minmax(clamp(100px, 20vmin, 200px), max-content) 1fr;
-    grid-auto-rows: auto; /* Automatically adjust row heights based on content */
-    gap: clamp(0.5em, 1.0vmin, 3vw) clamp(0.5em, 1.0vmin, 3vw); /* Adjustable gaps */
-    grid-auto-flow: dense; /* Allow denser placement of items to optimize layout */
-    align-items: start;
+    grid-template-columns: max-content 1fr; /* First column adjusts to the content, second column fills remaining space */
+    gap: clamp(0.5em, 1vmin, 3vw); /* Adjustable spacing between columns and rows */
+    align-items: start; /* Align content to the top */
+    width: 100%; /* Ensure grid spans full width */
+    box-sizing: border-box; /* Include padding in size */
+}
 
-/*     If long text is breaking layout:*/    
-    overflow: hidden; /* Hide overflow if necessary */
-    text-overflow: ellipsis; /* Optional: truncate long text */
-    word-wrap: break-word; /* Ensure proper wrapping */
-    hyphens: auto; /* Enable hyphenation for better wrapping */
-
+/* Individual Cell Styling */
+.grid-content div {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    background-color: var(--col1-light);
+    font-family: 'Inter Display', sans-serif;
+    font-weight: 200;
+    font-size: clamp(3px, 2.5vmin, 36px); /* Responsive font size */
+    padding: clamp(2px, 0.5vmin, 10px);
+    color: var(--col1);
+    border-radius: 0.5vmin; /* Smooth corners */
+    white-space: normal; /* Allow wrapping for better fit */
+    overflow-wrap: break-word; /* Ensure text wraps correctly */
+    transition: transform 0.3s ease, color 0.3s ease;
+    box-sizing: border-box;
 }
