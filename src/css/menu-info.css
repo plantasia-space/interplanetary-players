@@ -3,8 +3,6 @@
     --size-upper-buttons: clamp(10vmin, 10vmin, 100vmin); /* Upper part (info, radio group) 90 */
     --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
 
-    --col1: white; /* Default color */
-    --col2: rgba(0, 0, 0 ); /* Hover and active color */
 }
 
 

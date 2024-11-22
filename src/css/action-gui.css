@@ -3,8 +3,7 @@
     --size-xyz-knobs: clamp(9vmin, 14vmin, 140vmin); /* Middle part (circles) */
     --size-lower-buttons: clamp(5vmin, 10vmin, 100vmin); /* General lower buttons */
     --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
-    --col1: white; /* Default color */
-    --col2: rgba(0, 0, 0, 1); /* Hover and active color */
+
 }
 
 /* General row layout for alignment */
@@ -153,16 +152,3 @@
     text-align: center;
 }
 
-
-.knob-base {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-}
-
-.knob-pointer {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.1s ease-in-out; /* Smooth rotation */
-}

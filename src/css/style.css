@@ -15,8 +15,8 @@
 
 /* Color Variables */
 :root {
-    --col1: white; /* Default color */
-    --col2: rgba(255, 255, 255, 0.613);  /* Hover and active color */
+    --col1: rgb(46, 255, 95); /* Default color */
+    --col2: rgba(115, 64, 255, 0.613);  /* Hover and active color */
 }
 
 /* Reset general */
@@ -33,7 +33,7 @@ webaudio-knob, webaudio-param {
     pointer-events: auto;
   }
 
-  
+
 /* Square Frame: Centered and fixed size */
 /* Responsive Frame: Centered and flexible size */
 .ratio-frame {
