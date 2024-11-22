@@ -23,7 +23,7 @@
 /* Match button group width to heading */   
 h1.responsive-title {
     font-family: 'Inter Display', sans-serif;
-    font-weight: 150;
+    font-weight: 200;
     font-size: 4vmin; /* Dynamic scaling */
     color: var(--col2);
     margin: 0;
@@ -230,7 +230,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     align-items: flex-start;
     background-color: var(--col1-light);
     font-family: 'Inter Display', sans-serif;
-    font-weight: 200;
+    font-weight: 250;
     font-size: clamp(3px, 2.5vmin, 36px); /* Responsive font size */
     padding: clamp(2px, 0.5vmin, 10px);
     color: var(--col1);
