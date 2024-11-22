@@ -1,0 +1,92 @@
+
+/* Middle Part Buttons (Circles) */
+.action-knob {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: var(--size-xyz-knobs);
+    height: var(--size-xyz-knobs);
+    font-size: calc(var(--size-xyz-knobs) / 2.5);
+    color: var(--col1);
+    background-color: transparent;
+    border: none;
+    transition: transform 0.3s ease, color 0.3s ease;
+    pointer-events: auto;
+    border-radius: 50%;
+}
+
+.action-knob:hover {
+    color: var(--col2);
+    transform: scale(1.1);
+}
+/* low Part  */
+.action-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: var(--size-lower-buttons);
+    height: var(--size-lower-buttons);
+    font-size: calc(var(--size-lower-buttons) / 2.5);
+    color: var(--col1);
+    background-color: transparent;
+    border: none;
+    transition: transform 0.3s ease, color 0.3s ease;
+    pointer-events: auto;
+    border-radius: 50%;
+}
+
+.action-button:hover {
+    color: var(--col2);
+    transform: scale(1.1);
+}
+
+/* Lower Part Buttons (Play, Balance, Regen) */
+.toggle-play-pause,
+.balance-button,
+.regen-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: var(--size-lower-buttons);
+    height: var(--size-lower-buttons);
+    font-size: calc(var(--size-lower-buttons) / 2.5);
+    color: var(--col1);
+    background-color: transparent;
+    border: none;
+    transition: transform 0.3s ease, color 0.3s ease;
+    pointer-events: auto;
+    border-radius: 50%;
+}
+
+.toggle-play-pause:hover,
+.balance-button:hover,
+.regen-button:hover {
+    color: var(--col2);
+    transform: scale(1.1);
+}
+
+
+/* Vertical Spacing and Row Control */
+.row {
+    min-height: 7vmin; /* Row height scales with vmin */
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+/* Grid container for layout */
+.container-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4vmin;
+    align-items: start;
+}
+
+/* Vertical Spacing and Row Control */
+.container.text-center {
+    display: flex;
+    flex-direction: column;
+    gap: 4vmin;
+}
+
+
+

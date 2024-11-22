@@ -1,12 +1,24 @@
 /* Define size variables for button groups */
 :root {
-    --size-upper-buttons: clamp(30px, 8vmin, 80px); /* Upper part (info, radio group) */
-    --size-middle-buttons: clamp(40px, 12vmin, 100px); /* Middle part (circles) */
-    --size-lower-buttons: clamp(50px, 14vmin, 120px); /* Lower part (play, balance, regen) */
+    --size-upper-buttons: clamp(7vmin, 1vmin, 70vmin); /* Upper part (info, radio group) 90 */
+    --size-xyz-knobs: clamp(9vmin, 14vmin, 140vmin); /* Middle part (circles) 100 */
+    --size-lower-buttons: clamp(5vmin, 10vmin, 100vmin); /* Lower part (play, balance, regen) 140 */
     --col1: white; /* Default color */
-    --col2: rgba(0, 0, 0, 0.613); /* Hover and active color */
-    --col2-light: rgba(255, 255, 255, 0.3); /* Expanded state color */
+    --col2: rgba(0, 0, 0 ); /* Hover and active color */
 }
+
+
+
+/* Match button group width to heading */   
+h1.responsive-title {
+    font-family: 'Inter Display', sans-serif;
+    font-weight: 150;
+    font-size: 4vmin; /* Dynamic scaling */
+    color: var(--col2);
+    margin: 0;
+    text-align: center;
+}
+
 button, .btn {
     outline: none; /* Remove browser default focus outline */
     box-shadow: none; /* Prevent any default box shadows */
@@ -17,15 +29,7 @@ button, .btn {
     appearance: none; /* Normalize button appearance across browsers */
 }
 
-/* Reset general */
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: black !important;
-    height: 100%;
-    font-family: 'Inter', sans-serif;
-}
+
 
 /* Toggle Button */
 button.menu-info-toggle {
@@ -36,7 +40,7 @@ button.menu-info-toggle {
     height: var(--size-upper-buttons);
     cursor: pointer;
     background-color: transparent;
-    border: 2px solid var(--col1);
+    border: none;
     border-radius: 10%;
     font-size: calc(var(--size-upper-buttons) / 3);
     pointer-events: auto;
@@ -59,7 +63,7 @@ button.menu-info-toggle:hover {
 }
 
 button.menu-info-toggle[aria-expanded="true"] {
-    background-color: var(--col2-light);
+    background-color: transparent;
     border-color: var(--col2);
     color: var(--col2);
 }
@@ -114,7 +118,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     font-size: calc(var(--size-upper-buttons) / 3); /* Icon scales proportionally */
     overflow: hidden; /* Prevent content overflow */
     transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    border-radius: 10%; /* Rounded edges */
+/*     border-radius: 10%; */ /* Rounded edges */
     padding: 0; /* Ensure no extra padding */
 }
 
@@ -145,13 +149,13 @@ button.menu-info-toggle[aria-expanded="false"]::after {
 .btn-check:hover + .btn-outline-primary,
 .btn-outline-primary:hover {
     background-color: rgba(0, 0, 0, 0); /* Keep transparent background */
-    border-color: var(--col2); /* Highlight border */
+    /* border-color: var(--col2); */ /* Highlight border */
     color: var(--col2); /* Change text/icon color */
 }
 
 /* Focus state */
 .btn-check:focus + .btn-outline-primary {
-    border: 2px solid var(--col2); /* Highlight border on focus */
+    /* border: 2px solid var(--col2); */ /* Highlight border on focus */
     background-color: rgba(255, 105, 105, 0.1); /* Optional: Subtle background change */
 
 }
@@ -170,15 +174,6 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     object-fit: contain; /* Prevent icon distortion */
 }
 
-/* Match button group width to heading */
-h1.responsive-title {
-    font-family: 'Inter Display', sans-serif;
-    font-weight: 150;
-    font-size: 4vw; /* Dynamic scaling */
-    color: var(--col2);
-    margin: 0;
-    text-align: center;
-}
 
 /* Ensure vertical alignment of button group and heading */
 .btn-group-vertical-container {
@@ -189,53 +184,8 @@ h1.responsive-title {
     max-width: var(--size-upper-buttons); /* Match width to heading */
 }
 
-/* Middle Part Buttons (Circles) */
-.action-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: var(--size-middle-buttons);
-    height: var(--size-middle-buttons);
-    font-size: calc(var(--size-middle-buttons) / 2.5);
-    color: var(--col1);
-    background-color: transparent;
-    border: none;
-    transition: transform 0.3s ease, color 0.3s ease;
-    pointer-events: auto;
-    border-radius: 50%;
-}
 
-.action-button:hover {
-    color: var(--col2);
-    transform: scale(1.1);
-}
-
-/* Lower Part Buttons (Play, Balance, Regen) */
-.toggle-play-pause,
-.balance-button,
-.regen-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: var(--size-lower-buttons);
-    height: var(--size-lower-buttons);
-    font-size: calc(var(--size-lower-buttons) / 2.5);
-    color: var(--col1);
-    background-color: transparent;
-    border: none;
-    transition: transform 0.3s ease, color 0.3s ease;
-    pointer-events: auto;
-    border-radius: 50%;
-}
-
-.toggle-play-pause:hover,
-.balance-button:hover,
-.regen-button:hover {
-    color: var(--col2);
-    transform: scale(1.1);
-}
-
-/* Placeholder Styles for Items in the Grid */
+/* Main Grid Layout */
 .grid-content div {
     display: flex;
     flex-direction: column;
@@ -244,47 +194,38 @@ h1.responsive-title {
     background-color: var(--col1-light);
     font-family: 'Inter Display', sans-serif;
     font-weight: 200;
-    font-size: clamp(12px, 2vw, 32px);
-    padding: clamp(5px, .5vw, 15px);
+
+    /* Updated font size for better small-screen scaling */
+    font-size: clamp(3px, 2.5vmin, 36px);
+
+    /* Ensure padding scales with small screens */
+    padding: clamp(2px, 0.5vmin, 10px);
+
     text-align: left;
     color: var(--col1);
-    border-radius: 0.5vw;
+    border-radius: 0.5vmin; /* Updated for smaller scaling */
     white-space: normal;
-    overflow-wrap: break-word;
+    overflow-wrap: break-word; /* Ensure long words wrap */
     transition: transform 0.3s ease, color 0.3s ease;
     box-sizing: border-box;
     height: 100%;
 }
 
 /* Main Grid Layout */
+/* Main Grid Layout */
 .grid-content {
     display: grid;
-    grid-template-columns: minmax(min-content, clamp(150px, 30%, 300px)) 1fr;
-    grid-auto-rows: auto;
-    gap: clamp(0.5em, 1.0vmin, 3vw) 1vw;
+    /* Adjust column widths for better balance */
+    grid-template-columns: minmax(clamp(100px, 20vmin, 200px), max-content) 1fr;
+    grid-auto-rows: auto; /* Automatically adjust row heights based on content */
+    gap: clamp(0.5em, 1.0vmin, 3vw) clamp(0.5em, 1.0vmin, 3vw); /* Adjustable gaps */
+    grid-auto-flow: dense; /* Allow denser placement of items to optimize layout */
     align-items: start;
+
+/*     If long text is breaking layout:*/    
+    overflow: hidden; /* Hide overflow if necessary */
+    text-overflow: ellipsis; /* Optional: truncate long text */
+    word-wrap: break-word; /* Ensure proper wrapping */
+    hyphens: auto; /* Enable hyphenation for better wrapping */
+
 }
-
-/* Grid container for layout */
-.container-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 2vw;
-    align-items: start;
-}
-
-/* Vertical Spacing and Row Control */
-.container.text-center {
-    display: flex;
-    flex-direction: column;
-    gap: 4vmin;
-}
-
-.row {
-    min-height: clamp(50px, 8vmin, 100px);
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-}
-
-

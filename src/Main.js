@@ -75,19 +75,26 @@ async function initializeApp() {
 }
 
 window.addEventListener('resize', () => {
-    // Get the smaller dimension to maintain a square aspect ratio
+    // Define the minimum size
+    const MIN_SIZE = 320;
+
+    // Get the smaller dimension of the viewport
     const size = Math.min(window.innerWidth, window.innerHeight);
 
+    // Clamp the size to ensure it doesn't go below the minimum size
+    const clampedSize = Math.max(size, MIN_SIZE);
+
     // Set the camera's aspect ratio to 1 for a square view
-    camera.aspect = 1; 
+    camera.aspect = 1;
     camera.updateProjectionMatrix();
 
-    // Resize the renderer to be square
-    renderer.setSize(size, size);
+    // Resize the renderer to be square, but with a minimum size
+    renderer.setSize(clampedSize, clampedSize);
 
     // Set the pixel ratio for high-DPI screens, but limit to 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
+
 
 function animate() {
     controls.update();

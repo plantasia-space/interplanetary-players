@@ -29,6 +29,7 @@ html, body {
     font-family: 'Inter', sans-serif;
 }
 
+
 /* Square Frame: Centered and fixed size */
 .ratio-frame {
     position: absolute;
@@ -37,6 +38,8 @@ html, body {
     transform: translate(-50%, -50%);
     width: 100vmin; /* Use the smallest dimension of the viewport */
     height: 100vmin; /* Maintain square aspect ratio */
+    min-width: 320px; /* Minimum width */
+    min-height: 320px; /* Minimum height */
     background-color: #000; /* Optional for debugging */
     overflow: hidden;
     box-sizing: border-box; /* Prevent padding/borders affecting size */
@@ -88,13 +91,3 @@ canvas {
     pointer-events: none; /* Pass-through for the 3D scene */
 }
 
-/* Title styling */
-h1.responsive-title {
-    font-family: 'Inter Display', sans-serif;
-    font-weight: 150;
-    font-size: 4vw;
-    color: var(--col2);
-    margin: 0;
-    text-align: center;
-    pointer-events: none; /* Title does not need interactions */
-}
