@@ -8,16 +8,7 @@
 }
 
 /* General row layout for alignment */
-.info-row {
-    display: flex;
-    justify-content: space-between; /* Even spacing between items */
-    align-items: center;
-    width: 100%; /* Full width */
-    max-width: 100%; /* Prevent overflow */
-    gap: 1vmin; /* Space between buttons */
-    padding: 0; /* Add padding to the edges */
-    box-sizing: content-box;
-}
+
 
 /* Shared button styles */
 .action-knob,

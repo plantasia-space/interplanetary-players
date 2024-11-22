@@ -1,6 +1,6 @@
 /* Define size variables for button groups */
 :root {
-    --size-upper-buttons: clamp(7vmin, 1vmin, 70vmin); /* Upper part (info, radio group) 90 */
+    --size-upper-buttons: clamp(9vmin, 10vmin, 90vmin); /* Upper part (info, radio group) 90 */
     --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
 
     --col1: white; /* Default color */
@@ -11,15 +11,13 @@
 /* Row Styling */
 .info-row {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Even spacing between items */
     align-items: center;
-    flex-wrap: nowrap; /* Prevent wrapping to new rows */
-    gap: 1vmin; /* Adjust spacing between buttons */
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    box-sizing: border-box;
-    padding: 0 2vw;
+    width: 100%; /* Full width */
+    max-width: 100%; /* Prevent overflow */
+    gap: 1vmin; /* Space between buttons */
+    padding: 0; /* Add padding to the edges */
+    box-sizing: content-box;
 }
 
 /* Match button group width to heading */   
@@ -49,13 +47,13 @@ button.menu-info-toggle {
     display: flex;
     justify-content: left;
     align-items: center;
-    width: 80%; /* Match the button group size */
-    height: 80%; /* Match the button group size */
+    width: 80%; 
+    height: 100%; 
     cursor: pointer;
     background-color: transparent;
     border: none;
     border-radius: 10%; /* Optional styling */
-    font-size: calc(var(--size-upper-buttons) / 3);
+    font-size: calc(var(--size-upper-buttons) );
     color: var(--col1);
     transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
     margin: 0 auto; /* Center horizontally */
