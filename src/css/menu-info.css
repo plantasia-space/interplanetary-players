@@ -45,7 +45,7 @@ button, .btn {
 /* Toggle Button */
 button.menu-info-toggle {
     display: flex;
-    justify-content: left;
+    justify-content: center;
     align-items: center;
     width: 80%; 
     height: 100%; 
@@ -119,6 +119,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     align-items: flex-start; /* Align items to the top */
     gap: 2rem; /* Add spacing between button group and grid content */
     width: 100%; /* Full width within the parent container */
+    
     box-sizing: border-box; /* Include padding in width */
 }
 /* Button group vertical layout */
@@ -126,6 +127,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     display: flex;
     flex-direction: column;
     align-items: center;
+    
     gap: 1rem; /* Space between buttons */
     width: 100%; /* Full width of the container */
     max-width: var(--size-upper-buttons); /* Restrict to the same width as heading */
@@ -195,17 +197,20 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     width: 80%; /* Ensure icon scales proportionally within the button */
     height: 80%; /* Maintain aspect ratio */
     object-fit: contain; /* Prevent icon distortion */
+    
 }
 
 
 /* Ensure vertical alignment of button group and heading */
 .btn-group-vertical-container {
     display: flex;
+    justify-self: stretch;
     flex-direction: column;
     align-items: center;
     width: 100%; /* Full width */
     max-width: var(--size-upper-buttons); /* Match width to heading */
 }
+
 
 /* Main Grid Layout */
 .grid-content {
