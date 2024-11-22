@@ -1,5 +1,3 @@
-// src/Scene.js
-
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -9,13 +7,12 @@ export function initScene(canvas) {
 
     const camera = new THREE.PerspectiveCamera(
         45, 
-        1, 
+        window.innerWidth / window.innerHeight, // Aspect ratio based on initial window size
         0.1, 
         1000
     );
     camera.position.set(0, 0, 10); // Initial position
 
-    // Ensure you're passing the correct element to OrbitControls
     const controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -27,41 +24,26 @@ export function initScene(canvas) {
     return { scene, camera, controls };
 }
 
-export function initCamera() {
-
-
-    const camera = new THREE.PerspectiveCamera(
-        45, // Ángulo de visión
-        1, // Relación de aspecto
-        0.1, // Distancia mínima visible
-        1000 // Distancia máxima visible
-    );
-    camera.position.set(0, 0, 10); // Posición inicial de la cámara
-    return camera;
-}
-
 export function initRenderer(canvas) {
     const renderer = new THREE.WebGLRenderer({
-        canvas, // Canvas al que se asigna
-        antialias: true, // Suavizado de bordes
-        alpha: true, // Fondo transparente
+        canvas,
+        antialias: true,
+        alpha: true, // Transparent background
     });
 
-    const size = Math.min(window.innerWidth, window.innerHeight);
+    // Initialize size and pixel ratio
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 1); // Transparent black background
 
-    // Resize the renderer to be square
-    renderer.setSize(size, size);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Relación de píxeles
-    renderer.setClearColor(0x000000, 1); // Fondo transparente (color negro, 0 opacidad)
     return renderer;
 }
 
 export function addLights(scene) {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Luz ambiental
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Ambient light
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Luz direccional
-    directionalLight.position.set(5, 10, 7.5); // Posición de la luz direccional
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Directional light
+    directionalLight.position.set(5, 10, 7.5);
     scene.add(directionalLight);
 }
-

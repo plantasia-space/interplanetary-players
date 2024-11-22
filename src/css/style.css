@@ -39,7 +39,7 @@ html, body {
     transform: translate(-50%, -50%);
     width: 100%; /* Take full width of the window */
     height: 100%; /* Take full height of the window */
-    min-width: 320px; /* Ensure minimum width */
+    min-width: 340px; /* Ensure minimum width */
     min-height: 320px; /* Ensure minimum height */
     max-width: 100vw; /* Restrict to window width */
     max-height: 100vh; /* Restrict to window height */

@@ -75,7 +75,7 @@ async function initializeApp() {
 }
 
 window.addEventListener('resize', () => {
-    const MIN_SIZE = 320; // Minimum frame size
+    const MIN_SIZE = 340; // Minimum frame size
 
     // Get the current viewport dimensions
     const viewportWidth = window.innerWidth;

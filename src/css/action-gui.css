@@ -7,28 +7,40 @@
     --col2: rgba(0, 0, 0, 1); /* Hover and active color */
 }
 
-/* Middle Part Buttons (Circles) */
-.action-knob {
+/* General row layout for alignment */
+.info-row {
+    display: flex;
+    justify-content: space-between; /* Even spacing between items */
+    align-items: center;
+    width: 100%; /* Full width */
+    max-width: 100%; /* Prevent overflow */
+    gap: 1vmin; /* Space between buttons */
+    padding: 0; /* Add padding to the edges */
+    box-sizing: content-box;
+}
+
+/* Shared button styles */
+.action-knob,
+.action-button {
     display: flex;
     justify-content: center;
     align-items: center;
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;
+    pointer-events: auto;
+    color: var(--col1);
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+/* Circle buttons (top row) */
+.action-knob {
     width: var(--size-xyz-knobs);
     height: var(--size-xyz-knobs);
     font-size: calc(var(--size-xyz-knobs) / 2.5);
-    color: var(--col1);
-    background-color: transparent;
-    border: none;
-    transition: transform 0.3s ease, color 0.3s ease;
-    pointer-events: auto;
-    border-radius: 50%;
 }
 
-.action-knob:hover {
-    color: var(--col2);
-    transform: scale(1.1);
-}
-
-/* General Action Button Styling */
+/* Balance buttons (bottom row) */
 .action-button {
     display: flex;
     justify-content: center;
@@ -125,6 +137,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: nowrap; /* Prevent wrapping to new rows */
+    gap: 1vmin; /* Adjust spacing between buttons */
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
@@ -134,16 +148,13 @@
 
 /* Column Styling */
 .col {
-    flex: 1;
+    flex: 1 1 auto; /* Allow columns to adjust dynamically */
     text-align: center;
     box-sizing: border-box;
 }
 
-.col-2 {
-    flex: 0 0 10%;
-    max-width: 10%;
-}
-
 .col-auto {
     flex: 0 0 auto;
+    max-width: var(--size-lower-buttons-side);
+    text-align: center;
 }
