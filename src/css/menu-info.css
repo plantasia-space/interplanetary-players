@@ -1,6 +1,8 @@
 /* Define size variables for button groups */
 :root {
     --size-upper-buttons: clamp(10vmin, 10vmin, 100vmin); /* Upper part (info, radio group) 90 */
+    --size-vertical-menu-buttons: clamp(7vmin, 7vmin, 70vmin); /* Upper part (info, radio group) 90 */
+
     --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
 
 }
@@ -128,17 +130,17 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     
     gap: 1rem; /* Space between buttons */
     width: 100%; /* Full width of the container */
-    max-width: var(--size-upper-buttons); /* Restrict to the same width as heading */
+    max-width: var(--size-vertical-menu-buttons); /* Restrict to the same width as heading */
 }
 
 /* Button styles when linked with checkboxes/radios */
 .btn-check + .btn {
-    width: var(--size-upper-buttons); /* Equal width and height for square buttons */
-    height: var(--size-upper-buttons); /* Square buttons */
+    width: var(--size-vertical-menu-buttons); /* Equal width and height for square buttons */
+    height: var(--size-vertical-menu-buttons); /* Square buttons */
     display: flex;
     justify-content: center; /* Center the icon horizontally */
     align-items: center; /* Center the icon vertically */
-    font-size: calc(var(--size-upper-buttons) / 3); /* Icon scales proportionally */
+    font-size: calc(var(--size-vertical-menu-buttons) / 3); /* Icon scales proportionally */
     overflow: hidden; /* Prevent content overflow */
     transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 /*     border-radius: 10%; */ /* Rounded edges */
@@ -159,8 +161,8 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     border-color: var(--col1);
     color: var(--col1);
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    width: var(--size-upper-buttons); /* Ensure buttons remain square */
-    height: var(--size-upper-buttons);
+    width: var(--size-vertical-menu-buttons); /* Ensure buttons remain square */
+    height: var(--size-vertical-menu-buttons);
     --bs-btn-active-bg: var(--col1);
     --bs-btn-active-border-color: var(--col1);
     --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
@@ -206,7 +208,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     flex-direction: column;
     align-items: center;
     width: 100%; /* Full width */
-    max-width: calc(var(--size-upper-buttons) *1.5);; /* Match width to heading */
+    max-width: calc(var(--size-vertical-menu-buttons) *1.5);; /* Match width to heading */
 }
 
 
