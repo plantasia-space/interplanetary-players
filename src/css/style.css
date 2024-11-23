@@ -15,8 +15,8 @@
 
 /* Color Variables */
 :root {
-    --col1: rgb(46, 255, 95); /* Default color */
-    --col2: rgba(115, 64, 255, 0.613);  /* Hover and active color */
+    --col1: rgb(255, 255, 255); /* Default color */
+    --col2: rgba(0, 0, 0, .5);  /* Hover and active color */
 }
 
 /* Reset general */
@@ -26,7 +26,7 @@ html, body {
     overflow: hidden;
     background-color: black !important;
     height: 100%;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Orbit', sans-serif;
 }
 
 webaudio-knob, webaudio-param {

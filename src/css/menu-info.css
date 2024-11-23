@@ -229,7 +229,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     justify-content: flex-start;
     align-items: flex-start;
     background-color: var(--col1-light);
-    font-family: 'Inter Display', sans-serif;
+    font-family: 'Orbit', sans-serif;
     font-weight: 250; /* Default for larger screens */
     font-size: clamp(10px, 2.5vmin, 36px); /* Responsive font size */
     padding: clamp(2px, 0.5vmin, 10px);
