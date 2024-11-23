@@ -1,3 +1,13 @@
+
+/* Orbit Regular (Body Text - Regular) */
+@font-face {
+    font-family: 'Orbit';
+    src: url('/public/assets/fonts/Orbit-latin-regular.woff2') format('woff2'),
+         url('/public/assets/fonts/Orbit-latin-regular.ttf') format('truetype');
+    font-weight: 400; /* Regular */
+    font-style: normal;
+}
+
 /* Inter Thin (Body Text - Ultra Light) */
 @font-face {
     font-family: 'Inter';
