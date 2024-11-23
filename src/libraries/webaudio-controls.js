@@ -428,8 +428,8 @@ if(window.customElements){
                 window.webAudioControlsWidgetManager.addWidget(this);
 
             this.canvas.addEventListener("pointerdown", this.pointerdown.bind(this));
-            this.canvas.addEventListener("wheel", this.wheel.bind(this));
-            this.elem.addEventListener("keydown", this.keydown.bind(this));
+
+          this.elem.addEventListener("keydown", this.keydown.bind(this));
 
             // Find and connect the linked webaudio-param element
             this.setupLinkedParam();
@@ -442,39 +442,42 @@ if(window.customElements){
         }
 
         drawKnob() {
-            const ctx = this.canvas.getContext("2d");
-            const { width, height } = this.canvas;
-
-            // Clear the canvas
-            ctx.clearRect(0, 0, width, height);
-
-            // Calculate value as a ratio
-            const ratio = (this.value - this._min) / (this._max - this._min);
-
-            // Knob background
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, 0, Math.PI * 2);
-            ctx.fillStyle = this.colors.bg || "#ddd"; // Background color
-            ctx.fill();
-            ctx.closePath();
-
-            // Indicator (arc showing the value)
-            const startAngle = -Math.PI / 2; // Top of the knob
-            const endAngle = startAngle + ratio * Math.PI * 2;
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, startAngle, endAngle);
-            ctx.lineWidth = 10;
-            ctx.strokeStyle = this.colors.indicator || "#e00"; // Indicator color
-            ctx.stroke();
-            ctx.closePath();
-
-            // Knob center
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2, Math.min(width, height) / 4, 0, Math.PI * 2);
-            ctx.fillStyle = this.colors.center || "#000"; // Center color
-            ctx.fill();
-            ctx.closePath();
-        }
+          const ctx = this.canvas.getContext("2d");
+          const { width, height } = this.canvas;
+      
+          // Ensure colors object is defined
+          const colors = this.colors || { bg: "#ddd", indicator: "#e00", center: "#000" };
+      
+          // Clear the canvas
+          ctx.clearRect(0, 0, width, height);
+      
+          // Calculate value as a ratio
+          const ratio = (this.value - this._min) / (this._max - this._min);
+      
+          // Knob background
+          ctx.beginPath();
+          ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, 0, Math.PI * 2);
+          ctx.fillStyle = colors.bg; // Safely access bg
+          ctx.fill();
+          ctx.closePath();
+      
+          // Indicator (arc showing the value)
+          const startAngle = -Math.PI / 2; // Top of the knob
+          const endAngle = startAngle + ratio * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, startAngle, endAngle);
+          ctx.lineWidth = 10;
+          ctx.strokeStyle = colors.indicator; // Safely access indicator
+          ctx.stroke();
+          ctx.closePath();
+      
+          // Knob center
+          ctx.beginPath();
+          ctx.arc(width / 2, height / 2, Math.min(width, height) / 4, 0, Math.PI * 2);
+          ctx.fillStyle = colors.center; // Safely access center
+          ctx.fill();
+          ctx.closePath();
+      }
 
         loadColorsWithDelay() {
             setTimeout(() => {
@@ -1280,15 +1283,17 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
                   font-family: 'Orbit', sans-serif;
               }
               .webaudio-param-container {
-                  display: inline-flex;
-                  flex-direction: column;
+                  display: flex;
                   align-items: center;
                   justify-content: center;
-                  border-radius: 4px;
-                  padding: 4px;
                   position: absolute;
-                  transform: translate(-50%, 15px);
-                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                  border-radius: 4px;
+                  padding: 0;
+                  width: var(--width, 100px);
+                  height: var(--height, 30px);
+                  background: transparent;
+                  color: var(--col1, #000);
+                  font-size: var(--fontsize, 1rem);
               }
               .webaudio-param-input {
                   width: 100%;
@@ -1296,7 +1301,8 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
                   border: none;
                   background: transparent;
                   font-size: inherit;
-                  color: var(--col1, #000);
+                  color: inherit;
+                  font-family: inherit;
               }
               .webaudio-param-input:focus {
                   outline: none;
@@ -1310,12 +1316,14 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
       // Elements
       this.container = root.querySelector(".webaudio-param-container");
       this.input = root.querySelector(".webaudio-param-input");
+      this.elem = this.container;
 
       // Attributes
       this.link = this.getAttr("link", ""); // Link to a control
       this._value = this.getAttr("value", 0); // Initial value
-      this.width = this.getAttr("width", "100"); // Width
-      this.height = this.getAttr("height", "30"); // Height
+      this.width = this.getAttr("width", "100px");
+      this.height = this.getAttr("height", "30px");
+      this.fontsize = this.getAttr("fontsize", "1rem");
 
       // Initialize styles, colors, and linked control
       this.loadColorsWithDelay();
@@ -1346,19 +1354,23 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
           const rootStyles = getComputedStyle(document.documentElement);
           this.colors = {
               text: rootStyles.getPropertyValue("--col1").trim() || "#000",
-              background: rootStyles.getPropertyValue("--col2").trim() || "#ddd"
+              background: rootStyles.getPropertyValue("--col2").trim() || "transparent"
           };
           this.updateStyles(); // Apply the colors
       }, 300); // Delay to ensure CSS variables are available
   }
 
   updateStyles() {
-      // Apply colors and dimensions
-      this.container.style.background = `${this.colors.background}80`; // Background with 50% alpha
+      if (!this.container) return; // Safeguard against undefined container
+
+      // Apply dimensions and font size
+      this.container.style.width = this.width;
+      this.container.style.height = this.height;
+      this.container.style.fontSize = this.fontsize;
+
+      // Apply colors
+      this.container.style.background = this.colors.background;
       this.container.style.color = this.colors.text;
-      this.container.style.width = `${this.width}px`;
-      this.container.style.height = `${this.height}px`;
-      this.input.style.fontSize = `${this.getAttr("fontsize", "12")}px`;
   }
 
   updateLinkedControl() {
@@ -1395,7 +1407,7 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
   }
 
   handleInputChange(event) {
-      let newValue = parseInt(event.target.value, 10); // Force integer value
+      let newValue = parseFloat(event.target.value); // Allow decimal values
       if (!isNaN(newValue)) {
           // Clip value to the min and max range of the linked control
           newValue = Math.min(this.max, Math.max(this.min, newValue));
@@ -1413,22 +1425,26 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
   }
 
   updateDisplay() {
-      this.input.value = this._value; // No decimals for integer display
+      if (!this.input) return; // Safeguard against undefined input
+      this.input.value = this._value; // Display the value
   }
 
   repositionBelowLinkedControl() {
       if (this.linkedControl) {
-          const linkedRect = this.linkedControl.getBoundingClientRect();
-          const offsetTop = linkedRect.bottom + window.scrollY - 70; // Adjust offset for proximity
-          const offsetLeft = linkedRect.left + linkedRect.width / 2 + window.scrollX;
+          const rc = this.linkedControl.getBoundingClientRect();
+          const rc2 = this.container.getBoundingClientRect();
 
-          this.style.top = `${offsetTop}px`;
-          this.style.left = `${offsetLeft}px`;
+          // Position the container relative to the linked control
+          const left = rc.left + (rc.width - rc2.width) / 2 + window.scrollX;
+          const top = rc.top + (rc.height - rc2.height) / 2 + window.scrollY;
+
+          this.style.left = `${left}px`;
+          this.style.top = `${top}px`;
       }
   }
 
   static get observedAttributes() {
-      return ["link", "value", "width", "height"];
+      return ["link", "value", "width", "height", "fontsize"];
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -1445,7 +1461,7 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
   }
 
   set value(v) {
-      this._value = Math.min(this.max, Math.max(this.min, parseInt(v, 10))); // Clip to range and enforce integer
+      this._value = Math.min(this.max, Math.max(this.min, parseFloat(v))); // Clip to range and allow decimals
       this.updateDisplay();
       this.updateLinkedControlValue();
   }
@@ -1453,8 +1469,20 @@ customElements.define("webaudio-param", class WebAudioParam extends WebAudioCont
   get value() {
       return this._value;
   }
-});
 
+  // Disable tooltip and related events
+  showtip() {
+      // No tooltip behavior
+  }
+
+  pointerover() {
+      // No tooltip behavior
+  }
+
+  pointerout() {
+      // No tooltip behavior
+  }
+});
 try{
   customElements.define("webaudio-keyboard", class WebAudioKeyboard extends WebAudioControlsWidget {
     constructor(){

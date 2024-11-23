@@ -7,10 +7,22 @@ import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
 import { setupInteractions } from './Interaction.js';
 // Dynamically load webaudio-controls.js
-import('./libraries/webaudio-controls.js').then((WAC) => {
-    console.log("WebAudioControls loaded:", WAC);
-    // Initialize or use WAC here if needed
+import('./libraries/webaudio-controls.js').then(() => {
+    console.log("WebAudioControls loaded.");
+    document.addEventListener("DOMContentLoaded", () => {
+        initializeWebAudioControls();
+    });
 });
+
+function initializeWebAudioControls() {
+    document.querySelectorAll("webaudio-knob, webaudio-slider, webaudio-param").forEach((el) => {
+        if (el.loadColorsWithDelay) {
+            el.loadColorsWithDelay(); // Ensure colors are loaded
+        }
+    });
+
+    console.log("WebAudioControls initialized.");
+}
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
