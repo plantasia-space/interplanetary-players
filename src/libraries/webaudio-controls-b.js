@@ -348,453 +348,470 @@ if(window.customElements){
       }
     }
   }
-
-  if (window.customElements) {
-    // Define the WebAudioKnob custom element
-    try {
-      customElements.define("webaudio-knob", class WebAudioKnob extends WebAudioControlsWidget {
+  try {
+    customElements.define("webaudio-knob", class WebAudioKnob extends WebAudioControlsWidget {
         constructor() {
-          super();
+            super();
+            // Bind methods to ensure correct 'this' context
+            this.pointerdown = this.pointerdown.bind(this);
+            this.pointermove = this.pointermove.bind(this);
+            this.pointerup = this.pointerup.bind(this);
+            this.wheel = this.wheel.bind(this);
+            this.keydown = this.keydown.bind(this);
+            this.contextMenu = this.contextMenu.bind(this);
+            this.showtip = this.showtip.bind(this);
         }
-  
+
         connectedCallback() {
-          let root;
-          if (this.attachShadow)
-            root = this.attachShadow({ mode: 'open' });
-          else
-            root = this;
-  
-          // Define the HTML structure with canvas and tooltip
-          root.innerHTML = `
-            <style>
-              ${this.basestyle}
-              :host {
-                display: inline-block;
-                margin: 0;
-                padding: 0;
-                cursor: pointer;
-                font-family: sans-serif;
-                font-size: 11px;
-                /* Utilize CSS variables for styling */
-                --knob-col1: var(--knob-col1, #e00); /* Fill color */
-                --knob-col2: var(--knob-col2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
-                --knob-outline: var(--knob-outline, none); /* Outline color */
-                --knob-width: var(--knob-width, 64px); /* Width of the knob */
-                --knob-height: var(--knob-height, 64px); /* Height of the knob */
-              }
-              .webaudio-knob-body {
-                display: inline-block;
-                position: relative;
-                width: var(--knob-width, 64px);
-                height: var(--knob-height, 64px);
-                touch-action: none;
-              }
-              canvas.webaudio-knob-canvas {
-                display: block;
-                width: 100%;
-                height: 100%;
-                transform: rotate(90deg); /* Rotate knob 90 degrees */
-              }
-              .webaudioctrl-tooltip {
-                /* Tooltip styling can be customized via CSS variables if needed */
-              }
-              .webaudioctrl-label {
-                /* Label styling can be customized via CSS variables if needed */
-              }
-            </style>
-            <div class='webaudio-knob-body' tabindex='1'>
-              <canvas class='webaudio-knob-canvas'></canvas>
-              <div class='webaudioctrl-tooltip'></div>
-              <div part="label" class="webaudioctrl-label"><slot></slot></div>
-            </div>
-          `;
-  
-          // Reference to elements
-          this.canvas = root.querySelector('canvas.webaudio-knob-canvas');
-          this.ttframe = root.querySelector('.webaudioctrl-tooltip');
-          this.label = root.querySelector('.webaudioctrl-label');
-  
-          // Initialize properties from attributes or defaults
-          this.enable = this.getAttr("enable", 1);
-          this._value = this.getAttr("value", 0);
-          this.defvalue = this.getAttr("defvalue", this._value);
-          this._min = this.getAttr("min", 0);
-          this._max = this.getAttr("max", 100);
-          this._step = this.getAttr("step", 1);
-          this._width = this.getAttr("width", 64);
-          this._height = this.getAttr("height", 64);
-          this._colors = this.getAttr("colors", opt.knobColors); // Expected format: "col1;col2"
-  
-          if (!this.hasOwnProperty("value")) Object.defineProperty(this, "value", {
-            get: () => { return this._value },
-            set: (v) => { this._value = v; this.redraw() }
-          });
-  
-          if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
-            get: () => { return this._min },
-            set: (v) => { this._min = +v; this.redraw() }
-          });
-  
-          if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
-            get: () => { return this._max },
-            set: (v) => { this._max = +v; this.redraw() }
-          });
-  
-          if (!this.hasOwnProperty("step")) Object.defineProperty(this, "step", {
-            get: () => { return this._step },
-            set: (v) => { this._step = +v; this.redraw() }
-          });
-  
-          if (!this.hasOwnProperty("width")) Object.defineProperty(this, "width", {
-            get: () => { return this._width },
-            set: (v) => { this._width = v; this.setupImage() }
-          });
-  
-          if (!this.hasOwnProperty("height")) Object.defineProperty(this, "height", {
-            get: () => { return this._height },
-            set: (v) => { this._height = v; this.setupImage() }
-          });
-  
-          if (!this.hasOwnProperty("colors")) Object.defineProperty(this, "colors", {
-            get: () => { return this._colors },
-            set: (v) => { this._colors = v; this.setupImage() }
-          });
-  
-          this.outline = this.getAttr("outline", opt.outline);
-  
-          // Parse colors from attributes or CSS variables
-          const style = getComputedStyle(this);
-          this.col1 = style.getPropertyValue('--knob-col1').trim() || "#e00"; // Fill color
-          this.col2 = style.getPropertyValue('--knob-col2').trim() || "rgba(0, 0, 0, 0.3)"; // Background color
-          this.outline = style.getPropertyValue('--knob-outline').trim() || this.outline;
-  
-          // Setup canvas dimensions and handle high DPI
-          this.setupImage();
-  
-          // Bind the drawKnob method to ensure correct 'this' context
-          this.drawKnob = this.drawKnob.bind(this);
-  
-          // Initial drawing
-          this.redraw();
-  
-          // Setup label positioning
-          this.setupLabel();
-  
-          // Other properties
-          this.log = this.getAttr("log", 0);
-          this.sensitivity = this.getAttr("sensitivity", 1);
-          this.valuetip = this.getAttr("valuetip", opt.valuetip);
-          this.tooltip = this.getAttr("tooltip", null);
-          this.conv = this.getAttr("conv", null);
-          if (this.conv) {
-            const x = this._value;
-            this.convValue = eval(this.conv);
-            if (typeof this.convValue === "function")
-              this.convValue = this.convValue(x);
-          }
-          else
-            this.convValue = this._value;
-  
-          this.midilearn = this.getAttr("midilearn", opt.midilearn);
-          this.midicc = this.getAttr("midicc", null);
-          this.midiController = {};
-          this.midiMode = "normal";
-          if (this.midicc) {
-            let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-            let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-            this.setMidiController(ch, cc);
-          }
-          if (this.midilearn && this.id) {
-            if (webAudioControlsWidgetManager && webAudioControlsWidgetManager.midiLearnTable) {
-              const ml = webAudioControlsWidgetManager.midiLearnTable;
-              for (let i = 0; i < ml.length; ++i) {
-                if (ml[i].id == this.id) {
-                  this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-                  break;
-                }
-              }
-            }
-          }
-  
-          // Additional properties
-          this.digits = 0;
-          if (this.step && this.step < 1) {
-            for (let n = this.step; n < 1; n *= 10)
-              ++this.digits;
-          }
-  
-          // Add to widget manager
-          if (window.webAudioControlsWidgetManager)
-            window.webAudioControlsWidgetManager.addWidget(this);
-        }
-  
-        disconnectedCallback() {}
-  
-        setupImage() {
-          // Get canvas dimensions from CSS variables or attributes
-          const style = getComputedStyle(this);
-          const width = parseInt(style.getPropertyValue('--knob-width')) || this._width;
-          const height = parseInt(style.getPropertyValue('--knob-height')) || this._height;
-  
-          // Handle high DPI displays for better resolution
-          const dpr = window.devicePixelRatio || 1;
-          this.canvas.width = width * dpr;
-          this.canvas.height = height * dpr;
-          this.canvas.style.width = `${width}px`;
-          this.canvas.style.height = `${height}px`;
-          const ctx = this.canvas.getContext('2d');
-          ctx.scale(dpr, dpr);
-  
-          // Apply outline if specified
-          this.canvas.style.outline = this.outline;
-  
-          this.redraw();
-        }
-  
-        redraw() {
-          let ratio;
-          this.digits = 0;
-          if (this.step && this.step < 1) {
-            for (let n = this.step; n < 1; n *= 10)
-              ++this.digits;
-          }
-          if (this.value < this.min) {
-            this.value = this.min;
-          }
-          if (this.value > this.max) {
-            this.value = this.max;
-          }
-          if (this.log)
-            ratio = Math.log(this.value / this.min) / Math.log(this.max / this.min);
-          else
-            ratio = (this.value - this.min) / (this.max - this.min);
-  
-          // Draw the knob based on the current ratio
-          this.drawKnob(ratio);
-        }
-  
-        /**
-         * Draws the knob on the canvas based on the provided ratio.
-         * @param {number} ratio - A value between 0 and 1 representing the current knob position.
-         */
-        drawKnob(ratio) {
-          const ctx = this.canvas.getContext('2d');
-          const style = getComputedStyle(this);
-          const width = parseInt(style.getPropertyValue('--knob-width')) || this._width;
-          const height = parseInt(style.getPropertyValue('--knob-height')) || this._height;
-          const radius = Math.min(width, height) / 2 - 5; // Padding of 5px
-          const centerX = width / 2;
-          const centerY = height / 2;
-  
-          // Clear the canvas
-          ctx.clearRect(0, 0, width, height);
-  
-          // Draw background (col2)
-          ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-          ctx.fillStyle = this.col2;
-          ctx.fill();
-  
-          // Draw filled portion (col1) based on the ratio
-          ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          const startAngle = 0; // Start at the bottom after 90-degree rotation
-          const endAngle = startAngle + (2 * Math.PI * ratio);
-          ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
-          ctx.closePath();
-          ctx.fillStyle = this.col1;
-          ctx.fill();
-  
-          // Optional: Draw a smooth needle indicator without the white line
-/*           ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          const needleLength = radius * 0.9;
-          const needleX = centerX + needleLength * Math.cos(endAngle);
-          const needleY = centerY + needleLength * Math.sin(endAngle);
-          ctx.lineTo(needleX, needleY);
-          ctx.strokeStyle = this.col1; // Use fill color for the needle
-          ctx.lineWidth = 2;
-          ctx.stroke(); */
-        }
-  
-        _setValue(v) {
-          if (this.step)
-            v = (Math.round((v - this.min) / this.step)) * this.step + this.min;
-          this._value = Math.min(this.max, Math.max(this.min, v));
-          if (this._value !== this.oldvalue) {
-            this.fireflag = true;
-            this.oldvalue = this._value;
-            if (this.conv) {
-              const x = this._value;
-              this.convValue = eval(this.conv);
-              if (typeof this.convValue === "function")
-                this.convValue = this.convValue(x);
-            }
+            let root;
+            if (this.attachShadow)
+                root = this.attachShadow({ mode: 'open' });
             else
-              this.convValue = this._value;
-            if (typeof this.convValue === "number") {
-              this.convValue = this.convValue.toFixed(this.digits);
+                root = this;
+
+            root.innerHTML =
+                `<style>
+                    ${this.basestyle}
+                    :host {
+                        display: inline-block;
+                        margin: 0;
+                        padding: 0;
+                        cursor: pointer;
+                        font-family: sans-serif;
+                        font-size: 11px;
+                        user-select: none;
+                        position: relative;
+                        /* Allow knob to adapt to container size */
+                        width: var(--knob-width, 100px);
+                        height: var(--knob-height, 100px);
+                    }
+                    .webaudio-knob-body {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 100%;
+                        height: 100%;
+                        position: relative;
+                        pointer-events: auto;
+                    }
+                    canvas {
+                        width: 100%;
+                        height: 100%;
+                        touch-action: none;
+                        pointer-events: none;
+                    }
+                    .webaudioctrl-tooltip {
+                        /* Tooltip styles */
+                        display: none;
+                        position: absolute;
+                        z-index: 999;
+                        background: #eee;
+                        color: #000;
+                        border: 1px solid #666;
+                        border-radius: 4px;
+                        padding: 5px 10px;
+                        text-align: center;
+                        font-size: 11px;
+                        opacity: 0;
+                        transition: opacity 0.3s;
+                    }
+                    .webaudioctrl-tooltip.visible {
+                        display: block;
+                        opacity: 0.9;
+                    }
+                </style>
+                <div class="webaudio-knob-body" tabindex="1">
+                    <canvas></canvas>
+                    <div class="webaudioctrl-tooltip"></div>
+                    <div part="label" class="webaudioctrl-label"><slot></slot></div>
+                </div>`;
+
+            this.elem = root.querySelector(".webaudio-knob-body");
+            this.canvas = this.elem.querySelector("canvas");
+            this.tooltip = this.elem.querySelector(".webaudioctrl-tooltip");
+            this.label = this.elem.querySelector(".webaudioctrl-label");
+
+            // Attributes
+            this.enable = this.getAttr("enable", 1);
+            this._value = parseFloat(this.getAttr("value", 0));
+            this.defvalue = parseFloat(this.getAttr("defvalue", this._value));
+            this._min = parseFloat(this.getAttr("min", 0));
+            this._max = parseFloat(this.getAttr("max", 100));
+            this._step = parseFloat(this.getAttr("step", 1));
+            this.sensitivity = parseFloat(this.getAttr("sensitivity", 1));
+            this.log = this.getAttr("log", 0);
+            this.tooltipText = this.getAttr("tooltip", null);
+
+            // Diameter handling
+            this.diameter = this.getAttr("diameter", null);
+            if (this.diameter !== null) {
+                this.width = parseInt(this.diameter, 10);
+                this.height = parseInt(this.diameter, 10);
+                this.style.setProperty('--knob-width', `${this.width}px`);
+                this.style.setProperty('--knob-height', `${this.height}px`);
+            } else {
+                this.width = parseInt(this.getAttr("width", 100), 10);
+                this.height = parseInt(this.getAttr("height", 100), 10);
+                this.style.setProperty('--knob-width', `${this.width}px`);
+                this.style.setProperty('--knob-height', `${this.height}px`);
             }
+
+            // Set canvas dimensions
+            this.canvas.width = this.width;
+            this.canvas.height = this.height;
+
+            // Initialize linked param and colors
+            this.linkedParam = null;
+            this.loadColorsWithDelay();
+
+            // Initialize value
+            this._setValue(this._value);
             this.redraw();
-            this.showtip(0);
-            return 1;
-          }
-          return 0;
-        }
-  
-        setValue(v, f) {
-          if (this._setValue(v) && f)
-            this.sendEvent("input"), this.sendEvent("change");
-        }
-  
-        keydown(e) {
-          let delta = this.step;
-          if (delta === 0)
-            delta = 1;
-          switch (e.key) {
-            case "ArrowUp":
-              this.setValue(this.value + delta, true);
-              break;
-            case "ArrowDown":
-              this.setValue(this.value - delta, true);
-              break;
-            default:
-              return;
-          }
-          e.preventDefault();
-          e.stopPropagation();
-        }
-  
-        wheel(e) {
-          if (!this.enable)
-            return;
-          if (this.log) {
-            let r = Math.log(this.value / this.min) / Math.log(this.max / this.min);
-            let d = (e.deltaY > 0 ? -0.01 : 0.01);
-            if (!e.shiftKey)
-              d *= 5;
-            r += d;
-            r = Math.max(0, Math.min(1, r)); // Clamp between 0 and 1
-            this.setValue(this.min * Math.pow(this.max / this.min, r), true);
-          }
-          else {
-            let delta = Math.max(this.step, (this.max - this.min) * 0.05);
-            if (e.shiftKey)
-              delta = this.step ? this.step : 1;
-            delta = e.deltaY > 0 ? -delta : delta;
-            this.setValue(+this.value + delta, true);
-          }
-          e.preventDefault();
-          e.stopPropagation();
-        }
-  
-        pointerdown(ev) {
-          if (!this.enable)
-            return;
-          let e = ev;
-          if (ev.touches) {
-            e = ev.changedTouches[0];
-            this.identifier = e.identifier;
-          }
-          else {
-            if (e.buttons !== 1 && e.button !== 0)
-              return;
-          }
-          this.canvas.focus();
-          this.drag = 1;
-          this.showtip(0);
-          this.oldvalue = this._value;
-  
-          let pointermove = (ev) => {
-            let e = ev;
-            if (ev.touches) {
-              for (let i = 0; i < ev.touches.length; ++i) {
-                if (ev.touches[i].identifier === this.identifier) {
-                  e = ev.touches[i];
-                  break;
+
+            // Register with widget manager
+            if (window.webAudioControlsWidgetManager)
+                window.webAudioControlsWidgetManager.addWidget(this);
+
+            // Event listeners
+            this.elem.addEventListener("pointerdown", this.pointerdown, { passive: false });
+            this.elem.addEventListener("wheel", this.wheel, { passive: false });
+            this.elem.addEventListener("keydown", this.keydown);
+            this.elem.addEventListener("contextmenu", this.contextMenu);
+
+            this.elem.addEventListener("touchstart", this.pointerdown, { passive: false });
+            this.elem.addEventListener("touchmove", this.pointermove, { passive: false });
+            this.elem.addEventListener("touchend", this.pointerup);
+            this.elem.addEventListener("touchcancel", this.pointerup);
+
+            // MIDI learn functionality
+            this.midilearn = this.getAttr("midilearn", opt.midilearn);
+            this.midicc = this.getAttr("midicc", null);
+            this.midiController = {};
+            this.midiMode = "normal";
+            if (this.midicc) {
+                let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+                let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+                this.setMidiController(ch, cc);
+            }
+            if (this.midilearn && this.id) {
+                if (webAudioControlsWidgetManager && webAudioControlsWidgetManager.midiLearnTable) {
+                    const ml = webAudioControlsWidgetManager.midiLearnTable;
+                    for (let i = 0; i < ml.length; ++i) {
+                        if (ml[i].id == this.id) {
+                            this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+                            break;
+                        }
+                    }
                 }
-              }
             }
-            if (this.lastShift !== e.shiftKey) {
-              this.lastShift = e.shiftKey;
-              this.startPosX = e.pageX;
-              this.startPosY = e.pageY;
-              this.startVal = this.value;
+
+            // Find and connect the linked webaudio-param element
+            this.setupLinkedParam();
+
+            // Multitouch support
+            this.touchIdentifiers = new Set();
+        }
+
+        disconnectedCallback() {
+            // Clean up event listeners
+            this.elem.removeEventListener("pointerdown", this.pointerdown);
+            this.elem.removeEventListener("wheel", this.wheel);
+            this.elem.removeEventListener("keydown", this.keydown);
+            this.elem.removeEventListener("contextmenu", this.contextMenu);
+
+            this.elem.removeEventListener("touchstart", this.pointerdown);
+            this.elem.removeEventListener("touchmove", this.pointermove);
+            this.elem.removeEventListener("touchend", this.pointerup);
+            this.elem.removeEventListener("touchcancel", this.pointerup);
+        }
+
+        loadColorsWithDelay() {
+            setTimeout(() => {
+                const rootStyles = getComputedStyle(document.documentElement);
+                this.colors = {
+                    bg: rootStyles.getPropertyValue("--webaudio-knob-bg") || "#ddd",
+                    indicator: rootStyles.getPropertyValue("--webaudio-knob-indicator") || "#e00",
+                    center: rootStyles.getPropertyValue("--webaudio-knob-center") || "#000"
+                };
+                this.redraw();
+            }, 100);
+        }
+
+        setupLinkedParam() {
+            const knobId = this.getAttribute("id");
+            if (!knobId) return;
+
+            const linkedParam = document.querySelector(`webaudio-param[link="${knobId}"]`);
+            if (linkedParam) {
+                this.linkedParam = linkedParam;
+                this.updateLinkedParam();
+
+                // Listen to changes in the linked param
+                linkedParam.addEventListener("input", () => {
+                    this.setValue(parseFloat(linkedParam.value) || this._min, true);
+                });
             }
-            let offset = (this.startPosY - e.pageY - this.startPosX + e.pageX) * this.sensitivity;
+        }
+
+        updateLinkedParam() {
+            if (this.linkedParam) {
+                this.linkedParam.value = this.value;
+                this.linkedParam.textContent = this.value.toFixed(2);
+            }
+        }
+
+        _setValue(v) {
+            if (this._step)
+                v = (Math.round((v - this._min) / this._step)) * this._step + this._min;
+            this._value = Math.min(this._max, Math.max(this._min, v));
+            if (this._value !== this.oldvalue) {
+                this.fireflag = true;
+                this.oldvalue = this._value;
+                this.redraw();
+                this.updateLinkedParam();
+                this.showtip(this.tooltipText);
+                return 1;
+            }
+            return 0;
+        }
+
+        get value() {
+            return this._value;
+        }
+
+        set value(v) {
+            this.setValue(v, true);
+        }
+
+        setValue(v, fireEvent) {
+            if (this._setValue(v) && fireEvent)
+                this.sendEvent("input"), this.sendEvent("change");
+        }
+
+        redraw() {
+            this.drawKnob();
+        }
+
+        drawKnob() {
+            const ctx = this.canvas.getContext("2d");
+            const { width, height } = this.canvas;
+
+            // Ensure colors object is defined
+            const colors = this.colors || { bg: "#ddd", indicator: "#e00", center: "#000" };
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Calculate value as a ratio
+            let ratio = (this.value - this._min) / (this._max - this._min);
             if (this.log) {
-              let r = Math.log(this.startVal / this.min) / Math.log(this.max / this.min);
-              r += offset / ((e.shiftKey ? 4 : 1) * 128);
-              r = Math.max(0, Math.min(1, r));
-              this._setValue(this.min * Math.pow(this.max / this.min, r));
+                ratio = Math.log(this.value / this._min) / Math.log(this._max / this._min);
+                ratio = isNaN(ratio) ? 0 : ratio;
+                ratio = Math.min(Math.max(ratio, 0), 1);
             }
-            else {
-              this._setValue(this.min + ((((this.startVal + (this.max - this.min) * offset / ((e.shiftKey ? 4 : 1) * 128)) - this.min) / this.step) | 0) * this.step);
-            }
-            if (this.fireflag) {
-              this.sendEvent("input");
-              this.fireflag = false;
-            }
-            if (e.preventDefault)
-              e.preventDefault();
-            if (e.stopPropagation)
-              e.stopPropagation();
-            return false;
-          }
-  
-          let pointerup = (ev) => {
-            let e = ev;
-            if (ev.touches) {
-              for (let i = 0;;) {
-                if (ev.changedTouches[i].identifier === this.identifier) {
-                  break;
-                }
-                if (++i >= ev.changedTouches.length)
-                  return;
-              }
-            }
-            this.drag = 0;
-            this.showtip(0);
-            this.startPosX = this.startPosY = null;
-            window.removeEventListener('mousemove', pointermove);
-            window.removeEventListener('touchmove', pointermove, { passive: false });
-            window.removeEventListener('mouseup', pointerup);
-            window.removeEventListener('touchend', pointerup);
-            window.removeEventListener('touchcancel', pointerup);
-            document.body.removeEventListener('touchstart', preventScroll, { passive: false });
-            this.sendEvent("change");
-          }
-  
-          let preventScroll = (e) => {
-            e.preventDefault();
-          }
-  
-          if (e.ctrlKey || e.metaKey)
-            this.setValue(this.defvalue, true);
-          else {
-            this.startPosX = e.pageX;
-            this.startPosY = e.pageY;
-            this.startVal = this.value;
-            window.addEventListener('mousemove', pointermove);
-            window.addEventListener('touchmove', pointermove, { passive: false });
-          }
-  
-          window.addEventListener('mouseup', pointerup);
-          window.addEventListener('touchend', pointerup);
-          window.addEventListener('touchcancel', pointerup);
-          document.body.addEventListener('touchstart', preventScroll, { passive: false });
-          ev.preventDefault();
-          ev.stopPropagation();
-          return false;
+
+            // Knob background
+            ctx.beginPath();
+            ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, 0, Math.PI * 2);
+            ctx.fillStyle = colors.bg;
+            ctx.fill();
+            ctx.closePath();
+
+            // Indicator (arc showing the value)
+            const startAngle = 90-(135 * Math.PI) / 180; // Start at 135 degrees
+            const endAngle = startAngle + ratio * (270 * Math.PI) / 180; // Sweep 270 degrees
+            ctx.beginPath();
+            ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 10, startAngle, endAngle);
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = colors.indicator;
+            ctx.stroke();
+            ctx.closePath();
+
+            // Knob center
+            ctx.beginPath();
+            ctx.arc(width / 2, height / 2, Math.min(width, height) / 4, 0, Math.PI * 2);
+            ctx.fillStyle = colors.center;
+            ctx.fill();
+            ctx.closePath();
         }
-      });
-    } catch (error) {
-      console.log("webaudio-knob already defined");
-    }
-  
-    // ... (Other custom elements like webaudio-slider, webaudio-switch, etc., remain unchanged)
-  }
+
+        pointerdown(ev) {
+            if (!this.enable) return;
+
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            if (ev.type === "touchstart") {
+                for (let touch of ev.changedTouches) {
+                    this.touchIdentifiers.add(touch.identifier);
+                }
+            }
+
+            this.dragging = true;
+            this.showtip(this.tooltipText);
+
+            // Add event listeners for pointermove and pointerup
+            window.addEventListener("pointermove", this.pointermove, { passive: false });
+            window.addEventListener("pointerup", this.pointerup);
+            window.addEventListener("touchmove", this.pointermove, { passive: false });
+            window.addEventListener("touchend", this.pointerup);
+            window.addEventListener("touchcancel", this.pointerup);
+        }
+
+        pointermove(ev) {
+            if (!this.dragging) return;
+
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            let clientX, clientY;
+
+            if (ev.type.startsWith("touch")) {
+                for (let touch of ev.changedTouches) {
+                    if (this.touchIdentifiers.has(touch.identifier)) {
+                        clientX = touch.clientX;
+                        clientY = touch.clientY;
+                        break;
+                    }
+                }
+                if (clientX === undefined || clientY === undefined) return;
+            } else {
+                clientX = ev.clientX;
+                clientY = ev.clientY;
+            }
+
+            const rect = this.canvas.getBoundingClientRect();
+            const x = clientX - rect.left - rect.width / 2;
+            const y = clientY - rect.top - rect.height / 2;
+            const angle = Math.atan2(y, x);
+            let ratio = (angle + Math.PI / 2) / (Math.PI * 2);
+            if (ratio < 0) ratio += 1; // Ensure ratio is between 0 and 1
+            let newValue;
+            if (this.log) {
+                const logMin = Math.log(this._min || 0.0001); // Avoid log(0)
+                const logMax = Math.log(this._max);
+                const logValue = logMin + ratio * (logMax - logMin);
+                newValue = Math.exp(logValue);
+            } else {
+                newValue = this._min + ratio * (this._max - this._min);
+            }
+
+            this.setValue(newValue, true);
+        }
+
+        pointerup(ev) {
+            if (ev.type.startsWith("touch")) {
+                for (let touch of ev.changedTouches) {
+                    this.touchIdentifiers.delete(touch.identifier);
+                }
+                if (this.touchIdentifiers.size === 0) {
+                    this.dragging = false;
+                    this.showtip(null);
+                    window.removeEventListener("touchmove", this.pointermove);
+                    window.removeEventListener("touchend", this.pointerup);
+                    window.removeEventListener("touchcancel", this.pointerup);
+                }
+            } else {
+                this.dragging = false;
+                this.showtip(null);
+                window.removeEventListener("pointermove", this.pointermove);
+                window.removeEventListener("pointerup", this.pointerup);
+            }
+            this.sendEvent("change");
+        }
+
+        wheel(ev) {
+            if (!this.enable) return;
+
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            let delta;
+            if (this.log) {
+                delta = (this._max / this._min) ** (ev.deltaY > 0 ? -0.01 : 0.01);
+                let newValue = this.value * delta;
+                this.setValue(newValue, true);
+            } else {
+                delta = Math.max(this._step, (this._max - this._min) * 0.01);
+                let valueDelta = ev.deltaY > 0 ? -delta : delta;
+                this.setValue(this.value + valueDelta, true);
+            }
+        }
+
+        keydown(ev) {
+            if (!this.enable) return;
+
+            const delta = this._step || 1;
+            switch (ev.key) {
+                case "ArrowUp":
+                    this.setValue(this.value + delta, true);
+                    break;
+                case "ArrowDown":
+                    this.setValue(this.value - delta, true);
+                    break;
+                default:
+                    return;
+            }
+            ev.preventDefault();
+        }
+
+        contextMenu(ev) {
+            if (window.webAudioControlsWidgetManager && this.midilearn)
+                webAudioControlsWidgetManager.contextMenuOpen(ev, this);
+            ev.preventDefault();
+            ev.stopPropagation();
+        }
+
+        showtip(text) {
+            if (text) {
+                this.tooltip.textContent = text;
+                this.tooltip.classList.add("visible");
+            } else {
+                this.tooltip.classList.remove("visible");
+            }
+        }
+
+        setMidiController(channel, cc) {
+            if (this.listeningToThisMidiController(channel, cc)) return;
+            this.midiController = { 'channel': channel, 'cc': cc };
+            console.log(`Added mapping for channel=${channel} cc=${cc} tooltip=${this.tooltipText}`);
+        }
+
+        listeningToThisMidiController(channel, cc) {
+            const c = this.midiController;
+            if ((c.channel === channel || c.channel < 0) && c.cc === cc)
+                return true;
+            return false;
+        }
+
+        processMidiEvent(event) {
+            const channel = event.data[0] & 0xf;
+            const controlNumber = event.data[1];
+            if (this.midiMode === 'learn') {
+                this.setMidiController(channel, controlNumber);
+                webAudioControlsWidgetManager.contextMenuClose();
+                this.midiMode = 'normal';
+                webAudioControlsWidgetManager.preserveMidiLearn();
+            }
+            if (this.listeningToThisMidiController(channel, controlNumber)) {
+                let val;
+                if (this.log) {
+                    val = this._min * Math.pow(this._max / this._min, event.data[2] / 127);
+                } else {
+                    val = this._min + (this._max - this._min) * (event.data[2] / 127);
+                }
+                this.setValue(val, true);
+            }
+        }
+
+        sendEvent(ev) {
+            const event = new Event(ev, { bubbles: true, cancelable: true });
+            this.dispatchEvent(event);
+        }
+    });
+} catch (error) {
+    console.log("webaudio-knob already defined");
+}
 try{
   customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
     constructor(){
@@ -1475,179 +1492,229 @@ ${this.basestyle}
   console.log("webaudio-switch already defined");
 }
 
-try{
-  customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
-    constructor(){
+customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
+  constructor() {
       super();
-      this.addEventListener("keydown",this.keydown);
-      this.addEventListener("mousedown",this.pointerdown,{passive:false});
-      this.addEventListener("touchstart",this.pointerdown,{passive:false});
-      this.addEventListener("wheel",this.wheel);
-      this.addEventListener("mouseover",this.pointerover);
-      this.addEventListener("mouseout",this.pointerout);
-      this.addEventListener("contextmenu",this.contextMenu);
-    }
-    connectedCallback(){
-      let root;
-      if(this.attachShadow)
-        root=this.attachShadow({mode: 'open'});
-      else
-        root=this;
-      root.innerHTML=
-`<style>
-${this.basestyle}
-:host{
-  display:inline-block;
-  user-select:none;
-  margin:0;
-  padding:0;
-  font-family: sans-serif;
-  font-size: 8px;
-  cursor:pointer;
-  position:relative;
-  vertical-align:baseline;
-}
-.webaudio-param-body{
-  display:inline-block;
-  position:relative;
-  text-align:center;
-  background:none;
-  margin:0;
-  padding:0;
-  font-family:sans-serif;
-  font-size:11px;
-  vertical-align:bottom;
-  border:none;
-}
-</style>
-<input class='webaudio-param-body' value='0' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
-`;
-      this.elem=root.childNodes[2];
-      this.ttframe=root.childNodes[3];
-      this.enable=this.getAttr("enable",1);
-      this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
-      this.defvalue=this.getAttr("defvalue",0);
-      this._fontsize=this.getAttr("fontsize",9); if (!this.hasOwnProperty("fontsize")) Object.defineProperty(this,"fontsize",{get:()=>{return this._fontsize},set:(v)=>{this._fontsize=v;this.setupImage()}});
-      this._src=this.getAttr("src",opt.paramSrc); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
-      this.link=this.getAttr("link","");
-      this._width=this.getAttr("width",opt.paramWidth); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
-      this._height=this.getAttr("height",opt.paramHeight); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
-      this._colors=this.getAttr("colors",opt.paramColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
-      this.outline=this.getAttr("outline",opt.outline);
-      this.rconv=this.getAttr("rconv",null);
-      this.midiController={};
-      this.midiMode="normal";
-      this.currentLink=null;
-      if(this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
+      this.linkedControl = null; // Reference to the linked control (e.g., webaudio-knob)
+      this._value = 0; // Internal value
+      this.min = 0; // Minimum value from the linked control
+      this.max = 100; // Maximum value from the linked control
+      this.colors = { text: "#000", background: "#ddd" }; // Default colors
+  }
+
+  connectedCallback() {
+      // Create shadow DOM and render the control
+      const root = this.attachShadow({ mode: "open" });
+      root.innerHTML = `
+          <style>
+              ${this.basestyle}
+              :host {
+                  display: inline-block;
+                  position: absolute;
+                  user-select: none;
+                  font-family: 'Orbit', sans-serif;
+              }
+              .webaudio-param-container {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  position: absolute;
+                  border-radius: 4px;
+                  padding: 0;
+                  width: var(--width, 100px);
+                  height: var(--height, 30px);
+                  background: transparent;
+                  color: var(--col1, #000);
+                  font-size: var(--fontsize, 1rem);
+              }
+              .webaudio-param-input {
+                  width: 100%;
+                  text-align: center;
+                  border: none;
+                  background: transparent;
+                  font-size: inherit;
+                  color: inherit;
+                  font-family: inherit;
+              }
+              .webaudio-param-input:focus {
+                  outline: none;
+              }
+          </style>
+          <div class="webaudio-param-container">
+              <input class="webaudio-param-input" type="text" />
+          </div>
+      `;
+
+      // Elements
+      this.container = root.querySelector(".webaudio-param-container");
+      this.input = root.querySelector(".webaudio-param-input");
+      this.elem = this.container;
+
+      // Attributes
+      this.link = this.getAttr("link", ""); // Link to a control
+      this._value = this.getAttr("value", 0); // Initial value
+      this.width = this.getAttr("width", "100px");
+      this.height = this.getAttr("height", "30px");
+      this.fontsize = this.getAttr("fontsize", "1rem");
+
+      // Initialize styles, colors, and linked control
+      this.loadColorsWithDelay();
+      this.updateLinkedControl();
+      this.updateStyles();
+      this.updateDisplay();
+
+      // Event listeners
+      this.input.addEventListener("change", this.handleInputChange.bind(this));
+      this.input.addEventListener("blur", this.updateDisplay.bind(this)); // Reset input on blur
+      window.addEventListener("resize", this.repositionBelowLinkedControl.bind(this));
+      window.addEventListener("scroll", this.repositionBelowLinkedControl.bind(this), true);
+
+      // Initial positioning
+      this.repositionBelowLinkedControl();
+  }
+
+  disconnectedCallback() {
+      if (this.linkedControl) {
+          this.linkedControl.removeEventListener("input", this.updateFromControl.bind(this));
       }
-      this.setupImage();
-      if(window.webAudioControlsWidgetManager)
-//        window.webAudioControlsWidgetManager.updateWidgets();
-        window.webAudioControlsWidgetManager.addWidget(this);
-      this.fromLink=((e)=>{
-        this.setValue(e.target.convValue.toFixed(e.target.digits));
-      }).bind(this);
-      this.elem.onchange=()=>{
-        if(!this.currentLink.target.conv || (this.currentLink.target.conv&&this.rconv)){
-          let val = this.value=this.elem.value;
-          if(this.rconv){
-            let x=+this.elem.value;
-            val=eval(this.rconv);
-          }
-          if(this.currentLink){
-            this.currentLink.target.setValue(val, true);
-          }
-        }
-      }
-    }
-    disconnectedCallback(){}
-    setupImage(){
-      this.imgloaded=()=>{
-        if(this.src!=""&&this.src!=null){
-          this.elem.style.backgroundImage = "url("+this.src+")";
-          this.elem.style.backgroundSize = "100% 100%";
-          if(this._width==null) this._width=this.img.width;
-          if(this._height==null) this._height=this.img.height;
-        }
-        else{
-          if(this._width==null) this._width=32;
-          if(this._height==null) this._height=20;
-        }
-        this.elem.style.width=this._width+"px";
-        this.elem.style.height=this._height+"px";
-        this.elem.style.fontSize=this.fontsize+"px";
-        let l=document.getElementById(this.link);
-        if(l&&typeof(l.value)!="undefined"){
-          if(typeof(l.convValue)=="number")
-            this.setValue(l.convValue.toFixed(l.digits));
-          else
-            this.setValue(l.convValue);
-          if(this.currentLink)
-            this.currentLink.removeEventListener("input",this.currentLink.func);
-          this.currentLink={target:l, func:(e)=>{
-            if(typeof(l.convValue)=="number")
-              this.setValue(l.convValue.toFixed(l.digits));
-            else
-              this.setValue(l.convValue);
-          }};
-          this.currentLink.target.addEventListener("input",this.currentLink.func);
-  //        l.addEventListener("input",(e)=>{this.setValue(l.convValue.toFixed(l.digits))});
-        }
-        this.redraw();
-      };
-      this.coltab = this.colors.split(";");
-      this.elem.style.color=this.coltab[0];
-      this.img=new Image();
-      this.img.onload=this.imgloaded.bind();
-      if(this.src==null){
-        this.elem.style.backgroundColor=this.coltab[1];
-        this.imgloaded();
-      }
-      else if(this.src==""){
-        this.elem.style.background="none";
-        this.imgloaded();
-      }
-      else{
-        this.img.src=this.src;
-      }
-    }
-    redraw() {
-      this.elem.value=this.value;
-    }
-    setValue(v,f){
-      this.value=v;
-      if(this.value!=this.oldvalue){
-        this.redraw();
-        this.showtip(0);
-        if(f){
-          let event=document.createEvent("HTMLEvents");
-          event.initEvent("change",false,true);
-          this.dispatchEvent(event);
-        }
-        this.oldvalue=this.value;
-      }
-    }
-    pointerdown(ev){
-      if(!this.enable)
-        return;
-      let e=ev;
-      if(ev.touches)
-          e = ev.touches[0];
-      else {
-        if(e.buttons!=1 && e.button!=0)
+      window.removeEventListener("resize", this.repositionBelowLinkedControl.bind(this));
+      window.removeEventListener("scroll", this.repositionBelowLinkedControl.bind(this));
+  }
+
+  loadColorsWithDelay() {
+      setTimeout(() => {
+          const rootStyles = getComputedStyle(document.documentElement);
+          this.colors = {
+              text: rootStyles.getPropertyValue("--col1").trim() || "#000",
+              background: rootStyles.getPropertyValue("--col2").trim() || "transparent"
+          };
+          this.updateStyles(); // Apply the colors
+      }, 300); // Delay to ensure CSS variables are available
+  }
+
+  updateStyles() {
+      if (!this.container) return; // Safeguard against undefined container
+
+      // Apply dimensions and font size
+      this.container.style.width = this.width;
+      this.container.style.height = this.height;
+      this.container.style.fontSize = this.fontsize;
+
+      // Apply colors
+      this.container.style.background = this.colors.background;
+      this.container.style.color = this.colors.text;
+  }
+
+  updateLinkedControl() {
+      // Find and link to the control (e.g., webaudio-knob)
+      const linkedControl = document.querySelector(`#${this.link}`);
+      if (!linkedControl) {
+          console.warn(`WebAudioParam: Linked control with id '${this.link}' not found.`);
           return;
       }
-      this.elem.focus();
-      this.redraw();
-    }
-  });
-} catch(error){
-  console.log("webaudio-param already defined");
-}
 
+      // Remove old listeners
+      if (this.linkedControl) {
+          this.linkedControl.removeEventListener("input", this.updateFromControl.bind(this));
+      }
+
+      // Set new linked control
+      this.linkedControl = linkedControl;
+      this.linkedControl.addEventListener("input", this.updateFromControl.bind(this));
+
+      // Fetch min and max from the linked control
+      this.min = parseFloat(this.linkedControl.getAttribute("min")) || 0;
+      this.max = parseFloat(this.linkedControl.getAttribute("max")) || 100;
+
+      // Initialize value from the linked control
+      this._value = parseFloat(this.linkedControl.value) || 0;
+      this.updateDisplay();
+  }
+
+  updateFromControl() {
+      if (this.linkedControl) {
+          this._value = parseFloat(this.linkedControl.value) || 0;
+          this.updateDisplay();
+      }
+  }
+
+  handleInputChange(event) {
+      let newValue = parseFloat(event.target.value); // Allow decimal values
+      if (!isNaN(newValue)) {
+          // Clip value to the min and max range of the linked control
+          newValue = Math.min(this.max, Math.max(this.min, newValue));
+          this._value = newValue;
+          this.updateLinkedControlValue();
+      }
+      this.updateDisplay();
+  }
+
+  updateLinkedControlValue() {
+      if (this.linkedControl) {
+          this.linkedControl.value = this._value;
+          this.linkedControl.dispatchEvent(new Event("input")); // Trigger the input event
+      }
+  }
+
+  updateDisplay() {
+      if (!this.input) return; // Safeguard against undefined input
+      this.input.value = this._value; // Display the value
+  }
+
+  repositionBelowLinkedControl() {
+      if (this.linkedControl) {
+          const rc = this.linkedControl.getBoundingClientRect();
+          const rc2 = this.container.getBoundingClientRect();
+
+          // Position the container relative to the linked control
+          const left = rc.left + (rc.width - rc2.width) / 2 + window.scrollX;
+          const top = rc.top + (rc.height - rc2.height) / 2 + window.scrollY;
+
+          this.style.left = `${left}px`;
+          this.style.top = `${top}px`;
+      }
+  }
+
+  static get observedAttributes() {
+      return ["link", "value", "width", "height", "fontsize"];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+      if (name === "link" && oldValue !== newValue) {
+          this.link = newValue;
+          this.updateLinkedControl();
+      } else if (name === "value") {
+          this._value = parseFloat(newValue) || 0;
+          this.updateDisplay();
+      } else if (["width", "height", "fontsize"].includes(name)) {
+          this[name] = newValue;
+          this.updateStyles();
+      }
+  }
+
+  set value(v) {
+      this._value = Math.min(this.max, Math.max(this.min, parseFloat(v))); // Clip to range and allow decimals
+      this.updateDisplay();
+      this.updateLinkedControlValue();
+  }
+
+  get value() {
+      return this._value;
+  }
+
+  // Disable tooltip and related events
+  showtip() {
+      // No tooltip behavior
+  }
+
+  pointerover() {
+      // No tooltip behavior
+  }
+
+  pointerout() {
+      // No tooltip behavior
+  }
+});
 try{
   customElements.define("webaudio-keyboard", class WebAudioKeyboard extends WebAudioControlsWidget {
     constructor(){

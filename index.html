@@ -87,17 +87,17 @@
                         <div class="row align-items-center">
                             <div class="col d-flex justify-content-center"></div> 
                             <div class="col d-flex justify-content-center">
-                                <webaudio-knob id="xKnob"  min="-100" max="100" ></webaudio-knob>
-                                <webaudio-param link="xKnob" width="4rem" height="1.2rem" fontsize=".8rem" ></webaudio-param>
+                                <webaudio-knob id="xKnob"  min="0" max="100" ></webaudio-knob>
+                                <webaudio-param link="xKnob"  ></webaudio-param>
 
                             </div>
                             <div class="col d-flex justify-content-center">
-                                <webaudio-knob id="yKnob"  min="0" max="100"></webaudio-knob>
-                                <webaudio-param link="yKnob" width="4rem" height="1.2rem" fontsize=".8rem" ></webaudio-param>
+                                <webaudio-knob id="yKnob" min="-100" max="100"> </webaudio-knob>
+                                <webaudio-param link="yKnob" ></webaudio-param>
                             </div>
                             <div class="col d-flex justify-content-center">
-                                <webaudio-knob id="zKnob"  min="-100" max="100"></webaudio-knob>
-                                <webaudio-param link="zKnob" width="4rem" height="1.2rem" fontsize=".8rem" ></webaudio-param>
+                                <webaudio-knob id="zKnob" min="0" max="100"> </webaudio-knob>
+                                <webaudio-param link="zKnob" ></webaudio-param>
 
                             </div>
                             <div class="col d-flex justify-content-center"></div> 
@@ -131,7 +131,7 @@
     WebAudioControlsOptions={
       useMidi:1,
       preserveMidiLearn:1,
-      knobDiameter:50,
+      knobDiameter:100,
       switchWidth:40,
       switchHeight:20,
     };
