@@ -22,7 +22,7 @@
 
 /* Match button group width to heading */   
 h1.responsive-title {
-    font-family: 'Inter Display', sans-serif;
+    font-family: 'Orbit', sans-serif;
     font-weight: 200;
     font-size: 4vmin; /* Dynamic scaling */
     color: var(--col2);
