@@ -29,7 +29,7 @@ html, body {
     font-family: 'Orbit', sans-serif;
 }
 
-webaudio-knob, webaudio-param {
+webaudio-knob, webaudio-param, webaudio-slider {
     pointer-events: auto;
   }
 

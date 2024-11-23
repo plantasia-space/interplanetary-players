@@ -15,12 +15,6 @@ import('./libraries/webaudio-controls.js').then(() => {
 });
 
 function initializeWebAudioControls() {
-    document.querySelectorAll("webaudio-knob, webaudio-slider, webaudio-param").forEach((el) => {
-        if (el.loadColorsWithDelay) {
-            el.loadColorsWithDelay(); // Ensure colors are loaded
-        }
-    });
-
     console.log("WebAudioControls initialized.");
 }
 
