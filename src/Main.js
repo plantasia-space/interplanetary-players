@@ -1,10 +1,16 @@
 // src/Main.js
+// src/Main.js
 import { initScene, initRenderer, addLights } from './Scene.js';
 import { loadAndDisplayModel } from './Loaders.js';
 import { DataManager } from './DataManager.js';
 import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
-import { setupInteractions } from './Interaction.js'; // Import Interaction.js
+import { setupInteractions } from './Interaction.js';
+// Dynamically load webaudio-controls.js
+import('./libraries/webaudio-controls.js').then((WAC) => {
+    console.log("WebAudioControls loaded:", WAC);
+    // Initialize or use WAC here if needed
+});
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
