@@ -98,8 +98,45 @@ canvas {
     border: 2px solid var(--col1);
     border-radius: 5px;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Ensures vertical stacking */
     box-sizing: border-box;
     background: none;
     padding: 1vw 1vw;
+}
+.action-gui-container {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    margin-top: auto; /* Keeps the container at the bottom of the sub-frame */
+    /* Additional styling as needed */
+}
+
+.action-gui-container .container {
+    width: 100%;
+    /* Optional: Add padding or margin if needed */
+}
+
+.action-gui-container .row {
+    width: 100%;
+    /* Optional: Add spacing between rows if needed */
+}
+
+.action-gui-container .col-2, 
+.action-gui-container .col-4 {
+    /* Center content vertically and horizontally */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-gui-container .btn {
+    margin: 5px 0; /* Adjust spacing between buttons */
+    /* Optional: Customize button sizes, colors, etc. */
+}
+
+.action-gui-container webaudio-knob,
+.action-gui-container webaudio-param {
+    margin: 5px 0; /* Adjust spacing between controls */
+    /* Optional: Set sizes or other properties */
 }

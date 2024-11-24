@@ -1,8 +1,8 @@
 /* Define size variables for responsiveness */
 :root {
-    --size-xyz-knobs: clamp(9vmin, 14vmin, 140vmin); /* Middle part (circles) */
-    --size-lower-buttons: clamp(5vmin, 10vmin, 100vmin); /* General lower buttons */
-    --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
+    --size-xyz-knobs: clamp(14vmin, 14vmin, 140vmin); /* Middle part (circles) */
+    --size-lower-buttons: clamp(4vmin, 4vmin, 40vmin); /* General lower buttons */
+    --size-lower-buttons-side: clamp(5vmin, 8vmin, 50vmin); /* Side buttons (Play, Regen) */
 
 }
 
@@ -101,7 +101,6 @@
     height: 75%;
 }
 
-/* Layout Rules */
 
 /* Container Within Sub-frame */
 .container {
