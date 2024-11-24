@@ -35,8 +35,6 @@ function handlePause() {
     }
 }
 
-// Preserve Existing Canvas Interaction
-canvas3D.addEventListener('mousedown', () => console.log('Canvas clicked!'));
 
 // Initialize Application
 async function initializeApp() {
@@ -119,6 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.webAudioControlsWidgetManager.addMidiListener((event) => {
             if (midiDumpEnabled) {
                 console.log("MIDI DUMP:", event.data);
+
+                                // Log registered widgets after ensuring widgets have connected
+                setTimeout(() => {
+                    console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
+                }, 100); // 100ms delay
+
             }
         });
 
@@ -126,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const xKnob = document.getElementById('xKnob');
         if (xKnob) {
             xKnob.addEventListener('change', (e) => {
-                console.log("xKnob value changed to:", xKnob.value);
+                //console.log("xKnob value changed to:", xKnob.value);
             });
         } else {
             console.warn("Element with id 'xKnob' not found.");
@@ -135,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const yKnob = document.getElementById('yKnob');
         if (yKnob) {
             yKnob.addEventListener('change', (e) => {
-                console.log("yKnob value changed to:", yKnob.value);
+                //console.log("yKnob value changed to:", yKnob.value);
             });
         } else {
             console.warn("Element with id 'yKnob' not found.");
@@ -144,16 +148,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const zKnob = document.getElementById('zKnob');
         if (zKnob) {
             zKnob.addEventListener('change', (e) => {
-                console.log("zKnob value changed to:", zKnob.value);
+                //console.log("zKnob value changed to:", zKnob.value);
             });
         } else {
             console.warn("Element with id 'zKnob' not found.");
         }
 
-        // Log registered widgets after ensuring widgets have connected
-        setTimeout(() => {
-            console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
-        }, 100); // 100ms delay
 
 
     } else {
