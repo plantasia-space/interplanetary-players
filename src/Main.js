@@ -1,22 +1,11 @@
 // src/Main.js
-// src/Main.js
+
 import { initScene, initRenderer, addLights } from './Scene.js';
 import { loadAndDisplayModel } from './Loaders.js';
 import { DataManager } from './DataManager.js';
 import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
 import { setupInteractions } from './Interaction.js';
-// Dynamically load webaudio-controls.js
-import('./libraries/webaudio-controls.js').then(() => {
-    console.log("WebAudioControls loaded.");
-    document.addEventListener("DOMContentLoaded", () => {
-        initializeWebAudioControls();
-    });
-});
-
-function initializeWebAudioControls() {
-    console.log("WebAudioControls initialized.");
-}
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -59,10 +48,10 @@ async function initializeApp() {
 
         console.log(`[APP] Using trackId: ${trackId}`);
 
-        // Usar el DataManager para manejar fetch y configuración
+        // Use DataManager to handle fetch and configuration
         await dataManager.fetchAndUpdateConfig(trackId);
 
-        // Verificar si los datos necesarios están completos
+        // Verify required data fields
         if (!Constants.TRACK_DATA?.track || 
             !Constants.TRACK_DATA?.soundEngine || 
             !Constants.TRACK_DATA?.interplanetaryPlayer) {
@@ -71,14 +60,14 @@ async function initializeApp() {
 
         console.log('[APP] TRACK_DATA confirmed:', Constants.TRACK_DATA);
 
-        // Aplicar colores basados en TRACK_DATA
+        // Apply colors based on TRACK_DATA
         Constants.applyColorsFromTrackData();
 
-        // Llenar placeholders usando el tipo 'monitorInfo' por defecto (o el que necesites)
+        // Populate placeholders using the default type 'monitorInfo'
         setupInteractions(dataManager);
         dataManager.populatePlaceholders('monitorInfo');
 
-        // Cargar el modelo y mostrarlo en la escena
+        // Load the model and display it in the scene
         await loadAndDisplayModel(scene, Constants.TRACK_DATA);
         console.log('[APP] Model loaded successfully.');
     } catch (error) {
@@ -108,7 +97,6 @@ window.addEventListener('resize', () => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-
 function animate() {
     controls.update();
     renderer.render(scene, camera);
@@ -116,3 +104,59 @@ function animate() {
 }
 
 initializeApp().then(animate);
+
+let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
+
+// Handle Event Listeners after DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Application initialized.");
+
+    // Check if the WebAudioControlsWidgetManager is available
+    if (window.webAudioControlsWidgetManager) {
+        console.log("webAudioControlsWidgetManager is defined.");
+
+        // Add external MIDI listeners if needed
+        window.webAudioControlsWidgetManager.addMidiListener((event) => {
+            if (midiDumpEnabled) {
+                console.log("MIDI DUMP:", event.data);
+            }
+        });
+
+        // Add event listeners to controls
+        const xKnob = document.getElementById('xKnob');
+        if (xKnob) {
+            xKnob.addEventListener('change', (e) => {
+                console.log("xKnob value changed to:", xKnob.value);
+            });
+        } else {
+            console.warn("Element with id 'xKnob' not found.");
+        }
+
+        const yKnob = document.getElementById('yKnob');
+        if (yKnob) {
+            yKnob.addEventListener('change', (e) => {
+                console.log("yKnob value changed to:", yKnob.value);
+            });
+        } else {
+            console.warn("Element with id 'yKnob' not found.");
+        }
+
+        const zKnob = document.getElementById('zKnob');
+        if (zKnob) {
+            zKnob.addEventListener('change', (e) => {
+                console.log("zKnob value changed to:", zKnob.value);
+            });
+        } else {
+            console.warn("Element with id 'zKnob' not found.");
+        }
+
+        // Log registered widgets after ensuring widgets have connected
+        setTimeout(() => {
+            console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
+        }, 100); // 100ms delay
+
+
+    } else {
+        console.error("webAudioControlsWidgetManager is not defined.");
+    }
+});
