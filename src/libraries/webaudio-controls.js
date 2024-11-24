@@ -355,14 +355,14 @@ try {
       super();
       // No additional initialization needed here
     }
-
+  
     connectedCallback() {
       let root;
       if (this.attachShadow)
         root = this.attachShadow({ mode: 'open' });
       else
         root = this;
-
+  
       // Define the HTML structure with canvas and tooltip
       root.innerHTML = `
         <style>
@@ -375,8 +375,8 @@ try {
             font-family: sans-serif;
             font-size: 11px;
             /* Utilize CSS variables for styling */
-            --knob-col1: var(--knob-col1, #e00); /* Fill color */
-            --knob-col2: var(--knob-col2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
+            --knob-col1: var(--col1, #e00); /* Fill color */
+            --knob-col2: var(--col2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
             --knob-outline: var(--knob-outline, none); /* Outline color */
             --knob-width: var(--knob-width, 64px); /* Width of the knob */
             --knob-height: var(--knob-height, 64px); /* Height of the knob */
@@ -407,13 +407,13 @@ try {
           <div part="label" class="webaudioctrl-label"><slot></slot></div>
         </div>
       `;
-
+  
       // Reference to elements
       this.elem = root.querySelector('.webaudio-knob-body');
       this.canvas = root.querySelector('canvas.webaudio-knob-canvas');
       this.ttframe = root.querySelector('.webaudioctrl-tooltip');
       this.label = root.querySelector('.webaudioctrl-label');
-
+  
       // Initialize properties from attributes or defaults
       this.enable = this.getAttr("enable", 1);
       this._value = this.getAttr("value", 0);
@@ -425,43 +425,43 @@ try {
       this._height = this.getAttr("height", 64);
       this._diameter = this.getAttr("diameter", null); // For future use if needed
       this._colors = this.getAttr("colors", opt.knobColors); // Expected format: "col1;col2;col3"
-
+  
       // Define getters and setters for properties
       if (!this.hasOwnProperty("value")) Object.defineProperty(this, "value", {
         get: () => { return this._value },
         set: (v) => { this._value = v; this.redraw() }
       });
-
+  
       if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
         get: () => { return this._min },
         set: (v) => { this._min = +v; this.redraw() }
       });
-
+  
       if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
         get: () => { return this._max },
         set: (v) => { this._max = +v; this.redraw() }
       });
-
+  
       if (!this.hasOwnProperty("step")) Object.defineProperty(this, "step", {
         get: () => { return this._step },
         set: (v) => { this._step = +v; this.redraw() }
       });
-
+  
       if (!this.hasOwnProperty("width")) Object.defineProperty(this, "width", {
         get: () => { return this._width },
         set: (v) => { this._width = v; this.setupImage() }
       });
-
+  
       if (!this.hasOwnProperty("height")) Object.defineProperty(this, "height", {
         get: () => { return this._height },
         set: (v) => { this._height = v; this.setupImage() }
       });
-
+  
       if (!this.hasOwnProperty("colors")) Object.defineProperty(this, "colors", {
         get: () => { return this._colors },
         set: (v) => { this._colors = v; this.setupImage() }
       });
-
+  
       // Other properties
       this.outline = this.getAttr("outline", opt.outline);
       this.log = this.getAttr("log", 0);
@@ -476,27 +476,22 @@ try {
           this.convValue = this.convValue(x);
       } else
         this.convValue = this._value;
+  
 
-      // Parse colors from the 'colors' attribute or use default
-      this.coltab = this.colors ? this.colors.split(";") : ["#e00", "#000", "#000"];
-      if (this.coltab.length < 3) {
-        // Ensure we have at least 3 colors
-        this.coltab = [this.coltab[0] || "#e00", this.coltab[1] || "#000", "#000"];
-      }
-
+  
       // Setup canvas dimensions and handle high DPI
       this.setupImage();
-
+  
       // Bind the drawKnob method to ensure correct 'this' context
       this.drawKnob = this.drawKnob.bind(this);
-
+  
       // Initial drawing
       this.redraw();
-
+  
       // Setup label positioning
       this.setupLabel();
-
-
+  
+  
       this.midilearn = this.getAttr("midilearn", opt.midilearn);
       this.midicc = this.getAttr("midicc", null);
       this.midiController = {};
@@ -517,18 +512,18 @@ try {
           }
         }
       }
-
+  
       // Additional properties
       this.digits = 0;
       if (this.step && this.step < 1) {
         for (let n = this.step; n < 1; n *= 10)
           ++this.digits;
       }
-
+  
       // Add to widget manager
       if (window.webAudioControlsWidgetManager)
         window.webAudioControlsWidgetManager.addWidget(this);
-
+  
       // Bind focus and blur events after this.elem is assigned
       if (this.elem) {
         this.elem.addEventListener('focus', this.onfocus);
@@ -537,7 +532,7 @@ try {
         console.error('webaudio-knob: this.elem is not assigned correctly.');
       }
     }
-
+  
     disconnectedCallback() {
       // Remove event listeners to prevent memory leaks
       if (this.elem) {
@@ -545,12 +540,36 @@ try {
         this.elem.removeEventListener('blur', this.onblur);
       }
     }
-
+  
     setupImage() {
+
+            // *** Modified Section: Resolve CSS Variables in 'colors' ***
+      // Parse colors from the 'colors' attribute or use default
+      this.coltab = this.colors ? this.colors.split(";").map(color => {
+        color = color.trim();
+        if (color.startsWith('var(') && color.endsWith(')')) {
+          const varName = color.slice(4, -1).trim();
+          // Resolve CSS variable from the root (:root)
+          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+          return resolvedColor || '#000'; // Fallback to black if variable is not defined
+        }
+        return color;
+      }) : ["#e00", "#000", "#000"];
+      // *** End of Modified Section ***
+  
+      // Ensure we have at least 3 colors
+      if (this.coltab.length < 3) {
+        this.coltab = [
+          this.coltab[0] || "#e00",
+          this.coltab[1] || "#000",
+          this.coltab[2] || "#000"
+        ];
+      }
+      
       // Get canvas dimensions from attributes
       const width = parseInt(this._width) || 64;
       const height = parseInt(this._height) || 64;
-
+  
       // Handle high DPI displays for better resolution
       const dpr = window.devicePixelRatio || 1;
       this.canvas.width = width * dpr;
@@ -559,23 +578,23 @@ try {
       this.canvas.style.height = `${height}px`;
       const ctx = this.canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-
+  
       // Apply outline if specified
       this.canvas.style.outline = this.outline;
-
+  
       // Recalculate radius based on diameter if specified
       if (this._diameter) {
         this.radius = parseInt(this._diameter) / 2 - 5; // Padding of 5px
       } else {
         this.radius = Math.min(width, height) / 2 - 5; // Padding of 5px
       }
-
+  
       this.centerX = width / 2;
       this.centerY = height / 2;
-
+  
       this.redraw();
     }
-
+  
     redraw() {
       let ratio;
       this.digits = 0;
@@ -593,11 +612,11 @@ try {
         ratio = Math.log(this.value / this.min) / Math.log(this.max / this.min);
       else
         ratio = (this.value - this.min) / (this.max - this.min);
-
+  
       // Draw the knob based on the current ratio
       this.drawKnob(ratio);
     }
-
+  
     /**
      * Draws the knob on the canvas based on the provided ratio.
      * @param {number} ratio - A value between 0 and 1 representing the current knob position.
@@ -609,17 +628,17 @@ try {
       const radius = this.radius;
       const centerX = this.centerX;
       const centerY = this.centerY;
-
+  
       // Clear the canvas
       ctx.clearRect(0, 0, width, height);
-
+  
       // Draw background (col2)
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
       ctx.fillStyle = this.coltab[1]; // Background color
       ctx.fill();
-
+  
       // Draw filled portion (col1) based on the ratio
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
@@ -629,7 +648,7 @@ try {
       ctx.closePath();
       ctx.fillStyle = this.coltab[0]; // Fill color
       ctx.fill();
-
+  
       // Optional: Draw an outline around the knob
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
@@ -637,7 +656,7 @@ try {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-
+  
     _setValue(v) {
       if (this.step)
         v = (Math.round((v - this.min) / this.step)) * this.step + this.min;
@@ -662,12 +681,12 @@ try {
       }
       return 0;
     }
-
+  
     setValue(v, f) {
       if (this._setValue(v) && f)
         this.sendEvent("input"), this.sendEvent("change");
     }
-
+  
     keydown(e) {
       let delta = this.step;
       if (delta === 0)
@@ -685,7 +704,7 @@ try {
       e.preventDefault();
       e.stopPropagation();
     }
-
+  
     wheel(e) {
       if (!this.enable)
         return;
@@ -708,7 +727,7 @@ try {
       e.preventDefault();
       e.stopPropagation();
     }
-
+  
     pointerdown(ev) {
       if (!this.enable)
         return;
@@ -725,7 +744,7 @@ try {
       this.drag = 1;
       this.showtip(0);
       this.oldvalue = this._value;
-
+  
       let pointermove = (ev) => {
         let e = ev;
         if (ev.touches) {
@@ -762,7 +781,7 @@ try {
           e.stopPropagation();
         return false;
       }
-
+  
       let pointerup = (ev) => {
         let e = ev;
         if (ev.touches) {
@@ -785,11 +804,11 @@ try {
         document.body.removeEventListener('touchstart', preventScroll, { passive: false });
         this.sendEvent("change");
       }
-
+  
       let preventScroll = (e) => {
         e.preventDefault();
       }
-
+  
       if (e.ctrlKey || e.metaKey)
         this.setValue(this.defvalue, true);
       else {
@@ -799,7 +818,7 @@ try {
         window.addEventListener('mousemove', pointermove);
         window.addEventListener('touchmove', pointermove, { passive: false });
       }
-
+  
       window.addEventListener('mouseup', pointerup);
       window.addEventListener('touchend', pointerup);
       window.addEventListener('touchcancel', pointerup);
@@ -809,9 +828,10 @@ try {
       return false;
     }
   });
-} catch (error) {
-  console.log("webaudio-knob already defined");
-}
+  } catch (error) {
+    console.log("webaudio-knob already defined");
+  }
+
 try{
 customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
   constructor(){

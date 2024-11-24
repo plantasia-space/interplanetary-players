@@ -22,20 +22,7 @@
 
 }
 
-webaudio-knob {
-    --knob-col1: var(--col1); 
-    --knob-col2: var(--col2);  /* Semi-transparent black background */
-    --knob-outline: none; /* No outline */
-    --knob-width: 80px;
-    --knob-height: 80px;
-}
-/*   #zKnob {
-    --knob-col1: #e1ff00; 
-    --knob-col2: rgba(0, 0, 0, 0.3); 
-    --knob-outline: 2px solid #ffffff; 
-    --knob-width: 120px;
-    --knob-height: 120px;
-  } */
+
 /* Circle buttons (top row) */
 .action-knob {
     width: var(--size-xyz-knobs);

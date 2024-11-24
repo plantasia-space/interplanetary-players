@@ -16,7 +16,9 @@
 /* Color Variables */
 :root {
     --col1: rgb(255, 255, 255); /* Default color */
-    --col2: rgba(0, 0, 0, .5);  /* Hover and active color */
+    --col2: rgba(108, 108, 108, 0.479);  /* Hover and active color */
+    --col3: #000000; 
+
 }
 
 /* Reset general */

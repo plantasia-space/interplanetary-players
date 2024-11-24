@@ -13,18 +13,24 @@ export const Constants = {
             console.warn('[COLORS] No color data available in TRACK_DATA.');
             return;
         }
-
+    
         const { color1, color2 } = this.TRACK_DATA.soundEngine.soundEngineColors;
-
+    
         if (color1) {
             document.documentElement.style.setProperty('--col1', color1);
             console.log(`[COLORS] Set --col1 to ${color1}`);
         }
-
+    
         if (color2) {
             document.documentElement.style.setProperty('--col2', color2);
             console.log(`[COLORS] Set --col2 to ${color2}`);
         }
+    
+        // Update the colors for all knobs
+        const allKnobs = document.querySelectorAll('webaudio-knob');
+        allKnobs.forEach(knob => {
+            knob.setupImage();
+        });
     },
     /**
      * Sets and caches track data for the specified trackId.
