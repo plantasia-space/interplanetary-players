@@ -25,67 +25,84 @@
             <div class="sub-frame d-flex flex-column">
                 <!-- Header Row -->
                 <div class="d-flex justify-content-between">
-                <div class="info-row">
-                        <!-- Info Button (Left) -->
-                        <div class="col-1 d-flex justify-content-start align-items-center">
-                            <button class="btn btn-outline-primary menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu" ></button>
-                        </div>
-        
-                        <!-- Title (Center) -->
-                        <div class="col-10 text-center">
-                            <h1 class="responsive-title">jamming</h1>
-                        </div>
-        
-                        <!-- Tutor Button (Right) -->
-                        <div class="col-1 d-flex justify-content-end align-items-center">
+                    <div class="info-row">
+                            <!-- Info Button (Left) -->
+                            <div class="col-1 d-flex justify-content-start align-items-center">
+                                <button class="btn btn-outline-primary menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu" ></button>
+                            </div>
+            
+                            <!-- Title (Center) -->
+                            <div class="col-10 text-center">
+                                <h1 class="responsive-title">jamming</h1>
+                            </div>
+            
+                            <!-- Tutor Button (Right) -->
+                            <div class="col-1 d-flex justify-content-end align-items-center">
 
-                        </div>
-                    </div>
-                </div>
-        
-                <!-- Collapsible Menu -->
-                <div class="collapse mt-3" id="collapseInfoMenu">
-                    <div class="flex-container">
-                        <!-- Vertical Button Group (Left Column) -->
-                        <div class="btn-group-vertical-container">
-                            
-                            <div class="btn-group-vertical" role="group" aria-label="Menu Info Icon Group">
-                                <input type="radio" class="btn-check" name="iconGroup" id="monitorInfo" autocomplete="off" checked>
-                                <label class="btn btn-outline-primary menu-info-icon" for="monitorInfo" data-target="monitorInfo" data-src="/assets/icons/control_monitor.svg"></label>
-        
-                                <input type="radio" class="btn-check" name="iconGroup" id="trackInfo" autocomplete="off">
-                                <label class="btn btn-outline-primary menu-info-icon" for="trackInfo" data-target="trackInfo" data-src="/assets/icons/track.svg"></label>
-        
-                                <input type="radio" class="btn-check" name="iconGroup" id="interplanetaryPlayerInfo" autocomplete="off">
-                                <label class="btn btn-outline-primary menu-info-icon" for="interplanetaryPlayerInfo" data-target="interplanetaryPlayerInfo" data-src="/assets/icons/interplanetary-player.svg"></label>
-        
-                                <input type="radio" class="btn-check" name="iconGroup" id="soundEngineInfo" autocomplete="off">
-                                <label class="btn btn-outline-primary menu-info-icon" for="soundEngineInfo" data-target="soundEngineInfo" data-src="/assets/icons/sound_engine.svg"></label>
                             </div>
                         </div>
-        
-                        <!-- Grid Content (Right Columns) -->
-                        <div class="grid-content">
-                            <div id="placeholder_1"></div>
-                            <div id="placeholder_2"></div>
-                            <div id="placeholder_3"></div>
-                            <div id="placeholder_4"></div>
-                            <div id="placeholder_5"></div>
-                            <div id="placeholder_6"></div>
-                            <div id="placeholder_7"></div>
-                            <div id="placeholder_8"></div>
-                            <div id="placeholder_9"></div>
-                            <div id="placeholder_10"></div>
-                            <div id="placeholder_11"></div>
-                            <div id="placeholder_12"></div>
-                            <div id="placeholder_13"></div>
-                            <div id="placeholder_14"></div>
-                        </div>
                     </div>
-                </div>
-           
+            
+                    <!-- Collapsible Menu -->
+                    <div class="collapse mt-3" id="collapseInfoMenu">
+                        <div class="info-collapse-container">
+                            <!-- Vertical Button Group (Left Column) -->
+                            <div class="btn-group-vertical-container">
+                                
+                                <div class="btn-group-vertical" role="group" aria-label="Menu Info Icon Group">
+                                    <input type="radio" class="btn-check" name="iconGroup" id="monitorInfo" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary menu-info-icon" for="monitorInfo" data-target="monitorInfo" data-src="/assets/icons/control_monitor.svg"></label>
+            
+                                    <input type="radio" class="btn-check" name="iconGroup" id="trackInfo" autocomplete="off">
+                                    <label class="btn btn-outline-primary menu-info-icon" for="trackInfo" data-target="trackInfo" data-src="/assets/icons/track.svg"></label>
+            
+                                    <input type="radio" class="btn-check" name="iconGroup" id="interplanetaryPlayerInfo" autocomplete="off">
+                                    <label class="btn btn-outline-primary menu-info-icon" for="interplanetaryPlayerInfo" data-target="interplanetaryPlayerInfo" data-src="/assets/icons/interplanetary-player.svg"></label>
+            
+                                    <input type="radio" class="btn-check" name="iconGroup" id="soundEngineInfo" autocomplete="off">
+                                    <label class="btn btn-outline-primary menu-info-icon" for="soundEngineInfo" data-target="soundEngineInfo" data-src="/assets/icons/sound_engine.svg"></label>
+                                </div>
+                            </div>
+            
+                            <!-- Grid Content (Right Columns) -->
+                            <div class="grid-content">
+                                <div id="placeholder_1"></div>
+                                <div id="placeholder_2"></div>
+                                <div id="placeholder_3"></div>
+                                <div id="placeholder_4"></div>
+                                <div id="placeholder_5"></div>
+                                <div id="placeholder_6"></div>
+                                <div id="placeholder_7"></div>
+                                <div id="placeholder_8"></div>
+                                <div id="placeholder_9"></div>
+                                <div id="placeholder_10"></div>
+                                <div id="placeholder_11"></div>
+                                <div id="placeholder_12"></div>
+                                <div id="placeholder_13"></div>
+                                <div id="placeholder_14"></div>
+                            </div>
+                        </div>
+                     </div>
+
+
+
+<div class="mid-container"> 
+    <div class="col-2">
+    
+    <webaudio-slider id="gSlider" tracking="rel"
+        colors="#0f0;#000;#ff0"
+        value="50" min="0" max="100" width="32" height="400"> 
+    </webaudio-slider>
+    <webaudio-param link="slider1"></webaudio-param>
+    <webaudio-param 
+    link="gSlider" 
+    colors="var(--col1);var(--col2)">
+    </webaudio-param>
+    </div>
+    </div>
+    
                   <!-- Bottom-Aligned Buttons -->
-                  <div class="action-gui-container">
+                  <div class="action-gui-container"> 
                     <div class="container">
                         <!-- Main Row -->
                         <div class="row align-items-center">

@@ -7,6 +7,26 @@
 
 }
 
+#collapseInfoMenu {
+    position: absolute; /* Keep it positioned absolutely */
+    top: 3rem; /* Adjust based on the toggle button's position */
+    left: 0; /* Align to the left of the parent container */
+    z-index: 10; /* Place above other elements */
+    max-height: 80vh; /* Prevent overflow */
+    overflow-y: auto; /* Enable scrolling if content exceeds height */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
+    border: 1px solid rgba(0, 0, 0, 0.1); /* Optional: Add a border for clarity */
+    transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth expand/collapse */
+    opacity: 0; /* Hidden by default */
+    transform: scaleY(0); /* Collapsed state */
+    transform-origin: top; /* Expand from the top down */
+}
+
+/* Expanded state for the menu */
+#collapseInfoMenu.show {
+    opacity: 1;
+    transform: scaleY(1); /* Fully expanded */
+}
 
 /* Row Styling */
 .info-row {
@@ -113,7 +133,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
 
 
 /* Flex Container for Button Group and Grid Content */
-.flex-container {
+.info-collapse-container {
     display: flex; /* Enable horizontal alignment */
     flex-direction: row; /* Align items side by side */
     align-items: flex-start; /* Align items to the top */

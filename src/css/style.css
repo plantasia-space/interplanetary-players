@@ -102,6 +102,9 @@ canvas {
     box-sizing: border-box;
     background: none;
     padding: 1vw 1vw;
+    overflow: visible; /* Ensure the menu is not clipped */
+    z-index: 1; /* Keep it above the canvas */
+
 }
 .action-gui-container {
     display: flex;
@@ -139,4 +142,34 @@ canvas {
 .action-gui-container webaudio-param {
     margin: 5px 0; /* Adjust spacing between controls */
     /* Optional: Set sizes or other properties */
+}
+
+
+.mid-container {
+    position: relative; /* Ensures .mid-container can act as a positioning reference */
+    display: flex;
+    justify-content: flex-end; /* Keeps content aligned to the right */
+    align-items: center;
+    margin-top: auto;
+    height: 100%; /* Optional: ensure it stretches to match its parent */
+    z-index: 1; /* Keep above canvas but below menu */
+
+}
+
+.mid-container .col-2 {
+    position: absolute; /* Makes the slider column independent of layout flow */
+    right: 10px; /* Ensures the slider stays at the far right */
+    top: 50%; /* Centers vertically */
+    transform: translateY(-50%); /* Adjusts for exact vertical centering */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    z-index: 10; /* Ensures it stays above the collapsible menu */
+}
+
+
+webaudio-slider {
+    margin: 0;
+    padding: 0;
 }
