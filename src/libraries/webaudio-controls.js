@@ -1185,31 +1185,31 @@ try {
   
         ctx.beginPath();
         if (this.isHorizontal) {
-          // Triangle pointing upwards
+          // Triangle pointing to the right
           const knobX = this.trackX + this.trackLength * ratio;
           const knobY = this.trackY + this.trackHeight / 2;
           const size = this.knobSize;
   
-          ctx.moveTo(knobX, knobY - size);
-          ctx.lineTo(knobX - size, knobY + size);
-          ctx.lineTo(knobX + size, knobY + size);
+          ctx.moveTo(knobX + size, knobY); // Right point
+          ctx.lineTo(knobX - size, knobY - size); // Top-left point
+          ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
           ctx.closePath();
         } else {
-          // Triangle pointing to the right
+          // Triangle pointing upwards
           const knobX = this.trackX + this.trackHeight / 2;
           const knobY = this.trackY + this.trackLength * (1 - ratio);
           const size = this.knobSize;
   
-          ctx.moveTo(knobX - size, knobY);
-          ctx.lineTo(knobX + size, knobY - size);
-          ctx.lineTo(knobX + size, knobY + size);
+          ctx.moveTo(knobX, knobY - size); // Top point
+          ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
+          ctx.lineTo(knobX + size, knobY + size); // Bottom-right point
           ctx.closePath();
         }
   
         ctx.fill();
         ctx.stroke();
       }
-  
+    
       _setValue(v) {
         if (this._step) {
           v = Math.round((v - this._min) / this._step) * this._step + this._min;
