@@ -30,11 +30,11 @@
   z-index: 10;
   padding: 0;
   width: 100px;
-  color:#eee;
-  background-color: #268;
-  border: solid 1px #888;
-  box-shadow: 1px 1px 2px #888;
-  font-family: sans-serif;
+  color:#fffff;
+  background-color: #000000;
+  border: solid 1px #000000;
+  box-shadow: 1px 1px 2px ##a5a5a5;
+  font-family: orbit;
   font-size: 11px;
   line-height:1.7em;
   text-align:center;
@@ -50,7 +50,7 @@
   margin: 0;
   padding: 0;
   color: #000;
-  background-color:#eee;
+  background-color:#fff;
   text-decoration: none;
 }
 .webaudioctrl-context-menu__title{
