@@ -60,6 +60,7 @@ async function initializeApp() {
 
         // Apply colors based on TRACK_DATA
         Constants.applyColorsFromTrackData();
+        window.webAudioControlsWidgetManager.setTrackId(trackId);
 
         // Populate placeholders using the default type 'monitorInfo'
         setupInteractions(dataManager);
@@ -105,13 +106,16 @@ initializeApp().then(animate);
 
 let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
+
 // Handle Event Listeners after DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Application initialized.");
 
+    
     // Check if the WebAudioControlsWidgetManager is available
     if (window.webAudioControlsWidgetManager) {
         console.log("webAudioControlsWidgetManager is defined.");
+
 
         // Add external MIDI listeners if needed
         window.webAudioControlsWidgetManager.addMidiListener((event) => {
@@ -125,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             }
         });
-
+        
         // Add event listeners to controls
         const xKnob = document.getElementById('xKnob');
         if (xKnob) {
@@ -154,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("Element with id 'zKnob' not found.");
         }
 
+        
 
 
     } else {

@@ -21,6 +21,10 @@
  *	 limitations under the License.
  *
  * */
+
+ import { Constants, TRACK_ID } from './../Constants.js';
+
+ 
  if(window.customElements){
   let styles=document.createElement("style");
   styles.innerHTML=
@@ -303,7 +307,7 @@
     setMidiController(channel, cc) {
       if (this.listeningToThisMidiController(channel, cc)) return;
       this.midiController={ 'channel': channel, 'cc': cc};
-      console.log(`MIDI LOG: Added mapping for widget ${this.id || this.tagName} - channel=${channel}, cc=${cc}, tooltip=${this.tooltip}`);
+     // console.log(`MIDI LOG: Added mapping for widget ${this.id || this.tagName} - channel=${channel}, cc=${cc}, tooltip=${this.tooltip}`);
     }
     listeningToThisMidiController(channel, cc) {
       const c = this.midiController;
@@ -314,7 +318,7 @@
     
     processMidiEvent(event) {
       // Log entry into processMidiEvent
-      console.log(`MIDI LOG: processMidiEvent called for widget ${this.id || this.tagName}`);
+      //console.log(`MIDI LOG: processMidiEvent called for widget ${this.id || this.tagName}`);
       
       const status = event.data[0];
       const channel = status & 0xf;
@@ -323,7 +327,7 @@
       const controlValue = event.data[2];
   
       // Log received MIDI message details
-      console.log(`MIDI LOG: Received MIDI message - Status: ${status}, Channel: ${channel}, Type: ${messageType.toString(16)}, CC: ${controlNumber}, Value: ${controlValue}`);
+      //console.log(`MIDI LOG: Received MIDI message - Status: ${status}, Channel: ${channel}, Type: ${messageType.toString(16)}, CC: ${controlNumber}, Value: ${controlValue}`);
   
       if (this.midiMode === 'learn') {
           this.setMidiController(channel, controlNumber);
@@ -337,14 +341,14 @@
   
       if (this.listeningToThisMidiController(channel, controlNumber)) {
           // Log that the widget is responding to this MIDI controller
-          console.log(`MIDI LOG: Widget ${this.id || this.tagName} is responding to MIDI controller - Channel: ${channel}, CC: ${controlNumber}`);
+        //  console.log(`MIDI LOG: Widget ${this.id || this.tagName} is responding to MIDI controller - Channel: ${channel}, CC: ${controlNumber}`);
           const val = this.min + (this.max - this.min) * controlValue / 127;
           // Log the value being set
-          console.log(`MIDI LOG: Setting widget ${this.id || this.tagName} value to ${val}`);
+         // console.log(`MIDI LOG: Setting widget ${this.id || this.tagName} value to ${val}`);
           this.setValue(val, true);
       } else {
           // Log that the widget is ignoring this MIDI controller
-          console.log(`MIDI LOG: Widget ${this.id || this.tagName} is ignoring MIDI controller - Channel: ${channel}, CC: ${controlNumber}`);
+     //     console.log(`MIDI LOG: Widget ${this.id || this.tagName} is ignoring MIDI controller - Channel: ${channel}, CC: ${controlNumber}`);
       }
   }
 }
@@ -357,6 +361,8 @@ try {
     }
   
     connectedCallback() {
+
+      
       let root;
       if (this.attachShadow)
         root = this.attachShadow({ mode: 'open' });
@@ -493,25 +499,43 @@ try {
   
   
       this.midilearn = this.getAttr("midilearn", opt.midilearn);
+      console.log("Initialized midilearn:", this.midilearn);
+      
       this.midicc = this.getAttr("midicc", null);
+      console.log("Initialized midicc:", this.midicc);
+      
       this.midiController = {};
       this.midiMode = "normal";
+      
       if (this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
+          console.log("Parsing midicc:", this.midicc);
+          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+          console.log("Setting MIDI controller - channel:", ch, "CC:", cc);
+          this.setMidiController(ch, cc);
       }
-      if (this.midilearn && this.id) {
-        if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-          const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-          for (let i = 0; i < ml.length; ++i) {
-            if (ml[i].id == this.id) {
-              this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-              break;
-            }
+      
+      let retries = 0;
+      const maxRetries = 5; // Retry up to 50 times (5 seconds total if 100ms delay)
+      const attemptToLoadMidiLearn = () => {
+          if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
+              const ml = window.webAudioControlsWidgetManager.midiLearnTable;
+              for (let i = 0; i < ml.length; ++i) {
+                  if (ml[i].id === this.id) {
+                      console.log(`Loaded MIDI mapping for widget ${this.id}`);
+                      this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+                      return; // Stop retrying on success
+                  }
+              }
+              console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
+          } else if (retries < maxRetries) {
+              console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
+              setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
+          } else {
+              console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
           }
-        }
-      }
+      };
+      attemptToLoadMidiLearn();
   
       // Additional properties
       this.digits = 0;
@@ -845,6 +869,7 @@ try {
         this.wheel = this.wheel.bind(this);
         this.redraw = this.redraw.bind(this);
         this.handleParamChange = this.handleParamChange.bind(this);
+        this.onMidiMessage = this.onMidiMessage.bind(this);
   
         // Initialize properties for ResizeObserver
         this.resizeObserver = null;
@@ -949,9 +974,9 @@ try {
         this.coltab = this._colors.split(";").map(color => {
           color = color.trim();
           if (color.startsWith("var(") && color.endsWith(")")) {
-              const varName = color.slice(4, -1).trim();
-              const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-              return resolvedColor || "#000";
+            const varName = color.slice(4, -1).trim();
+            const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+            return resolvedColor || "#000";
           }
           return color;
         });
@@ -975,6 +1000,40 @@ try {
         }
         this.fireflag = true;
   
+        // MIDI Initialization
+        this.midilearn = this.getAttr("midilearn", opt.midilearn);
+        this.midicc = this.getAttr("midicc", null);
+        this.midiController = {};
+        this.midiMode = "normal";
+        if (this.midicc) {
+          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+          this.setMidiController(ch, cc);
+        }
+        let retries = 0;
+        const maxRetries = 5; // Retry up to 50 times (5 seconds total if 100ms delay)
+        const attemptToLoadMidiLearn = () => {
+            if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
+                const ml = window.webAudioControlsWidgetManager.midiLearnTable;
+                for (let i = 0; i < ml.length; ++i) {
+                    if (ml[i].id === this.id) {
+                        console.log(`Loaded MIDI mapping for widget ${this.id}`);
+                        this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+                        return; // Stop retrying on success
+                    }
+                }
+                console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
+            } else if (retries < maxRetries) {
+                console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
+                setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
+            } else {
+                console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
+            }
+        };
+        attemptToLoadMidiLearn();
+  
+
+        
         // Global registration
         window.webaudioSliders = window.webaudioSliders || {};
         if (this.id) {
@@ -985,6 +1044,16 @@ try {
         this.setupCanvas();
         this.redraw();
   
+        if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
+          get: () => { return this._min },
+          set: (v) => { this._min = +v; this.redraw() }
+        });
+        
+        if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
+          get: () => { return this._max },
+          set: (v) => { this._max = +v; this.redraw() }
+        });
+
         // Event listeners
         this.elem.addEventListener('keydown', this.keydown);
         this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
@@ -999,9 +1068,10 @@ try {
           }
         });
         this.resizeObserver.observe(this);
+        // Add to widget manager
+        if (window.webAudioControlsWidgetManager)
+          window.webAudioControlsWidgetManager.addWidget(this);
   
-        // Additional event listeners and initializations
-        // (Include any other important lines from your original code)
       }
   
       disconnectedCallback() {
@@ -1009,15 +1079,46 @@ try {
         this.elem.removeEventListener('keydown', this.keydown);
         this.elem.removeEventListener('mousedown', this.pointerdown);
         this.elem.removeEventListener('touchstart', this.pointerdown);
-        this.elem.removeEventListener('wheel', this.wheel);
+        this.elem.addEventListener('wheel', this.wheel, { passive: false });
   
         // Unobserve ResizeObserver
         if (this.resizeObserver) {
           this.resizeObserver.unobserve(this);
         }
   
-        // Additional cleanup if necessary
-        // (Include any other important lines from your original code)
+        // Additional cleanup
+        if (this.linkedParam) {
+          this.linkedParam.removeEventListener("input", this.handleParamChange);
+        }
+  
+        // Remove from widget manager
+        if (window.webAudioControlsWidgetManager)
+          window.webAudioControlsWidgetManager.removeWidget(this);
+      }
+  
+      // ... (Rest of your existing methods remain unchanged)
+  
+      // Implement MIDI methods similar to webaudio-knob
+      setMidiController(channel, cc) {
+        this.midiController.channel = channel;
+        this.midiController.cc = cc;
+        if (window.webAudioControlsMidiManager) {
+          window.webAudioControlsMidiManager.addWidget(this);
+        }
+      }
+  
+      onMidiMessage(event) {
+        const data = event.data;
+        const status = data[0];
+        const channel = status & 0x0F;
+        const type = status & 0xF0;
+        const cc = data[1];
+        const value = data[2];
+  
+        if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
+          const midiValue = (value / 127) * (this._max - this._min) + this._min;
+          this.setValue(midiValue, true);
+        }
       }
   
       setupCanvas() {
@@ -1634,7 +1735,7 @@ try{
       this.addEventListener("keydown",this.keydown);
       this.addEventListener("mousedown",this.pointerdown,{passive:false});
       this.addEventListener("touchstart",this.pointerdown,{passive:false});
-      this.addEventListener("wheel",this.wheel);
+      this.addEventListener("wheel",this.wheel, { passive: false });
       this.addEventListener("mouseover",this.pointerover);
       this.addEventListener("mouseout",this.pointerout);
       this.addEventListener("contextmenu",this.contextMenu);
@@ -1698,7 +1799,7 @@ ${this.basestyle}
       this.setupImage();
       if(window.webAudioControlsWidgetManager)
         window.webAudioControlsWidgetManager.updateWidgets();
-        window.webAudioControlsWidgetManager.addWidget(this);
+      //  window.webAudioControlsWidgetManager.addWidget(this);
       this.fromLink=((e)=>{
         this.setValue(e.target.convValue.toFixed(e.target.digits));
       }).bind(this);
@@ -2056,35 +2157,121 @@ ${this.basestyle}
   console.log("webaudio-keyboard already defined");
 }
 
+
+
+
+
+
+
+
 class WebAudioControlsWidgetManager {
-  constructor(){
-      this.midiAccess = null;
-      this.listOfWidgets = [];
-      this.listOfExternalMidiListeners = [];
-      this.updateWidgets();
+  constructor() {
+    console.log("Initializing WebAudioControlsWidgetManager...");
 
-      // Initialize MIDI only if required
-      if (window.UseWebAudioControlsMidi || opt.useMidi) {
-          if (opt.preserveMidiLearn)
-              this.midiLearnTable = JSON.parse(localStorage.getItem("WebAudioControlsMidiLearn"));
-          else
-              this.midiLearnTable = null;
-          this.initWebAudioControls();
-      } else {
+    this.midiAccess = null;
+    this.listOfWidgets = Array.from(
+      document.querySelectorAll(
+        "webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard"
+      )
+    );
+    this.listOfExternalMidiListeners = [];
+    this._trackId = null; // Initialize trackId
+
+    this.updateWidgets();
+    console.log("After updateWidgets call, listOfWidgets:", this.listOfWidgets);
+  }
+
+  setTrackId(trackId) {
+    console.log(`Setting track ID to: ${trackId}`);
+    this._trackId = trackId;
+
+    // Load MIDI Learn Table for the specific track
+    this.loadMIDILearnTable();
+  }
+
+  loadMIDILearnTable() {
+    if (!this._trackId) {
+      console.error("Track ID is not set. Cannot load MIDI Learn Table.");
+      return;
+    }
+
+    // Define the key using trackId
+    const storageKey = `WebAudioControlsMidiLearn_${this._trackId}`;
+    console.log(`Loading MIDI Learn Table using key: ${storageKey}`);
+
+    // Initialize MIDI only if required
+    if (window.UseWebAudioControlsMidi || opt.useMidi) {
+      console.log("MIDI is enabled. Initializing MIDI settings...");
+      if (opt.preserveMidiLearn) {
+        const storedMidiLearn = localStorage.getItem(storageKey);
+        console.log("Stored MIDI Learn Table in localStorage:", storedMidiLearn);
+
+        try {
+          this.midiLearnTable = JSON.parse(storedMidiLearn);
+          console.log("Parsed MIDI Learn Table:", this.midiLearnTable);
+        } catch (error) {
+          console.error("Error parsing MIDI Learn Table from localStorage:", error);
           this.midiLearnTable = null;
+        }
+      } else {
+        console.log("MIDI Learn Table is not preserved. Setting to null.");
+        this.midiLearnTable = null;
       }
+
+      this.initWebAudioControls();
+    } else {
+      console.log("MIDI is disabled.");
+      this.midiLearnTable = null;
+    }
+
+    console.log("Initialization complete. Final state:", {
+      midiAccess: this.midiAccess,
+      listOfWidgets: this.listOfWidgets,
+      listOfExternalMidiListeners: this.listOfExternalMidiListeners,
+      midiLearnTable: this.midiLearnTable,
+    });
   }
 
-  addWidget(w){
+  updateWidgets() {
+    // Convert NodeList to Array
+    this.listOfWidgets = Array.from(
+      document.querySelectorAll(
+        "webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard"
+      )
+    );
+    console.log("Widgets updated:", this.listOfWidgets);
+  }
+
+  addWidget(w) {
+    if (typeof w !== "object") {
+      console.error("Invalid widget passed to addWidget:", w);
+      return;
+    }
+
+    // Ensure listOfWidgets is an array
+    if (!Array.isArray(this.listOfWidgets)) {
+      console.warn("listOfWidgets is not an array. Converting...");
+      this.listOfWidgets = Array.from(this.listOfWidgets);
+    }
+
+    // Add the widget to the array
     this.listOfWidgets.push(w);
+    console.log(`Widget added: ${w.id || w.tagName}`);
+
+    // Optionally, apply MIDI mappings if available
+    if (this.midiLearnTable) {
+      const mapping = this.midiLearnTable.find((entry) => entry.id === w.id);
+      if (mapping) {
+        w.midiController = mapping.cc;
+        console.log(`Applied MIDI mapping to widget ${w.id}`, mapping.cc);
+      }
+    }
   }
-  updateWidgets(){
-    // Uncomment and modify if dynamic widget updates are needed
-     this.listOfWidgets = document.querySelectorAll("webaudio-knob,webaudio-slider,webaudio-switch,webaudio-param,webaudio-keyboard");
-  }
+
   initWebAudioControls() {
     if (navigator.requestMIDIAccess) {
-      navigator.requestMIDIAccess({ sysex: true }) // Enable sysex if required
+      navigator
+        .requestMIDIAccess({ sysex: true }) // Enable sysex if required
         .then(
           (midiAccess) => {
             this.onMIDIStarted(midiAccess);
@@ -2097,135 +2284,160 @@ class WebAudioControlsWidgetManager {
       console.error("Web MIDI API not supported in this browser.");
     }
   }
+
   enableInputs(midiAccess) {
     let inputs = midiAccess.inputs.values();
-    console.log(`MIDI LOG: Found ${midiAccess.inputs.size} MIDI input(s)`);
-    for(let input = inputs.next(); input && !input.done; input = inputs.next()) {
-      console.log(`MIDI LOG: Connected input: ${input.value.name}`);
+    for (
+      let input = inputs.next();
+      input && !input.done;
+      input = inputs.next()
+    ) {
       input.value.onmidimessage = this.handleMIDIMessage.bind(this);
+      console.log(`Enabled MIDI input: ${input.value.name}`);
     }
   }
+
   midiConnectionStateChange(e) {
-    console.log(`MIDI LOG: Connection changed - Port: ${e.port.name}, Connection: ${e.port.connection}, State: ${e.port.state}`);
+    console.log(`MIDI port ${e.port.name} is ${e.port.connection}`);
     // Re-enable inputs if necessary
     if (e.port.connection === "connected") {
-      this.enableInputs();
+      this.enableInputs(this.midiAccess);
     }
   }
 
   onMIDIStarted(midi) {
+    console.log("MIDI access granted.");
     this.midiAccess = midi; // Correctly using the 'midi' parameter
     midi.onstatechange = this.midiConnectionStateChange.bind(this);
-    console.log("MIDI LOG: MIDI Access initialized successfully.");
-
-    // Log available MIDI inputs
-    console.log("MIDI LOG: Available MIDI Inputs:");
-    const inputs = Array.from(midi.inputs.values());
-    if (inputs.length > 0) {
-        inputs.forEach((input, index) => {
-            console.log(`MIDI LOG: Input ${index + 1}: ${input.name}`);
-        });
-    } else {
-        console.log("MIDI LOG: No MIDI inputs found.");
-    }
-
-    // Log available MIDI outputs
-    console.log("MIDI LOG: Available MIDI Outputs:");
-    const outputs = Array.from(midi.outputs.values());
-    if (outputs.length > 0) {
-        outputs.forEach((output, index) => {
-            console.log(`MIDI LOG: Output ${index + 1}: ${output.name}`);
-        });
-    } else {
-        console.log("MIDI LOG: No MIDI outputs found.");
-    }
-
     this.enableInputs(midi); // Pass midiAccess to enableInputs
-}
-// Add hooks for external midi listeners support
+  }
+
+  // Add hooks for external midi listeners support
   addMidiListener(callback) {
-    this.listOfExternalMidiListeners.push(callback);
+    if (typeof callback === "function") {
+      this.listOfExternalMidiListeners.push(callback);
+      console.log("Added external MIDI listener.");
+    } else {
+      console.error("Callback provided to addMidiListener is not a function.");
+    }
   }
+
   getCurrentConfigAsJSON() {
-    return currentConfig.stringify();
+    // Assuming currentConfig is defined elsewhere
+    if (typeof currentConfig !== "undefined") {
+      return JSON.stringify(currentConfig);
+    } else {
+      console.error("currentConfig is not defined.");
+      return "{}";
+    }
   }
+
   handleMIDIMessage(event) {
-    // Log the incoming MIDI message data
-    console.log(`MIDI LOG: MIDI Message Received:`, event.data);
-  
-    // Existing code...
+    // Retained: Log the incoming MIDI message data
+    console.log(`MIDI IN:`, event.data);
+
+    // Handle external MIDI messages
     this.listOfExternalMidiListeners.forEach(function (externalListener) {
       externalListener(event);
     });
-  
-    if (((event.data[0] & 0xf0) == 0xf0) || ((event.data[0] & 0xf0) == 0xb0 && event.data[1] >= 120))
+
+    if (
+      (event.data[0] & 0xf0) === 0xf0 ||
+      ((event.data[0] & 0xf0) === 0xb0 && event.data[1] >= 120)
+    )
       return;
-  
+
     for (let w of this.listOfWidgets) {
-      if (w.processMidiEvent)
-        w.processMidiEvent(event);
+      if (w.processMidiEvent) w.processMidiEvent(event);
     }
-  
-    if (opt.mididump)
-      console.log(`MIDI LOG: MIDI Dump:`, event.data);
   }
-  contextMenuOpen(e,knob){
-    if(!this.midiAccess)
-      return;
-    let menu=document.getElementById("webaudioctrl-context-menu");
-    menu.style.left=e.pageX+"px";
-    menu.style.top=e.pageY+"px";
-    menu.knob=knob;
+
+  contextMenuOpen(e, knob) {
+    if (!this.midiAccess) return;
+    let menu = document.getElementById("webaudioctrl-context-menu");
+    menu.style.left = e.pageX + "px";
+    menu.style.top = e.pageY + "px";
+    menu.knob = knob;
     menu.classList.add("active");
     menu.knob.focus();
-    menu.knob.addEventListener("keydown",this.contextMenuCloseByKey.bind(this));
-    console.log(`MIDI LOG: MIDI Learn activated for widget: ${knob.id || knob.tagName}`);
+    menu.knob.addEventListener("keydown", this.contextMenuCloseByKey.bind(this));
+    console.log("Context menu opened for knob:", knob.id || knob.tagName);
   }
-  contextMenuCloseByKey(e){
-    if(e.keyCode==27)
-     this.contextMenuClose();
+
+  contextMenuCloseByKey(e) {
+    if (e.keyCode == 27) this.contextMenuClose();
   }
-  contextMenuClose(){
-    let menu=document.getElementById("webaudioctrl-context-menu");
-    if(menu.knob){
-      menu.knob.removeEventListener("keydown",this.contextMenuCloseByKey);
-      console.log(`MIDI LOG: Closing MIDI Learn for widget: ${menu.knob.id || menu.knob.tagName}`);
+
+  contextMenuClose() {
+    let menu = document.getElementById("webaudioctrl-context-menu");
+    if (menu.knob) {
+      menu.knob.removeEventListener(
+        "keydown",
+        this.contextMenuCloseByKey
+      );
     }
     menu.classList.remove("active");
-    let menuItemLearn=document.getElementById("webaudioctrl-context-menu-learn");
-    menuItemLearn.innerHTML = 'Learn';
-    if(menu.knob){
-      menu.knob.midiMode = 'normal';
+    let menuItemLearn = document.getElementById(
+      "webaudioctrl-context-menu-learn"
+    );
+    menuItemLearn.innerHTML = "Learn";
+    if (menu.knob) {
+      menu.knob.midiMode = "normal";
     }
+    console.log("Context menu closed.");
   }
-  contextMenuLearn(){
-    let menu=document.getElementById("webaudioctrl-context-menu");
-    let menuItemLearn=document.getElementById("webaudioctrl-context-menu-learn");
-    menuItemLearn.innerHTML = 'Listening...';
-    menu.knob.midiMode = 'learn';
-    console.log("MIDI LOG: MIDI Learn mode activated.");
+
+  contextMenuLearn() {
+    let menu = document.getElementById("webaudioctrl-context-menu");
+    let menuItemLearn = document.getElementById(
+      "webaudioctrl-context-menu-learn"
+    );
+    menuItemLearn.innerHTML = "Listening...";
+    menu.knob.midiMode = "learn";
+    console.log("Context menu set to 'Learn' mode.");
   }
-  contextMenuClear(e){
-    let menu=document.getElementById("webaudioctrl-context-menu");
-    if(menu.knob){
-      menu.knob.midiController={};
-      console.log(`MIDI LOG: Cleared MIDI mapping for widget: ${menu.knob.id || menu.knob.tagName}`);
+
+  contextMenuClear(e) {
+    let menu = document.getElementById("webaudioctrl-context-menu");
+    if (menu.knob) {
+      menu.knob.midiController = {};
+      console.log(
+        `MIDI LOG: Cleared MIDI mapping for widget: ${menu.knob.id || menu.knob.tagName}`
+      );
     }
     this.contextMenuClose();
   }
-  preserveMidiLearn(){
-    if(!opt.preserveMidiLearn)
+
+  preserveMidiLearn() {
+    if (!opt.preserveMidiLearn) return;
+
+    if (!this._trackId) {
+      console.error("Track ID is not set. Cannot preserve MIDI Learn Table.");
       return;
-    const v=[];
-    for(let w of this.listOfWidgets) {
-      if(w.id)
-        v.push({"id":w.id, "cc":w.midiController});
     }
-    const s=JSON.stringify(v);
-    localStorage.setItem("WebAudioControlsMidiLearn",s);
-    console.log("MIDI LOG: Preserved MIDI Learn mappings to localStorage.");
+
+    const storageKey = `WebAudioControlsMidiLearn_${this._trackId}`;
+    const v = [];
+    for (let w of this.listOfWidgets) {
+      if (w.id)
+        v.push({ id: w.id, cc: w.midiController });
+    }
+    const s = JSON.stringify(v);
+    localStorage.setItem(storageKey, s);
+    console.log(
+      `MIDI LOG: Preserved MIDI Learn mappings to localStorage with key: ${storageKey}`
+    );
   }
 }
-window.webAudioControlsWidgetManager = new WebAudioControlsWidgetManager();
-console.log("MIDI LOG: WebAudioControlsWidgetManager initialized and attached to window.");
+
+// Instantiate and attach the manager if MIDI is enabled
+if (window.UseWebAudioControlsMidi || opt.useMidi) {
+  window.webAudioControlsWidgetManager =
+    window.webAudioControlsMidiManager = new WebAudioControlsWidgetManager();
+  console.log("WebAudioControlsWidgetManager instantiated.");
 }
+
+// Example usage:
+// Assuming you have a trackId to set
+// window.webAudioControlsWidgetManager.setTrackId('track_123');
+ }

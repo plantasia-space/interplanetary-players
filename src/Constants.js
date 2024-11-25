@@ -52,8 +52,12 @@ export const Constants = {
         this.TRACK_DATA = trackData;
         lscache.set(trackId, trackData, this.CACHE_EXPIRY_MINUTES);
         console.log(`[CACHE] Cached track data for trackId: ${trackId}`, trackData);
+
+
+
     },
 
+    
     /**
      * Retrieves cached track data for the specified trackId.
      * @param {string} trackId - The track ID.
@@ -88,3 +92,4 @@ export const Constants = {
 
 // Export individual constants for convenience
 export const DEFAULT_TRACK_ID = Constants.DEFAULT_TRACK_ID;
+export const TRACK_ID = Constants.TRACK_ID;
