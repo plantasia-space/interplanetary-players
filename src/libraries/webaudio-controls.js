@@ -832,430 +832,541 @@ try {
     console.log("webaudio-knob already defined");
   }
 
-try{
-customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
-  constructor(){
-    super();
-  }
-  connectedCallback(){
-    let root;
-    if(this.attachShadow)
-      root=this.attachShadow({mode: 'open'});
-    else
-      root=this;
-    root.innerHTML=
-`<style>
-${this.basestyle}
-:host{
-  display:inline-block;
-  position:relative;
-  margin:0;
-  padding:0;
-  font-family: sans-serif;
-  font-size: 11px;
-  cursor:pointer;
-}
-.webaudio-slider-body{
-  display:inline-block;
-  position:relative;
-  margin:0;
-  padding:0;
-  vertical-align:bottom;
-  white-space:pre;
-}
-.webaudio-slider-knob{
-  display:inline-block;
-  position:absolute;
-  margin:0;
-  padding:0;
-}
-</style>
-<div class='webaudio-slider-body' tabindex='1' touch-action='none'><div class='webaudio-slider-knob' touch-action='none'></div><div class='webaudioctrl-tooltip'></div><div part="label" class="webaudioctrl-label"><slot></slot></div></div>
-`;
-    this.elem=root.childNodes[2];
-    this.knob=this.elem.firstChild;
-    this.ttframe=this.knob.nextSibling;
-    this.label=this.ttframe.nextSibling;
-    this.enable=this.getAttr("enable",1);
-    this.tracking=this.getAttr("tracking","rel"); 
-    this._src=this.getAttr("src",opt.sliderSrc); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
-    this._knobsrc=this.getAttr("knobsrc",opt.sliderKnobSrc); if (!this.hasOwnProperty("knobsrc")) Object.defineProperty(this,"knobsrc",{get:()=>{return this._knobsrc},set:(v)=>{this._knobsrc=v;this.setupImage()}});
-    this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
-    this.defvalue=this.getAttr("defvalue",this._value);
-    this._min=this.getAttr("min",0); if (!this.hasOwnProperty("min")) Object.defineProperty(this,"min",{get:()=>{return this._min},set:(v)=>{this._min=v;this.redraw()}});
-    this._max=this.getAttr("max",100); if (!this.hasOwnProperty("max")) Object.defineProperty(this,"max",{get:()=>{return this._max},set:(v)=>{this._max=v;this.redraw()}});
-    this._step=this.getAttr("step",1); if (!this.hasOwnProperty("step")) Object.defineProperty(this,"step",{get:()=>{return this._step},set:(v)=>{this._step=v;this.redraw()}});
-    this._sprites=this.getAttr("sprites",0); if (!this.hasOwnProperty("sprites")) Object.defineProperty(this,"sprites",{get:()=>{return this._sprites},set:(v)=>{this._sprites=v;this.setupImage()}});
-    this._direction=this.getAttr("direction",null); if (!this.hasOwnProperty("direction")) Object.defineProperty(this,"direction",{get:()=>{return this._direction},set:(v)=>{this._direction=v;this.setupImage()}});
-    this.log=this.getAttr("log",0);
-    this._width=this.getAttr("width",opt.sliderWidth); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
-    this._height=this.getAttr("height",opt.sliderHeight); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
-    this._knobwidth=this.getAttr("knobwidth",opt.sliderKnobWidth); if (!this.hasOwnProperty("knobwidth")) Object.defineProperty(this,"knobwidth",{get:()=>{return this._knobwidth},set:(v)=>{this._knobwidth=v;this.setupImage()}});
-    this._knobheight=this.getAttr("knobheight",opt.sliderKnobHeight); if (!this.hasOwnProperty("knobheight")) Object.defineProperty(this,"knobheight",{get:()=>{return this._knobheight},set:(v)=>{this._knobheight=v;this.setupImage()}});
-    this._ditchlength=this.getAttr("ditchlength",opt.sliderDitchlength); if (!this.hasOwnProperty("ditchlength")) Object.defineProperty(this,"ditchlength",{get:()=>{return this._ditchlength},set:(v)=>{this._ditchlength=v;this.setupImage()}});
-    this._colors=this.getAttr("colors",opt.sliderColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
-    this.outline=this.getAttr("outline",opt.outline);
-    this.setupLabel();
-    this.sensitivity=this.getAttr("sensitivity",1);
-    this.valuetip=this.getAttr("valuetip",opt.valuetip);
-    this.tooltip=this.getAttr("tooltip",null);
-    this.conv=this.getAttr("conv",null);
-    if(this.conv){
-      const x=this._value;
-      this.convValue=eval(this.conv);
-      if(typeof(this.convValue)=="function")
-        this.convValue=this.convValue(x);
-    }
-    else
-      this.convValue=this._value;
-    this.midilearn=this.getAttr("midilearn",opt.midilearn);
-    this.midicc=this.getAttr("midicc",null);
-    this.midiController={};
-    this.midiMode="normal";
-    if(this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
-    }
-    if(this.midilearn && this.id){
-      if(webAudioControlsWidgetManager && webAudioControlsWidgetManager.midiLearnTable){
-        const ml=webAudioControlsWidgetManager.midiLearnTable;
-        for(let i=0; i < ml.length; ++i){
-          if(ml[i].id==this.id){
-            this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-            break;
+  try {
+    customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
+      constructor() {
+        super();
+  
+        // Bind methods to ensure correct 'this' context
+        this.pointerdown = this.pointerdown.bind(this);
+        this.pointermove = this.pointermove.bind(this);
+        this.pointerup = this.pointerup.bind(this);
+        this.keydown = this.keydown.bind(this);
+        this.wheel = this.wheel.bind(this);
+        this.redraw = this.redraw.bind(this);
+        this.handleParamChange = this.handleParamChange.bind(this);
+      }
+  
+      connectedCallback() {
+        let root;
+        if (this.attachShadow) {
+          root = this.attachShadow({ mode: 'open' });
+        } else {
+          root = this;
+        }
+  
+        // Define the HTML structure with a canvas element
+        root.innerHTML = `
+          <style>
+            ${this.basestyle}
+            :host {
+              display: inline-block;
+              position: relative;
+              margin: 0;
+              padding: 0;
+              font-family: sans-serif;
+              font-size: 11px;
+              cursor: pointer;
+              user-select: none;
+            }
+            .webaudio-slider-body {
+              position: relative;
+              width: 100%;
+              height: 100%;
+              touch-action: none;
+            }
+            canvas.webaudio-slider-canvas {
+              display: block;
+              width: 100%;
+              height: 100%;
+            }
+            .webaudioctrl-tooltip {
+              position: absolute;
+              top: -25px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: rgba(0, 0, 0, 0.7);
+              color: #fff;
+              padding: 2px 5px;
+              border-radius: 3px;
+              font-size: 10px;
+              white-space: nowrap;
+              pointer-events: none;
+              opacity: 0;
+              transition: opacity 0.2s;
+            }
+            .webaudioctrl-label {
+              position: absolute;
+              width: 100%;
+              text-align: center;
+              top: 100%;
+              left: 0;
+              transform: translateY(4px);
+            }
+            :host(:focus) .webaudio-slider-body {
+              outline: none;
+            }
+          </style>
+          <div class='webaudio-slider-body' tabindex='1'>
+            <canvas class='webaudio-slider-canvas'></canvas>
+            <div class='webaudioctrl-tooltip'></div>
+            <div part="label" class="webaudioctrl-label"><slot></slot></div>
+          </div>
+        `;
+  
+        // Reference to elements
+        this.elem = root.querySelector('.webaudio-slider-body');
+        this.canvas = root.querySelector('canvas.webaudio-slider-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.ttframe = root.querySelector('.webaudioctrl-tooltip');
+        this.label = root.querySelector('.webaudioctrl-label');
+  
+        // Initialize properties from attributes or defaults
+        this.enable = this.getAttr("enable", 1);
+        this.tracking = this.getAttr("tracking", "rel");
+        this._value = parseFloat(this.getAttribute("value")) || 0;
+        this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
+        this._min = parseFloat(this.getAttribute("min")) || 0;
+        this._max = parseFloat(this.getAttribute("max")) || 100;
+        this._step = parseFloat(this.getAttribute("step")) || 1;
+        this._direction = this.getAttribute("direction") || "horz"; // Default to horizontal
+        this.log = this.getAttr("log", 0);
+        this._width = parseInt(this.getAttribute("width")) || 200; // Default width
+        this._height = parseInt(this.getAttribute("height")) || 40; // Default height
+        this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555"; // Default colors
+        this.outline = this.getAttribute("outline") || "1px solid #444";
+        this.setupLabel();
+        this.sensitivity = parseFloat(this.getAttribute("sensitivity")) || 1;
+        this.valuetip = this.getAttr("valuetip", opt.valuetip);
+        this.tooltip = this.getAttribute("tooltip") || null;
+        this.conv = this.getAttribute("conv") || null;
+        this.link = this.getAttribute("link") || ""; // Link to external param
+  
+        // Convert colors into an array
+        this.coltab = this._colors.split(";").map(color => color.trim());
+        // Ensure there are enough colors
+        while (this.coltab.length < 5) this.coltab.push("#000"); // Fallback to black
+  
+        // Setup canvas dimensions and handle high DPI
+        this.setupCanvas();
+  
+        // Define 'value' property
+        Object.defineProperty(this, 'value', {
+          get: () => this._value,
+          set: (v) => { this.setValue(v, true); }
+        });
+  
+        // Ensure 'convValue' is accessible
+        this.convValue = this._value;
+  
+        // Ensure 'digits' is accessible
+        this.digits = 0;
+        if (this._step && this._step < 1) {
+          let n = this._step;
+          while (n < 1) {
+            n *= 10;
+            ++this.digits;
           }
         }
-      }
-    }
-    this.setupImage();
-    this.digits=0;
-    if(this.step && this.step < 1) {
-      for(let n = this.step ; n < 1; n *= 10)
-        ++this.digits;
-    }
-    this.fireflag=true;
-    if(window.webAudioControlsWidgetManager)
-      window.webAudioControlsWidgetManager.addWidget(this);
-    this.elem.onclick=(e)=>{e.stopPropagation()};
-  }
-  disconnectedCallback(){}
-  setupImage(){
-    this.coltab = this.colors.split(";");
-    this.bodyimg=new Image();
-    this.knobimg=new Image();
-    this.srcurl=null;
-    if(this.src==null||this.src==""){
-      this.sw=+this._width;
-      this.sh=+this.height;
-      if(this._direction=="horz"){
-        if(this._width==null) this.sw=128;
-        if(this._height==null) this.sh=24;
-      }
-      else if(this._direction=="vert"){
-        if(this._width==null) this.sw=24;
-        if(this._height==null) this.sh=128;
-      }
-      else{
-        if(this._width==null) this.sw=128;
-        if(this._height==null) this.sh=24;
-      }
-      const r=Math.min(this.sw,this.sh)*0.5;
-      const svgbody=
-`<svg xmlns="http://www.w3.org/2000/svg" width="${this.sw}" height="${this.sh}" preserveAspectRatio="none">
-<defs>
-  <filter id="f1">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
-  </filter>
-  <linearGradient id="g1" x1="0%" y1="0%" ${(this.sw>this.sh)?'x2="0%" y2="100%"':'x2="100%" y2="0%"'}>
-    <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-    <stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
-  </linearGradient>
-</defs>
-<rect x="1" y="1" rx="${r}" ry="${r}" width="${this.sw-2}" height="${this.sh-2}" fill="#000"/>
-<rect x="3" y="3" rx="${r}" ry="${r}" width="${this.sw-6}" height="${this.sh-6}" fill="${this.coltab[1]}" filter="url(#f1)"/>
-<rect x="1" y="1" rx="${r}" ry="${r}" width="${this.sw-2}" height="${this.sh-2}" fill="url(#g1)"/>
-</svg>`;
-      this.srcurl = "data:image/svg+xml;base64,"+btoa(svgbody);
-    }
-    else{
-      this.srcurl = this.src;
-    }
-    this.bodyimg.onload=()=>{
-      if(this.src!="")
-        this.elem.style.backgroundImage = "url("+this.srcurl+")";
-      this.sw=+this._width;
-      this.sh=+this.height;
-      if(this._width==null) this.sw=this.bodyimg.width;
-      if(this._height==null) this.sh=this.bodyimg.height;
-      if(this.dr==null){
-        if(this.sw>this.sh)
-          this.dr="horz";
-        else
-          this.dr="vert";
-      }
-      this.kw=+this._knobwidth;
-      this.kh=+this._knobheight;
-      if(this._knobsrc==null){
-        if(this._knobwidth==null) this.kw=Math.min(this.sw,this.sh);
-        if(this._knobheight==null) this.kh=Math.min(this.sw,this.sh);
-        const mm=Math.min(this.kw,this.kh)*0.5;
-        const kw2=Math.max(1,this.kw-12);
-        const kh2=Math.max(1,this.kh-12);
-        const svgknob=
-`<svg xmlns="http://www.w3.org/2000/svg" width="${this.kw}" height="${this.kh}" preserveAspectRatio="none">
-<defs>
-  <filter id="f1">
-    <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" />
-  </filter>
-  <linearGradient id="g1" x1="0%" y1="0%" x2="0%" y2="100%">
-    <stop offset="0%" stop-color="${this.coltab[2]}"/>
-    <stop offset="50%" stop-color="${this.coltab[0]}"/>
-    <stop offset="100%" stop-color="${this.coltab[0]}" stop-opacity="0.5"/>
-  </linearGradient>
-  <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
-    <stop offset="0%" stop-color="${this.coltab[0]}"/>
-    <stop offset="100%" stop-color="${this.coltab[0]}"/>
-  </linearGradient>
-  <linearGradient id="g3" x1="0%" y1="0%" x2="0%" y2="100%">
-    <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-    <stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
-  </linearGradient>
-</defs>
-<rect x="2" y="2" width="${this.kw-4}" height="${this.kh-4}" rx="${mm}" ry="${mm}" fill="#000"/>
-<rect x="3" y="3" width="${this.kw-6}" height="${this.kh-6}" rx="${mm}" ry="${mm}" fill="url(#g1)"/>
-<rect x="6" y="6" width="${kw2}" height="${kh2}" rx="${mm}" ry="${mm}" fill="url(#g2)" filter="url(#f1)"/>
-<rect x="3" y="3" width="${this.kw-6}" height="${this.kh-6}" rx="${mm}" ry="${mm}" fill="url(#g3)"/>
-</svg>`;
-        this.knobsrcurl = "data:image/svg+xml;base64,"+btoa(svgknob);
-      }
-      else{
-        this.knobsrcurl = this.knobsrc;
-      }
-      this.knobimg.onload=()=>{
-        this.knob.style.backgroundImage = "url("+this.knobsrcurl+")";
-        if(this._knobwidth==null) this.kw=this.knobimg.width;
-        if(this._knobheight==null) this.kh=this.knobimg.height;
-        this.dlen=this.ditchlength;
-        if(this.dlen==null){
-          if(this.dr=="horz")
-            this.dlen=this.sw-this.kw;
-          else
-            this.dlen=this.sh-this.kh;
+  
+        // Register slider globally for external access
+        window.webaudioSliders = window.webaudioSliders || {};
+        if (this.id) {
+          window.webaudioSliders[this.id] = this;
         }
-        this.knob.style.backgroundSize = "100% 100%";
-        this.knob.style.width = this.kw+"px";
-        this.knob.style.height = this.kh+"px";
-        this.elem.style.backgroundSize = "100% 100%";
-        this.elem.style.width=this.sw+"px";
-        this.elem.style.height=this.sh+"px";
+  
+        // Initial drawing
         this.redraw();
-      };
-      this.knobimg.src=this.knobsrcurl;
-    };
-    this.bodyimg.src=this.srcurl;
-  }
-  redraw() {
-    let ratio;
-    this.digits=0;
-    if(this.step && this.step < 1) {
-      for(let n = this.step ; n < 1; n *= 10)
-        ++this.digits;
-    }
-    if(this.value<this.min){
-      this.value=this.min;
-    }
-    if(this.value>this.max){
-      this.value=this.max;
-    }
-    if(this.log)
-      ratio = Math.log(this.value/this.min) / Math.log(this.max / this.min);
-    else
-      ratio = (this.value - this.min) / (this.max - this.min);
-    let style = this.knob.style;
-    if(this.dr=="horz"){
-      style.top=(this.sh-this.kh)*0.5+"px";
-      style.left=((this.sw-this.kw-this.dlen)*0.5+ratio*this.dlen)+"px";
-      this.sensex=1; this.sensey=0;
-    }
-    else{
-      style.left=(this.sw-this.kw)*0.5+"px";
-      style.top=((this.sh-this.kh-this.dlen)*0.5+(1-ratio)*this.dlen)+"px";
-      this.sensex=0; this.sensey=1;
-    }
-  }
-  _setValue(v){
-    if(this.step)
-      v=(Math.round((v-this.min)/this.step))*this.step+this.min;
-    this._value=Math.min(this.max,Math.max(this.min,v));
-    if(this._value!=this.oldvalue){
-      this.oldvalue=this._value;
-      this.fireflag=true;
-      if(this.conv){
-        const x=this._value;
-        this.convValue=eval(this.conv);
-        if(typeof(this.convValue)=="function")
-          this.convValue=this.convValue(x);
+  
+        // Event listeners
+        this.elem.addEventListener('keydown', this.keydown);
+        this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
+        this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
+        this.elem.addEventListener('wheel', this.wheel, { passive: false });
+  
+        // MIDI properties (if needed)
+        this.midilearn = this.getAttr("midilearn", opt.midilearn);
+        this.midicc = this.getAttr("midicc", null);
+        this.midiController = {};
+        this.midiMode = "normal";
+        if (this.midicc) {
+          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+          this.setMidiController(ch, cc);
+        }
+        if (this.midilearn && this.id) {
+          if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
+            const ml = window.webAudioControlsWidgetManager.midiLearnTable;
+            for (let i = 0; i < ml.length; ++i) {
+              if (ml[i].id === this.id) {
+                this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+                break;
+              }
+            }
+          }
+        }
+  
+        // Handle "link" attribute to connect to external param
+        if (this.link) {
+          this.linkedParam = document.getElementById(this.link);
+          if (this.linkedParam) {
+            // Initialize the slider's value based on the linked param's value
+            this._value = parseFloat(this.linkedParam.value) || this._value;
+            this.redraw();
+  
+            // Listen to changes in the linked param
+            this.linkedParam.addEventListener("input", this.handleParamChange);
+          } else {
+            console.warn(`webaudio-slider: Linked param with id "${this.link}" not found.`);
+          }
+        }
+  
+        // Additional properties
+        this.fireflag = true;
+  
+        // Add to widget manager
+        if (window.webAudioControlsWidgetManager)
+          window.webAudioControlsWidgetManager.addWidget(this);
+  
+        // Prevent event propagation on click
+        this.elem.onclick = (e) => { e.stopPropagation(); };
       }
-      else
-        this.convValue=this._value;
-      if(typeof(this.convValue)=="number"){
-        this.convValue=this.convValue.toFixed(this.digits);
+  
+      disconnectedCallback() {
+        // Remove event listeners to prevent memory leaks
+        this.elem.removeEventListener('keydown', this.keydown);
+        this.elem.removeEventListener('mousedown', this.pointerdown);
+        this.elem.removeEventListener('touchstart', this.pointerdown);
+        this.elem.removeEventListener('wheel', this.wheel);
+  
+        // Remove listener from linked param if exists
+        if (this.linkedParam) {
+          this.linkedParam.removeEventListener("input", this.handleParamChange);
+        }
+  
+        // Clean up from global registry
+        if (window.webaudioSliders && this.id) {
+          delete window.webaudioSliders[this.id];
+        }
       }
-      this.redraw();
-      this.showtip(0);
-      return 1;
-    }
-    return 0;
-  }
-  setValue(v,f){
-    if(this._setValue(v)&&f)
-      this.sendEvent("input"),this.sendEvent("change");
-  }
-  keydown(e){
-    let delta = this.step;
-    if(delta === 0)
-      delta = 1;
-    switch(e.key){
-      case "ArrowUp":
-        this.setValue(this.value+delta,true);
-        break;
-      case "ArrowDown":
-        this.setValue(this.value-delta,true);
-        break;
-      default:
-          return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  wheel(e) {
-    if (!this.enable)
-      return;
-    if(this.log){
-      let r=Math.log(this.value/this.min)/Math.log(this.max/this.min);
-      let d = (e.deltaY>0?-0.01:0.01);
-      if(!e.shiftKey)
-        d*=5;
-      r += d;
-      r = Math.max(0, Math.min(1, r)); // Clamp between 0 and 1
-      this.setValue(this.min*Math.pow(this.max/this.min,r),true);
-    }
-    else{
-      let delta=Math.max(this.step, (this.max-this.min)*0.05);
-      if(e.shiftKey)
-        delta=this.step?this.step:1;
-      delta=e.deltaY>0?-delta:delta;
-      this.setValue(+this.value+delta,true);
-    }
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  pointerdown(ev){
-    if(!this.enable)
-      return;
-    let e=ev;
-    if(ev.touches){
-      e = ev.changedTouches[0];
-      this.identifier=e.identifier;
-    }
-    else {
-      if(e.buttons!=1 && e.button!=0)
-        return;
-    }
-    this.elem.focus();
-    this.drag=1;
-    this.showtip(0);
-    this.oldvalue = this._value;
-
-    let pointermove=(ev)=>{
-      let e=ev;
-      if(ev.touches){
-        for(let i=0;i<ev.touches.length;++i){
-          if(ev.touches[i].identifier==this.identifier){
-            e = ev.touches[i];
-            break;
+  
+      setupCanvas() {
+        // Handle high DPI displays
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = this._width * dpr;
+        this.canvas.height = this._height * dpr;
+        this.canvas.style.width = `${this._width}px`;
+        this.canvas.style.height = `${this._height}px`;
+        this.ctx.scale(dpr, dpr);
+  
+        // Apply outline
+        this.canvas.style.outline = this.outline;
+  
+        // Calculate dimensions based on direction
+        if (this._direction.toLowerCase() === "horz") {
+          this.isHorizontal = true;
+          this.trackLength = this._width - 40; // Padding for knob
+          this.trackHeight = 10;
+          this.trackX = 20;
+          this.trackY = (this._height - this.trackHeight) / 2;
+          this.knobSize = 15;
+        } else if (this._direction.toLowerCase() === "vert") {
+          this.isHorizontal = false;
+          this.trackLength = this._height - 40; // Padding for knob
+          this.trackHeight = 10;
+          this.trackX = (this._width - this.trackHeight) / 2;
+          this.trackY = 20;
+          this.knobSize = 15;
+        } else {
+          // Default to horizontal if direction is invalid
+          console.warn(`webaudio-slider: Invalid direction "${this._direction}". Defaulting to horizontal.`);
+          this.isHorizontal = true;
+          this.trackLength = this._width - 40;
+          this.trackHeight = 10;
+          this.trackX = 20;
+          this.trackY = (this._height - this.trackHeight) / 2;
+          this.knobSize = 15;
+        }
+      }
+  
+      redraw() {
+        // Clamp value within min and max
+        this._value = Math.min(this._max, Math.max(this._min, this._value));
+  
+        // Calculate ratio
+        let ratio;
+        if (this.log) {
+          if (this._value <= 0 || this._min <= 0) {
+            ratio = 0;
+          } else {
+            ratio = Math.log(this._value / this._min) / Math.log(this._max / this._min);
+          }
+        } else {
+          ratio = (this._value - this._min) / (this._max - this._min);
+        }
+        ratio = Math.max(0, Math.min(1, ratio)); // Ensure ratio is within [0,1]
+  
+        // Update convValue for external access
+        if (this.conv) {
+          const x = this._value;
+          try {
+            this.convValue = eval(this.conv);
+            if (typeof this.convValue === "function")
+              this.convValue = this.convValue(x);
+          } catch (error) {
+            console.error(`webaudio-slider: Error evaluating conv expression "${this.conv}":`, error);
+            this.convValue = this._value;
+          }
+        } else {
+          this.convValue = this._value;
+        }
+  
+        if (typeof this.convValue === "number") {
+          this.convValue = this.convValue.toFixed(this.digits);
+        }
+  
+        // Draw the slider based on the current ratio
+        this.drawSlider(ratio);
+  
+        // Update tooltip if necessary
+        if (this.fireflag) {
+          this.showtip(0);
+          this.fireflag = false;
+        }
+  
+        // Update linked param if exists
+        if (this.linkedParam) {
+          if (parseFloat(this.linkedParam.value) !== this._value) {
+            // Avoid triggering the param's event listener when updating param programmatically
+            this.updatingFromSlider = true;
+            this.linkedParam.value = this._value;
+            this.updatingFromSlider = false;
           }
         }
       }
-      if(this.lastShift !== e.shiftKey) {
-        this.lastShift = e.shiftKey;
-        this.startPosX = e.pageX;
-        this.startPosY = e.pageY;
-        this.startVal = this.value;
+  
+      /**
+       * Draws the slider on the canvas based on the provided ratio.
+       * @param {number} ratio - A value between 0 and 1 representing the current slider position.
+       */
+      drawSlider(ratio) {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this._width, this._height);
+  
+        // Draw background track
+        ctx.fillStyle = this.coltab[4] || '#555'; // Background color
+        ctx.fillRect(0, 0, this._width, this._height);
+  
+        // Draw track
+        ctx.fillStyle = this.coltab[1] || '#333'; // Track color
+        if (this.isHorizontal) {
+          ctx.fillRect(this.trackX, this.trackY, this.trackLength, this.trackHeight);
+        } else {
+          ctx.fillRect(this.trackX, this.trackY, this.trackHeight, this.trackLength);
+        }
+  
+        // Draw filled portion
+        ctx.fillStyle = this.coltab[0] || '#e00'; // Fill color
+        if (this.isHorizontal) {
+          ctx.fillRect(this.trackX, this.trackY, this.trackLength * ratio, this.trackHeight);
+        } else {
+          ctx.fillRect(
+            this.trackX,
+            this.trackY + this.trackLength * (1 - ratio),
+            this.trackHeight,
+            this.trackLength * ratio
+          );
+        }
+  
+        // Draw triangle knob/pointer
+        ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
+        ctx.strokeStyle = this.coltab[3] || '#777'; // Outline color
+        ctx.lineWidth = 2;
+  
+        ctx.beginPath();
+        if (this.isHorizontal) {
+          // Triangle pointing upwards
+          const knobX = this.trackX + this.trackLength * ratio;
+          const knobY = this.trackY + this.trackHeight / 2;
+          const size = this.knobSize;
+  
+          ctx.moveTo(knobX, knobY - size);
+          ctx.lineTo(knobX - size, knobY + size);
+          ctx.lineTo(knobX + size, knobY + size);
+          ctx.closePath();
+        } else {
+          // Triangle pointing to the right
+          const knobX = this.trackX + this.trackHeight / 2;
+          const knobY = this.trackY + this.trackLength * (1 - ratio);
+          const size = this.knobSize;
+  
+          ctx.moveTo(knobX - size, knobY);
+          ctx.lineTo(knobX + size, knobY - size);
+          ctx.lineTo(knobX + size, knobY + size);
+          ctx.closePath();
+        }
+  
+        ctx.fill();
+        ctx.stroke();
       }
-      let offset = (this.startPosY - e.pageY - this.startPosX + e.pageX) * this.sensitivity;
-      if(this.log){
-        let r = Math.log(this.startVal / this.min) / Math.log(this.max / this.min);
-        r += offset/((e.shiftKey?4:1)*128);
-        r = Math.max(0, Math.min(1, r));
-        this._setValue(this.min * Math.pow(this.max/this.min, r));
+  
+      _setValue(v) {
+        if (this._step) {
+          v = Math.round((v - this._min) / this._step) * this._step + this._min;
+        }
+        v = Math.min(this._max, Math.max(this._min, v));
+        if (v !== this._value) {
+          this._value = v;
+          this.fireflag = true;
+  
+          this.redraw();
+          return true;
+        }
+        return false;
       }
-      else{
-        this._setValue(this.min + ((((this.startVal + (this.max - this.min) * offset / ((e.shiftKey ? 4 : 1) * 128)) - this.min) / this.step) | 0) * this.step);
+  
+      setValue(v, fire = false) {
+        if (this._setValue(v) && fire) {
+          this.sendEvent("input");
+          this.sendEvent("change");
+          this.updateLinkedParam(); // Update linked param if exists
+        }
       }
-      if(this.fireflag){
-        this.sendEvent("input");
-        this.fireflag=false;
-      }
-      if(e.preventDefault)
-        e.preventDefault();
-      if(e.stopPropagation)
-        e.stopPropagation();
-      return false;
-    }
-
-    let pointerup=(ev)=>{
-      let e=ev;
-      if(ev.touches){
-        for(let i=0;;){
-          if(ev.changedTouches[i].identifier==this.identifier){
+  
+      keydown(e) {
+        if (!this.enable) return;
+        let delta = this._step || 1;
+        switch (e.key) {
+          case "ArrowUp":
+          case "ArrowRight":
+            this.setValue(this._value + delta, true);
             break;
-          }
-          if(++i>=ev.changedTouches.length)
+          case "ArrowDown":
+          case "ArrowLeft":
+            this.setValue(this._value - delta, true);
+            break;
+          default:
             return;
         }
+        e.preventDefault();
+        e.stopPropagation();
       }
-      this.drag=0;
-      this.showtip(0);
-      this.startPosX = this.startPosY = null;
-      window.removeEventListener('mousemove', pointermove);
-      window.removeEventListener('touchmove', pointermove, {passive:false});
-      window.removeEventListener('mouseup', pointerup);
-      window.removeEventListener('touchend', pointerup);
-      window.removeEventListener('touchcancel', pointerup);
-      document.body.removeEventListener('touchstart', preventScroll, {passive:false});
-      this.sendEvent("change");
-    }
-
-    let preventScroll=(e)=>{
-      e.preventDefault();
-    }
-
-    if(e.ctrlKey || e.metaKey)
-      this.setValue(this.defvalue, true);
-    else {
-      this.startPosX = e.pageX;
-      this.startPosY = e.pageY;
-      this.startVal = this.value;
-      window.addEventListener('mousemove', pointermove);
-      window.addEventListener('touchmove', pointermove, {passive:false});
-    }
-
-    window.addEventListener('mouseup', pointerup);
-    window.addEventListener('touchend', pointerup);
-    window.addEventListener('touchcancel', pointerup);
-    document.body.addEventListener('touchstart', preventScroll, {passive:false});
-    ev.preventDefault();
-    ev.stopPropagation();
-    return false;
+  
+      wheel(e) {
+        if (!this.enable) return;
+        let delta = e.deltaY < 0 ? this._step || 1 : -(this._step || 1);
+        if (e.shiftKey) delta *= 5; // Increase sensitivity with shift
+        this.setValue(this._value + delta, true);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+  
+      pointerdown(ev) {
+        if (!this.enable) return;
+  
+        // Prevent default to avoid unwanted behaviors
+        ev.preventDefault();
+        ev.stopPropagation();
+  
+        this.elem.focus();
+        this.dragging = true;
+  
+        // Determine the initial ratio based on pointer position
+        const rect = this.canvas.getBoundingClientRect();
+        this.updateValueFromPointer(ev, rect);
+  
+        // Add event listeners for move and up
+        window.addEventListener('mousemove', this.pointermove, { passive: false });
+        window.addEventListener('mouseup', this.pointerup);
+        window.addEventListener('touchmove', this.pointermove, { passive: false });
+        window.addEventListener('touchend', this.pointerup);
+        window.addEventListener('touchcancel', this.pointerup);
+      }
+  
+      pointermove(ev) {
+        if (!this.dragging) return;
+  
+        // Prevent default to avoid unwanted behaviors
+        ev.preventDefault();
+        ev.stopPropagation();
+  
+        const rect = this.canvas.getBoundingClientRect();
+        this.updateValueFromPointer(ev, rect);
+      }
+  
+      pointerup(ev) {
+        if (!this.dragging) return;
+        this.dragging = false;
+  
+        // Remove event listeners
+        window.removeEventListener('mousemove', this.pointermove);
+        window.removeEventListener('mouseup', this.pointerup);
+        window.removeEventListener('touchmove', this.pointermove, { passive: false });
+        window.removeEventListener('touchend', this.pointerup);
+        window.removeEventListener('touchcancel', this.pointerup);
+      }
+  
+      updateValueFromPointer(ev, rect) {
+        let clientX, clientY;
+        if (ev.touches && ev.touches.length > 0) {
+          clientX = ev.touches[0].clientX;
+          clientY = ev.touches[0].clientY;
+        } else {
+          clientX = ev.clientX;
+          clientY = ev.clientY;
+        }
+  
+        let ratio;
+        if (this.isHorizontal) {
+          let x = clientX - rect.left;
+          x = Math.max(this.trackX, Math.min(this.trackX + this.trackLength, x));
+          ratio = (x - this.trackX) / this.trackLength;
+        } else {
+          let y = clientY - rect.top;
+          y = Math.max(this.trackY, Math.min(this.trackY + this.trackLength, y));
+          ratio = 1 - (y - this.trackY) / this.trackLength;
+        }
+  
+        let newValue;
+        if (this.log) {
+          if (this._min <= 0) {
+            console.warn("webaudio-slider: Logarithmic scale requires min > 0.");
+            newValue = this._min;
+          } else {
+            newValue = this._min * Math.pow(this._max / this._min, ratio);
+          }
+        } else {
+          newValue = this._min + ratio * (this._max - this._min);
+        }
+  
+        this.setValue(newValue, true);
+      }
+  
+      // Handle changes from the linked param
+      handleParamChange(e) {
+        if (this.updatingFromSlider) return; // Prevent circular update
+        const newValue = parseFloat(e.target.value);
+        if (!isNaN(newValue) && newValue !== this._value) {
+          this.setValue(newValue, false);
+        }
+      }
+  
+      // Update linked param when slider changes
+      updateLinkedParam() {
+        if (this.linkedParam) {
+          if (parseFloat(this.linkedParam.value) !== this._value) {
+            // Prevent param's event listener from triggering slider's update again
+            this.updatingFromSlider = true;
+            this.linkedParam.value = this._value;
+            this.updatingFromSlider = false;
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error("webaudio-slider already defined or error in definition:", error);
   }
-});
-} catch(error){
-  console.log("webaudio-slider already defined");
-}
-
-try{
+  try{
 customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
   constructor(){
     super();
@@ -1526,24 +1637,24 @@ ${this.basestyle}
 }
 
 try{
-customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
-  constructor(){
-    super();
-    this.addEventListener("keydown",this.keydown);
-    this.addEventListener("mousedown",this.pointerdown,{passive:false});
-    this.addEventListener("touchstart",this.pointerdown,{passive:false});
-    this.addEventListener('wheel', this.wheelHandler, { passive: false });    
-    this.addEventListener("mouseover",this.pointerover);
-    this.addEventListener("mouseout",this.pointerout);
-    this.addEventListener("contextmenu",this.contextMenu);
-  }
-  connectedCallback(){
-    let root;
-    if(this.attachShadow)
-      root=this.attachShadow({mode: 'open'});
-    else
-      root=this;
-    root.innerHTML=
+  customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
+    constructor(){
+      super();
+      this.addEventListener("keydown",this.keydown);
+      this.addEventListener("mousedown",this.pointerdown,{passive:false});
+      this.addEventListener("touchstart",this.pointerdown,{passive:false});
+      this.addEventListener("wheel",this.wheel);
+      this.addEventListener("mouseover",this.pointerover);
+      this.addEventListener("mouseout",this.pointerout);
+      this.addEventListener("contextmenu",this.contextMenu);
+    }
+    connectedCallback(){
+      let root;
+      if(this.attachShadow)
+        root=this.attachShadow({mode: 'open'});
+      else
+        root=this;
+      root.innerHTML=
 `<style>
 ${this.basestyle}
 :host{
@@ -1572,188 +1683,131 @@ ${this.basestyle}
 </style>
 <input class='webaudio-param-body' value='0' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
 `;
-    this.elem=root.childNodes[2];
-    this.ttframe=root.childNodes[3];
-    this.enable=this.getAttr("enable",1);
-    this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
-    this.defvalue=this.getAttr("defvalue",0);
-    this._fontsize=this.getAttr("fontsize",9); if (!this.hasOwnProperty("fontsize")) Object.defineProperty(this,"fontsize",{get:()=>{return this._fontsize},set:(v)=>{this._fontsize=v;this.setupImage()}});
-    this._src=this.getAttr("src",opt.paramSrc); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
-    this.link=this.getAttr("link","");
-    this._width=this.getAttr("width",opt.paramWidth); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
-    this._height=this.getAttr("height",opt.paramHeight); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
-    this._colors=this.getAttr("colors",opt.paramColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
-    this.outline=this.getAttr("outline",opt.outline);
-    this.rconv=this.getAttr("rconv",null);
-    this.midiController={};
-    this.midiMode="normal";
-    this.currentLink=null;
-    if(this.midicc) {
+      this.elem=root.childNodes[2];
+      this.ttframe=root.childNodes[3];
+      this.enable=this.getAttr("enable",1);
+      this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
+      this.defvalue=this.getAttr("defvalue",0);
+      this._fontsize=this.getAttr("fontsize",9); if (!this.hasOwnProperty("fontsize")) Object.defineProperty(this,"fontsize",{get:()=>{return this._fontsize},set:(v)=>{this._fontsize=v;this.setupImage()}});
+      this._src=this.getAttr("src",opt.paramSrc); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
+      this.link=this.getAttr("link","");
+      this._width=this.getAttr("width",opt.paramWidth); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
+      this._height=this.getAttr("height",opt.paramHeight); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
+      this._colors=this.getAttr("colors",opt.paramColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
+      this.outline=this.getAttr("outline",opt.outline);
+      this.rconv=this.getAttr("rconv",null);
+      this.midiController={};
+      this.midiMode="normal";
+      this.currentLink=null;
+      if(this.midicc) {
         let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
         let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
         this.setMidiController(ch, cc);
-    }
-    this.setupImage();
-    if(window.webAudioControlsWidgetManager)
-      window.webAudioControlsWidgetManager.addWidget(this);
-    this.fromLink=((e)=>{
-      this.setValue(e.target.convValue.toFixed(e.target.digits));
-    }).bind(this);
-    this.elem.onchange=()=>{
-      if(!this.currentLink.target.conv || (this.currentLink.target.conv&&this.rconv)){
-        let val = this.value=this.elem.value;
-        if(this.rconv){
-          let x=+this.elem.value;
-          val=eval(this.rconv);
+      }
+      this.setupImage();
+      if(window.webAudioControlsWidgetManager)
+//        window.webAudioControlsWidgetManager.updateWidgets();
+        window.webAudioControlsWidgetManager.addWidget(this);
+      this.fromLink=((e)=>{
+        this.setValue(e.target.convValue.toFixed(e.target.digits));
+      }).bind(this);
+      this.elem.onchange=()=>{
+        if(!this.currentLink.target.conv || (this.currentLink.target.conv&&this.rconv)){
+          let val = this.value=this.elem.value;
+          if(this.rconv){
+            let x=+this.elem.value;
+            val=eval(this.rconv);
+          }
+          if(this.currentLink){
+            this.currentLink.target.setValue(val, true);
+          }
         }
-        if(this.currentLink){
-          this.currentLink.target.setValue(val, true);
-        }
       }
     }
-  }
-  disconnectedCallback(){}
-  setupImage(){
-    this.imgloaded=()=>{
-      if(this.src!=""&&this.src!=null){
-        this.elem.style.backgroundImage = "url("+this.srcurl+")";
-        this.elem.style.backgroundSize = "100% 100%";
-        if(this._width==null) this._width=this.img.width;
-        if(this._height==null) this._height=this.img.height;
-      }
-      else{
-        this.elem.style.backgroundColor=this.coltab[1];
-      }
-      this.elem.style.width=this._width+"px";
-      this.elem.style.height=this._height+"px";
-      this.elem.style.fontSize=this.fontsize+"px";
-      let l=document.getElementById(this.link);
-      if(l&&typeof(l.value)!="undefined"){
-        if(typeof(l.convValue)=="number")
-          this.setValue(l.convValue.toFixed(l.digits));
-        else
-          this.setValue(l.convValue);
-        if(this.currentLink)
-          this.currentLink.target.removeEventListener("input",this.currentLink.func);
-        this.currentLink={target:l, func:(e)=>{
+    disconnectedCallback(){}
+    setupImage(){
+      this.imgloaded=()=>{
+        if(this.src!=""&&this.src!=null){
+          this.elem.style.backgroundImage = "url("+this.src+")";
+          this.elem.style.backgroundSize = "100% 100%";
+          if(this._width==null) this._width=this.img.width;
+          if(this._height==null) this._height=this.img.height;
+        }
+        else{
+          if(this._width==null) this._width=32;
+          if(this._height==null) this._height=20;
+        }
+        this.elem.style.width=this._width+"px";
+        this.elem.style.height=this._height+"px";
+        this.elem.style.fontSize=this.fontsize+"px";
+        let l=document.getElementById(this.link);
+        if(l&&typeof(l.value)!="undefined"){
           if(typeof(l.convValue)=="number")
             this.setValue(l.convValue.toFixed(l.digits));
           else
             this.setValue(l.convValue);
-        }};
-        this.currentLink.target.addEventListener("input",this.currentLink.func);
+          if(this.currentLink)
+            this.currentLink.removeEventListener("input",this.currentLink.func);
+          this.currentLink={target:l, func:(e)=>{
+            if(typeof(l.convValue)=="number")
+              this.setValue(l.convValue.toFixed(l.digits));
+            else
+              this.setValue(l.convValue);
+          }};
+          this.currentLink.target.addEventListener("input",this.currentLink.func);
+  //        l.addEventListener("input",(e)=>{this.setValue(l.convValue.toFixed(l.digits))});
+        }
+        this.redraw();
+      };
+      this.coltab = this.colors.split(";");
+      this.elem.style.color=this.coltab[0];
+      this.img=new Image();
+      this.img.onload=this.imgloaded.bind();
+      if(this.src==null){
+        this.elem.style.backgroundColor=this.coltab[1];
+        this.imgloaded();
       }
-      this.redraw();
-    };
-    this.coltab = this.colors.split(";");
-    this.elem.style.color=this.coltab[0];
-    this.img=new Image();
-    this.img.onload=this.imgloaded.bind();
-    if(this.src==null){
-      this.elem.style.backgroundColor=this.coltab[1];
-      this.imgloaded();
-    }
-    else if(this.src==""){
-      this.elem.style.background="none";
-      this.imgloaded();
-    }
-    else{
-      this.img.src=this.src;
-    }
-  }
-  redraw() {
-    this.elem.value=this.value;
-  }
-  setValue(v,f){
-    this.value=v;
-    if(this.value!=this.oldvalue){
-      this.redraw();
-      this.showtip(0);
-      if(f){
-        let event=document.createEvent("HTMLEvents");
-        event.initEvent("change",false,true);
-        this.dispatchEvent(event);
+      else if(this.src==""){
+        this.elem.style.background="none";
+        this.imgloaded();
       }
-      this.oldvalue=this.value;
+      else{
+        this.img.src=this.src;
+      }
     }
-  }
-  pointerdown(ev){
-    if(!this.enable)
-      return;
-    let e=ev;
-    if(ev.touches)
-        e = ev.touches[0];
-    else {
-      if(e.buttons!=1 && e.button!=0)
+    redraw() {
+      this.elem.value=this.value;
+    }
+    setValue(v,f){
+      this.value=v;
+      if(this.value!=this.oldvalue){
+        this.redraw();
+        this.showtip(0);
+        if(f){
+          let event=document.createEvent("HTMLEvents");
+          event.initEvent("change",false,true);
+          this.dispatchEvent(event);
+        }
+        this.oldvalue=this.value;
+      }
+    }
+    pointerdown(ev){
+      if(!this.enable)
         return;
-    }
-    this.elem.focus();
-    this.drag=1;
-    this.showtip(0);
-    let pointermove=(ev)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
-    let pointerup=(e)=>{
-      this.drag=0;
-      this.showtip(0);
-      window.removeEventListener('mousemove', pointermove);
-      window.removeEventListener('touchmove', pointermove, {passive:false});
-      window.removeEventListener('mouseup', pointerup);
-      window.removeEventListener('touchend', pointerup);
-      window.removeEventListener('touchcancel', pointerup);
-      document.body.removeEventListener('touchstart', preventScroll,{passive:false});
-      if(this.type=="kick"){
-        this.setValue(0, true);
-        this.sendEvent("change");
+      let e=ev;
+      if(ev.touches)
+          e = ev.touches[0];
+      else {
+        if(e.buttons!=1 && e.button!=0)
+          return;
       }
-      this.sendEvent("click");
-      e.preventDefault();
-      e.stopPropagation();
+      this.elem.focus();
+      this.redraw();
     }
-    let preventScroll=(e)=>{
-      e.preventDefault();
-    }
-    switch(this.type){
-    case "kick":
-      this.setValue(1, true);
-      this.sendEvent("change");
-      break;
-    case "toggle":
-      if(e.ctrlKey || e.metaKey)
-        this.value=defvalue;
-      else
-        this.value=1-this.value;
-      this.checked=!!this.value;
-      this.sendEvent("change");
-      break;
-    case "radio":
-      let els=document.querySelectorAll("webaudio-switch[type='radio'][group='"+this.group+"']");
-      for(let i=0;i<els.length;++i){
-        if(els[i]==this)
-          els[i].setValue(1, true);
-        else
-          els[i].setValue(0, true);
-      }
-      this.sendEvent("change");
-      break;
-    }
-
-    window.addEventListener('mouseup', pointerup);
-    window.addEventListener('touchend', pointerup);
-    window.addEventListener('touchcancel', pointerup);
-    document.body.addEventListener('touchstart', preventScroll,{passive:false});
-    this.redraw();
-    ev.preventDefault();
-    ev.stopPropagation();
-    return false;
-  }
-});
+  });
 } catch(error){
-  console.log("webaudio-switch already defined");
+  console.log("webaudio-param already defined");
 }
-
 try{
 customElements.define("webaudio-keyboard", class WebAudioKeyboard extends WebAudioControlsWidget {
   constructor(){
