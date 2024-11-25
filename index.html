@@ -87,47 +87,25 @@
 
 
 <div class="mid-container"> 
-    <div class="col-2">
-    <!-- Horizontal Slider -->
-    <webaudio-slider 
-      id="gslider" 
-      width="200" 
-      height="40" 
-      min="0" 
-      max="100" 
-      step="1" 
-      value="50" 
-      colors="#e00;#333;#fff;#777;#555" 
-      direction="horz">
-      <!-- Optional Slot Content for Label -->
-      Gain
-    </webaudio-slider>
-
-    <webaudio-param 
-      link="gslider" 
-      colors="#e00;#333;#fff;#777;#555">
-    </webaudio-param>
-
+    <div class="col-1">
     <!-- Vertical Slider -->
     <webaudio-slider 
       id="vslider" 
       tracking="rel"
-      colors="#0f0;#000;#ff0;#777;#555"
-      tooltip="Vertical Slider"
+      colors="#00000000;#00000000;var(--col2);var(--col1)" 
       value="50" 
-      min="-100" 
+      min="0" 
       max="100" 
       step="1"
       width="32" 
       height="400" 
+      midilearn="1"
       direction="vert">
-      <!-- Optional Slot Content for Label -->
-      Volume
     </webaudio-slider>
 
     <webaudio-param 
       link="vslider" 
-      colors="#0f0;#000;#ff0;#777;#555">
+      colors="var(--col1);var(--col2)">
     </webaudio-param>
     </div>
     </div>

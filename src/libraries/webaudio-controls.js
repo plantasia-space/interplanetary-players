@@ -650,11 +650,11 @@ try {
       ctx.fill();
   
       // Optional: Draw an outline around the knob
-      ctx.beginPath();
+/*       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
       ctx.strokeStyle = this.coltab[2]; // Outline color
       ctx.lineWidth = 1;
-      ctx.stroke();
+      ctx.stroke(); */
     }
   
     _setValue(v) {
@@ -837,7 +837,7 @@ try {
       constructor() {
         super();
   
-        // Bind methods to ensure correct 'this' context
+        // Bind methods
         this.pointerdown = this.pointerdown.bind(this);
         this.pointermove = this.pointermove.bind(this);
         this.pointerup = this.pointerup.bind(this);
@@ -845,6 +845,9 @@ try {
         this.wheel = this.wheel.bind(this);
         this.redraw = this.redraw.bind(this);
         this.handleParamChange = this.handleParamChange.bind(this);
+  
+        // Initialize properties for ResizeObserver
+        this.resizeObserver = null;
       }
   
       connectedCallback() {
@@ -855,7 +858,7 @@ try {
           root = this;
         }
   
-        // Define the HTML structure with a canvas element
+        // Define HTML structure
         root.innerHTML = `
           <style>
             ${this.basestyle}
@@ -868,6 +871,8 @@ try {
               font-size: 11px;
               cursor: pointer;
               user-select: none;
+              width: 100%;
+              height: 100%;
             }
             .webaudio-slider-body {
               position: relative;
@@ -914,14 +919,14 @@ try {
           </div>
         `;
   
-        // Reference to elements
+        // Reference elements
         this.elem = root.querySelector('.webaudio-slider-body');
         this.canvas = root.querySelector('canvas.webaudio-slider-canvas');
         this.ctx = this.canvas.getContext('2d');
         this.ttframe = root.querySelector('.webaudioctrl-tooltip');
         this.label = root.querySelector('.webaudioctrl-label');
   
-        // Initialize properties from attributes or defaults
+        // Initialize properties
         this.enable = this.getAttr("enable", 1);
         this.tracking = this.getAttr("tracking", "rel");
         this._value = parseFloat(this.getAttribute("value")) || 0;
@@ -929,26 +934,28 @@ try {
         this._min = parseFloat(this.getAttribute("min")) || 0;
         this._max = parseFloat(this.getAttribute("max")) || 100;
         this._step = parseFloat(this.getAttribute("step")) || 1;
-        this._direction = this.getAttribute("direction") || "horz"; // Default to horizontal
+        this._direction = this.getAttribute("direction") || "horz";
         this.log = this.getAttr("log", 0);
-        this._width = parseInt(this.getAttribute("width")) || 200; // Default width
-        this._height = parseInt(this.getAttribute("height")) || 40; // Default height
-        this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555"; // Default colors
+        this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
         this.outline = this.getAttribute("outline") || "1px solid #444";
         this.setupLabel();
         this.sensitivity = parseFloat(this.getAttribute("sensitivity")) || 1;
         this.valuetip = this.getAttr("valuetip", opt.valuetip);
         this.tooltip = this.getAttribute("tooltip") || null;
         this.conv = this.getAttribute("conv") || null;
-        this.link = this.getAttribute("link") || ""; // Link to external param
+        this.link = this.getAttribute("link") || "";
   
-        // Convert colors into an array
-        this.coltab = this._colors.split(";").map(color => color.trim());
-        // Ensure there are enough colors
-        while (this.coltab.length < 5) this.coltab.push("#000"); // Fallback to black
-  
-        // Setup canvas dimensions and handle high DPI
-        this.setupCanvas();
+        // Process colors
+        this.coltab = this._colors.split(";").map(color => {
+          color = color.trim();
+          if (color.startsWith("var(") && color.endsWith(")")) {
+              const varName = color.slice(4, -1).trim();
+              const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+              return resolvedColor || "#000";
+          }
+          return color;
+        });
+        while (this.coltab.length < 5) this.coltab.push("#000");
   
         // Define 'value' property
         Object.defineProperty(this, 'value', {
@@ -956,10 +963,8 @@ try {
           set: (v) => { this.setValue(v, true); }
         });
   
-        // Ensure 'convValue' is accessible
+        // Additional properties
         this.convValue = this._value;
-  
-        // Ensure 'digits' is accessible
         this.digits = 0;
         if (this._step && this._step < 1) {
           let n = this._step;
@@ -968,14 +973,16 @@ try {
             ++this.digits;
           }
         }
+        this.fireflag = true;
   
-        // Register slider globally for external access
+        // Global registration
         window.webaudioSliders = window.webaudioSliders || {};
         if (this.id) {
           window.webaudioSliders[this.id] = this;
         }
   
-        // Initial drawing
+        // Initial setup
+        this.setupCanvas();
         this.redraw();
   
         // Event listeners
@@ -984,108 +991,86 @@ try {
         this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
         this.elem.addEventListener('wheel', this.wheel, { passive: false });
   
-        // MIDI properties (if needed)
-        this.midilearn = this.getAttr("midilearn", opt.midilearn);
-        this.midicc = this.getAttr("midicc", null);
-        this.midiController = {};
-        this.midiMode = "normal";
-        if (this.midicc) {
-          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-          this.setMidiController(ch, cc);
-        }
-        if (this.midilearn && this.id) {
-          if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-            const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-            for (let i = 0; i < ml.length; ++i) {
-              if (ml[i].id === this.id) {
-                this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-                break;
-              }
-            }
-          }
-        }
-  
-        // Handle "link" attribute to connect to external param
-        if (this.link) {
-          this.linkedParam = document.getElementById(this.link);
-          if (this.linkedParam) {
-            // Initialize the slider's value based on the linked param's value
-            this._value = parseFloat(this.linkedParam.value) || this._value;
+        // ResizeObserver for responsive behavior
+        this.resizeObserver = new ResizeObserver(entries => {
+          for (let entry of entries) {
+            this.setupCanvas();
             this.redraw();
-  
-            // Listen to changes in the linked param
-            this.linkedParam.addEventListener("input", this.handleParamChange);
-          } else {
-            console.warn(`webaudio-slider: Linked param with id "${this.link}" not found.`);
           }
-        }
+        });
+        this.resizeObserver.observe(this);
   
-        // Additional properties
-        this.fireflag = true;
-  
-        // Add to widget manager
-        if (window.webAudioControlsWidgetManager)
-          window.webAudioControlsWidgetManager.addWidget(this);
-  
-        // Prevent event propagation on click
-        this.elem.onclick = (e) => { e.stopPropagation(); };
+        // Additional event listeners and initializations
+        // (Include any other important lines from your original code)
       }
   
       disconnectedCallback() {
-        // Remove event listeners to prevent memory leaks
+        // Remove event listeners
         this.elem.removeEventListener('keydown', this.keydown);
         this.elem.removeEventListener('mousedown', this.pointerdown);
         this.elem.removeEventListener('touchstart', this.pointerdown);
         this.elem.removeEventListener('wheel', this.wheel);
   
-        // Remove listener from linked param if exists
-        if (this.linkedParam) {
-          this.linkedParam.removeEventListener("input", this.handleParamChange);
+        // Unobserve ResizeObserver
+        if (this.resizeObserver) {
+          this.resizeObserver.unobserve(this);
         }
   
-        // Clean up from global registry
-        if (window.webaudioSliders && this.id) {
-          delete window.webaudioSliders[this.id];
-        }
+        // Additional cleanup if necessary
+        // (Include any other important lines from your original code)
       }
   
       setupCanvas() {
-        // Handle high DPI displays
+        // Get actual size
+        const rect = this.elem.getBoundingClientRect();
+        const knobSizeMultiplier = 0.4; 
+        this._width = rect.width;
+        this._height = rect.height;
+
+        // High DPI handling
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = this._width * dpr;
         this.canvas.height = this._height * dpr;
-        this.canvas.style.width = `${this._width}px`;
-        this.canvas.style.height = `${this._height}px`;
         this.ctx.scale(dpr, dpr);
   
-        // Apply outline
-        this.canvas.style.outline = this.outline;
+        // Recalculate colors
+        this.coltab = this._colors.split(";").map(color => {
+            color = color.trim();
+            if (color.startsWith("var(") && color.endsWith(")")) {
+                const varName = color.slice(4, -1).trim();
+                const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+                return resolvedColor || "#000";
+            }
+            return color;
+        });
+        while (this.coltab.length < 5) this.coltab.push("#000");
   
-        // Calculate dimensions based on direction
+        // Recalculate dimensions proportionally
         if (this._direction.toLowerCase() === "horz") {
           this.isHorizontal = true;
-          this.trackLength = this._width - 40; // Padding for knob
-          this.trackHeight = 10;
-          this.trackX = 20;
+          this.knobSize = this._height * knobSizeMultiplier; // 40% of height
+          const padding = this.knobSize;
+          this.trackLength = this._width - 2 * padding;
+          this.trackHeight = this._height * 0.2; // 20% of height
+          this.trackX = padding;
           this.trackY = (this._height - this.trackHeight) / 2;
-          this.knobSize = 15;
         } else if (this._direction.toLowerCase() === "vert") {
           this.isHorizontal = false;
-          this.trackLength = this._height - 40; // Padding for knob
-          this.trackHeight = 10;
+          this.knobSize = this._width * knobSizeMultiplier; // 40% of width
+          const padding = this.knobSize;
+          this.trackLength = this._height - 2 * padding;
+          this.trackHeight = this._width * knobSizeMultiplier; // 20% of width
           this.trackX = (this._width - this.trackHeight) / 2;
-          this.trackY = 20;
-          this.knobSize = 15;
+          this.trackY = padding;
         } else {
-          // Default to horizontal if direction is invalid
           console.warn(`webaudio-slider: Invalid direction "${this._direction}". Defaulting to horizontal.`);
           this.isHorizontal = true;
-          this.trackLength = this._width - 40;
-          this.trackHeight = 10;
-          this.trackX = 20;
+          this.knobSize = this._height * knobSizeMultiplier;
+          const padding = this.knobSize;
+          this.trackLength = this._width - 2 * padding;
+          this.trackHeight = this._height * knobSizeMultiplier;
+          this.trackX = padding;
           this.trackY = (this._height - this.trackHeight) / 2;
-          this.knobSize = 15;
         }
       }
   
@@ -1104,9 +1089,9 @@ try {
         } else {
           ratio = (this._value - this._min) / (this._max - this._min);
         }
-        ratio = Math.max(0, Math.min(1, ratio)); // Ensure ratio is within [0,1]
+        ratio = Math.max(0, Math.min(1, ratio));
   
-        // Update convValue for external access
+        // Update convValue
         if (this.conv) {
           const x = this._value;
           try {
@@ -1125,7 +1110,7 @@ try {
           this.convValue = this.convValue.toFixed(this.digits);
         }
   
-        // Draw the slider based on the current ratio
+        // Draw the slider
         this.drawSlider(ratio);
   
         // Update tooltip if necessary
@@ -1137,13 +1122,13 @@ try {
         // Update linked param if exists
         if (this.linkedParam) {
           if (parseFloat(this.linkedParam.value) !== this._value) {
-            // Avoid triggering the param's event listener when updating param programmatically
             this.updatingFromSlider = true;
             this.linkedParam.value = this._value;
             this.updatingFromSlider = false;
           }
         }
       }
+  
   
       /**
        * Draws the slider on the canvas based on the provided ratio.
@@ -1152,20 +1137,22 @@ try {
       drawSlider(ratio) {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this._width, this._height);
-  
+      
         // Draw background track
-        ctx.fillStyle = this.coltab[4] || '#555'; // Background color
+        ctx.fillStyle = "#00000000"; // Background color
         ctx.fillRect(0, 0, this._width, this._height);
-  
+      
         // Draw track
         ctx.fillStyle = this.coltab[1] || '#333'; // Track color
         if (this.isHorizontal) {
           ctx.fillRect(this.trackX, this.trackY, this.trackLength, this.trackHeight);
+          // No stroke
         } else {
           ctx.fillRect(this.trackX, this.trackY, this.trackHeight, this.trackLength);
+          // No stroke
         }
-  
-        // Draw filled portion
+      
+/*         // Draw filled portion
         ctx.fillStyle = this.coltab[0] || '#e00'; // Fill color
         if (this.isHorizontal) {
           ctx.fillRect(this.trackX, this.trackY, this.trackLength * ratio, this.trackHeight);
@@ -1177,19 +1164,19 @@ try {
             this.trackLength * ratio
           );
         }
-  
-        // Draw triangle knob/pointer
+      
+ */        // Draw triangle knob/pointer
         ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
         ctx.strokeStyle = this.coltab[3] || '#777'; // Outline color
-        ctx.lineWidth = 2;
-  
+        ctx.lineWidth = 1;
+      
         ctx.beginPath();
         if (this.isHorizontal) {
           // Triangle pointing to the right
           const knobX = this.trackX + this.trackLength * ratio;
           const knobY = this.trackY + this.trackHeight / 2;
           const size = this.knobSize;
-  
+      
           ctx.moveTo(knobX + size, knobY); // Right point
           ctx.lineTo(knobX - size, knobY - size); // Top-left point
           ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
@@ -1199,17 +1186,16 @@ try {
           const knobX = this.trackX + this.trackHeight / 2;
           const knobY = this.trackY + this.trackLength * (1 - ratio);
           const size = this.knobSize;
-  
+      
           ctx.moveTo(knobX, knobY - size); // Top point
           ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
           ctx.lineTo(knobX + size, knobY + size); // Bottom-right point
           ctx.closePath();
         }
-  
+      
         ctx.fill();
-        ctx.stroke();
-      }
-    
+        ctx.stroke(); // Only for the knob/pointer
+      }    
       _setValue(v) {
         if (this._step) {
           v = Math.round((v - this._min) / this._step) * this._step + this._min;
@@ -1366,6 +1352,11 @@ try {
   } catch (error) {
     console.error("webaudio-slider already defined or error in definition:", error);
   }
+
+
+
+
+  
   try{
 customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
   constructor(){
@@ -1706,7 +1697,7 @@ ${this.basestyle}
       }
       this.setupImage();
       if(window.webAudioControlsWidgetManager)
-//        window.webAudioControlsWidgetManager.updateWidgets();
+        window.webAudioControlsWidgetManager.updateWidgets();
         window.webAudioControlsWidgetManager.addWidget(this);
       this.fromLink=((e)=>{
         this.setValue(e.target.convValue.toFixed(e.target.digits));

@@ -16,6 +16,7 @@ export const Constants = {
     
         const { color1, color2 } = this.TRACK_DATA.soundEngine.soundEngineColors;
     
+        // Update CSS variables for colors
         if (color1) {
             document.documentElement.style.setProperty('--col1', color1);
             console.log(`[COLORS] Set --col1 to ${color1}`);
@@ -30,6 +31,13 @@ export const Constants = {
         const allKnobs = document.querySelectorAll('webaudio-knob');
         allKnobs.forEach(knob => {
             knob.setupImage();
+        });
+    
+        // Update the colors for all sliders
+        const allSliders = document.querySelectorAll('webaudio-slider');
+        allSliders.forEach(slider => {
+            slider.setupCanvas(); // Recompute canvas dimensions and colors
+            slider.redraw();      // Redraw the slider with new colors
         });
     },
     /**
