@@ -3,7 +3,7 @@
     --size-upper-buttons: clamp(10vmin, 10vmin, 100vmin); /* Upper part (info, radio group) 90 */
     --size-vertical-menu-buttons: clamp(7vmin, 7vmin, 70vmin); /* Upper part (info, radio group) 90 */
 
-    --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, Regen) */
+    --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, cosmic-lfo) */
 
 }
 
@@ -249,7 +249,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     justify-content: flex-start;
     align-items: flex-start;
     background-color: var(--col1-light);
-    font-family: 'Orbit', sans-serif;
+    font-family: 'SpaceMono', sans-serif;
     font-weight: 250; /* Default for larger screens */
     font-size: clamp(10px, 2.5vmin, 36px); /* Responsive font size */
     padding: clamp(2px, 0.5vmin, 10px);
