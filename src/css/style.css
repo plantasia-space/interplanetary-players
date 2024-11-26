@@ -29,7 +29,7 @@ html, body {
     overflow: hidden;
     background-color: black !important;
     height: 100%;
-    font-family: 'Orbit', sans-serif;
+    font-family: 'SpaceMono', sans-serif;
 }
 
 webaudio-knob, webaudio-param, webaudio-slider, webaudio-switch {
@@ -42,7 +42,7 @@ webaudioctrl-context-menu {
     overflow: hidden;
     background-color: black !important;
     height: 100%;
-    font-family: 'Orbit', sans-serif;
+    font-family: 'SpaceMono', sans-serif;
 }
 
 /* Square Frame: Centered and fixed size */

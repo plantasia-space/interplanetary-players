@@ -347,18 +347,22 @@ try {
   customElements.define("webaudio-knob", class WebAudioKnob extends WebAudioControlsWidget {
     constructor() {
       super();
-      // No additional initialization needed here
+      this.resizeObserver = null; // Reference to ResizeObserver
+      // Bind event handlers to ensure correct 'this' context
+      this.onFocus = this.onFocus.bind(this);
+      this.onBlur = this.onBlur.bind(this);
+      this.onPointerDown = this.pointerdown.bind(this);
+      this.onPointerMove = this.pointermove.bind(this);
+      this.onPointerUp = this.pointerup.bind(this);
     }
-  
-    connectedCallback() {
 
-      
+    connectedCallback() {
       let root;
       if (this.attachShadow)
         root = this.attachShadow({ mode: 'open' });
       else
         root = this;
-  
+
       // Define the HTML structure with canvas and tooltip
       root.innerHTML = `
         <style>
@@ -374,14 +378,21 @@ try {
             --knob-col1: var(--col1, #e00); /* Fill color */
             --knob-col2: var(--col2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
             --knob-outline: var(--knob-outline, none); /* Outline color */
-            --knob-width: var(--knob-width, 64px); /* Width of the knob */
-            --knob-height: var(--knob-height, 64px); /* Height of the knob */
+            /* Set width and height to either specified values or maintain square */
+            --knob-size: ${this.hasAttribute("width") && this.hasAttribute("height") ? 
+              `var(--knob-width, ${this.getAttr("width", 64)}px)` : 
+              '100%'};
+            box-sizing: border-box; /* Ensure padding and border are included in width and height */
+            width: var(--knob-size);
+            height: var(--knob-size); /* Force height to match width for square aspect ratio */
+            position: relative; /* Ensure positioned elements are relative to the host */
           }
           .webaudio-knob-body {
-            display: inline-block;
-            position: relative;
-            width: var(--knob-width, 64px);
-            height: var(--knob-height, 64px);
+            display: flex; /* Use flexbox to center the canvas */
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
             touch-action: none;
           }
           canvas.webaudio-knob-canvas {
@@ -403,13 +414,18 @@ try {
           <div part="label" class="webaudioctrl-label"><slot></slot></div>
         </div>
       `;
-  
+
       // Reference to elements
       this.elem = root.querySelector('.webaudio-knob-body');
       this.canvas = root.querySelector('canvas.webaudio-knob-canvas');
       this.ttframe = root.querySelector('.webaudioctrl-tooltip');
       this.label = root.querySelector('.webaudioctrl-label');
-  
+
+      if (!this.elem || !this.canvas) {
+        console.error('webaudio-knob: Essential elements are missing.');
+        return;
+      }
+
       // Initialize properties from attributes or defaults
       this.enable = this.getAttr("enable", 1);
       this._value = this.getAttr("value", 0);
@@ -417,47 +433,47 @@ try {
       this._min = this.getAttr("min", 0);
       this._max = this.getAttr("max", 100);
       this._step = this.getAttr("step", 1);
-      this._width = this.getAttr("width", 64);
-      this._height = this.getAttr("height", 64);
+      this._width = this.hasAttribute("width") ? this.getAttr("width", 64) : null;
+      this._height = this.hasAttribute("height") ? this.getAttr("height", 64) : null;
       this._diameter = this.getAttr("diameter", null); // For future use if needed
       this._colors = this.getAttr("colors", opt.knobColors); // Expected format: "col1;col2;col3"
-  
+
       // Define getters and setters for properties
       if (!this.hasOwnProperty("value")) Object.defineProperty(this, "value", {
         get: () => { return this._value },
         set: (v) => { this._value = v; this.redraw() }
       });
-  
+
       if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
         get: () => { return this._min },
         set: (v) => { this._min = +v; this.redraw() }
       });
-  
+
       if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
         get: () => { return this._max },
         set: (v) => { this._max = +v; this.redraw() }
       });
-  
+
       if (!this.hasOwnProperty("step")) Object.defineProperty(this, "step", {
         get: () => { return this._step },
         set: (v) => { this._step = +v; this.redraw() }
       });
-  
+
       if (!this.hasOwnProperty("width")) Object.defineProperty(this, "width", {
         get: () => { return this._width },
         set: (v) => { this._width = v; this.setupImage() }
       });
-  
+
       if (!this.hasOwnProperty("height")) Object.defineProperty(this, "height", {
         get: () => { return this._height },
         set: (v) => { this._height = v; this.setupImage() }
       });
-  
+
       if (!this.hasOwnProperty("colors")) Object.defineProperty(this, "colors", {
         get: () => { return this._colors },
         set: (v) => { this._colors = v; this.setupImage() }
       });
-  
+
       // Other properties
       this.outline = this.getAttr("outline", opt.outline);
       this.log = this.getAttr("log", 0);
@@ -472,92 +488,101 @@ try {
           this.convValue = this.convValue(x);
       } else
         this.convValue = this._value;
-  
 
-  
       // Setup canvas dimensions and handle high DPI
       this.setupImage();
-  
+
       // Bind the drawKnob method to ensure correct 'this' context
       this.drawKnob = this.drawKnob.bind(this);
-  
+
       // Initial drawing
       this.redraw();
-  
+
       // Setup label positioning
       this.setupLabel();
-  
-  
+
+      // MIDI related setup
       this.midilearn = this.getAttr("midilearn", opt.midilearn);
       console.log("Initialized midilearn:", this.midilearn);
-      
+
       this.midicc = this.getAttr("midicc", null);
       console.log("Initialized midicc:", this.midicc);
-      
+
       this.midiController = {};
       this.midiMode = "normal";
-      
+
       if (this.midicc) {
-          console.log("Parsing midicc:", this.midicc);
-          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-          console.log("Setting MIDI controller - channel:", ch, "CC:", cc);
-          this.setMidiController(ch, cc);
+        console.log("Parsing midicc:", this.midicc);
+        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+        console.log("Setting MIDI controller - channel:", ch, "CC:", cc);
+        this.setMidiController(ch, cc);
       }
-      
+
       let retries = 0;
-      const maxRetries = 5; // Retry up to 50 times (5 seconds total if 100ms delay)
+      const maxRetries = 5; // Retry up to 5 times (5 * 100ms = 500ms total)
       const attemptToLoadMidiLearn = () => {
-          if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-              const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-              for (let i = 0; i < ml.length; ++i) {
-                  if (ml[i].id === this.id) {
-                      console.log(`Loaded MIDI mapping for widget ${this.id}`);
-                      this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-                      return; // Stop retrying on success
-                  }
-              }
-              console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
-          } else if (retries < maxRetries) {
-              console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
-              setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
-          } else {
-              console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
+        if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
+          const ml = window.webAudioControlsWidgetManager.midiLearnTable;
+          for (let i = 0; i < ml.length; ++i) {
+            if (ml[i].id === this.id) {
+              console.log(`Loaded MIDI mapping for widget ${this.id}`);
+              this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+              return; // Stop retrying on success
+            }
           }
+          console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
+        } else if (retries < maxRetries) {
+          console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
+          setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
+        } else {
+          console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
+        }
       };
       attemptToLoadMidiLearn();
-  
+
       // Additional properties
       this.digits = 0;
       if (this.step && this.step < 1) {
         for (let n = this.step; n < 1; n *= 10)
           ++this.digits;
       }
-  
+
       // Add to widget manager
       if (window.webAudioControlsWidgetManager)
         window.webAudioControlsWidgetManager.addWidget(this);
-  
-      // Bind focus and blur events after this.elem is assigned
+
+      // Bind focus, blur, and pointerdown events after this.elem is assigned
       if (this.elem) {
-        this.elem.addEventListener('focus', this.onfocus);
-        this.elem.addEventListener('blur', this.onblur);
+        this.elem.addEventListener('focus', this.onFocus);
+        this.elem.addEventListener('blur', this.onBlur);
+        this.elem.addEventListener('pointerdown', this.onPointerDown);
       } else {
         console.error('webaudio-knob: this.elem is not assigned correctly.');
       }
     }
-  
+
     disconnectedCallback() {
       // Remove event listeners to prevent memory leaks
       if (this.elem) {
-        this.elem.removeEventListener('focus', this.onfocus);
-        this.elem.removeEventListener('blur', this.onblur);
+        this.elem.removeEventListener('focus', this.onFocus);
+        this.elem.removeEventListener('blur', this.onBlur);
+        this.elem.removeEventListener('pointerdown', this.onPointerDown);
       }
-    }
-  
-    setupImage() {
 
-            // *** Modified Section: Resolve CSS Variables in 'colors' ***
+      // Disconnect ResizeObserver if it exists
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
+
+      // Remove any global event listeners if necessary
+      window.removeEventListener('pointermove', this.onPointerMove);
+      window.removeEventListener('pointerup', this.onPointerUp);
+    }
+
+    setupImage() {
+      // *** Resolve CSS Variables in 'colors' ***
       // Parse colors from the 'colors' attribute or use default
       this.coltab = this.colors ? this.colors.split(";").map(color => {
         color = color.trim();
@@ -569,21 +594,23 @@ try {
         }
         return color;
       }) : ["#e00", "#000", "#000"];
-      // *** End of Modified Section ***
-  
-      // Ensure we have at least 3 colors
-      if (this.coltab.length < 3) {
-        this.coltab = [
-          this.coltab[0] || "#e00",
-          this.coltab[1] || "#000",
-          this.coltab[2] || "#000"
-        ];
+      // *** End of Resolving CSS Variables ***
+
+      // Determine actual size
+      let width, height;
+      if (this._width && this._height) {
+        width = parseInt(this._width);
+        height = parseInt(this._height);
+      } else {
+        // Get computed size from CSS
+        const style = getComputedStyle(this.elem);
+        width = parseInt(style.width) || 64;
+        height = parseInt(style.height) || 64;
+        // Enforce square aspect ratio
+        const size = Math.min(width, height);
+        width = height = size;
       }
-      
-      // Get canvas dimensions from attributes
-      const width = parseInt(this._width) || 64;
-      const height = parseInt(this._height) || 64;
-  
+
       // Handle high DPI displays for better resolution
       const dpr = window.devicePixelRatio || 1;
       this.canvas.width = width * dpr;
@@ -592,23 +619,56 @@ try {
       this.canvas.style.height = `${height}px`;
       const ctx = this.canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-  
+
       // Apply outline if specified
       this.canvas.style.outline = this.outline;
-  
+
       // Recalculate radius based on diameter if specified
       if (this._diameter) {
         this.radius = parseInt(this._diameter) / 2 - 5; // Padding of 5px
       } else {
         this.radius = Math.min(width, height) / 2 - 5; // Padding of 5px
       }
-  
+
       this.centerX = width / 2;
       this.centerY = height / 2;
-  
+
       this.redraw();
+
+      // Setup ResizeObserver to handle parent size changes if width or height is not set
+      if (!this._width || !this._height) {
+        if (this.resizeObserver) {
+          this.resizeObserver.disconnect();
+        }
+        this.resizeObserver = new ResizeObserver(entries => {
+          for (let entry of entries) {
+            const newWidth = entry.contentRect.width;
+            const newHeight = entry.contentRect.height;
+            const size = Math.min(newWidth, newHeight);
+            const adjustedWidth = size;
+            const adjustedHeight = size;
+
+            // Update canvas dimensions
+            this.canvas.width = adjustedWidth * dpr;
+            this.canvas.height = adjustedHeight * dpr;
+            this.canvas.style.width = `${adjustedWidth}px`;
+            this.canvas.style.height = `${adjustedHeight}px`;
+            const ctx = this.canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            // Update radius and center
+            this.radius = Math.min(adjustedWidth, adjustedHeight) / 2 - 5;
+            this.centerX = adjustedWidth / 2;
+            this.centerY = adjustedHeight / 2;
+
+            // Redraw the knob with new dimensions
+            this.redraw();
+          }
+        });
+        this.resizeObserver.observe(this.elem);
+      }
     }
-  
+
     redraw() {
       let ratio;
       this.digits = 0;
@@ -626,33 +686,33 @@ try {
         ratio = Math.log(this.value / this.min) / Math.log(this.max / this.min);
       else
         ratio = (this.value - this.min) / (this.max - this.min);
-  
+
       // Draw the knob based on the current ratio
       this.drawKnob(ratio);
     }
-  
+
     /**
      * Draws the knob on the canvas based on the provided ratio.
      * @param {number} ratio - A value between 0 and 1 representing the current knob position.
      */
     drawKnob(ratio) {
       const ctx = this.canvas.getContext('2d');
-      const width = parseInt(this._width) || 64;
-      const height = parseInt(this._height) || 64;
+      const width = this.canvas.width / (window.devicePixelRatio || 1);
+      const height = this.canvas.height / (window.devicePixelRatio || 1);
       const radius = this.radius;
       const centerX = this.centerX;
       const centerY = this.centerY;
-  
+
       // Clear the canvas
       ctx.clearRect(0, 0, width, height);
-  
+
       // Draw background (col2)
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
       ctx.fillStyle = this.coltab[1]; // Background color
       ctx.fill();
-  
+
       // Draw filled portion (col1) based on the ratio
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
@@ -662,15 +722,17 @@ try {
       ctx.closePath();
       ctx.fillStyle = this.coltab[0]; // Fill color
       ctx.fill();
-  
+
       // Optional: Draw an outline around the knob
-/*       ctx.beginPath();
+      /*
+      ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
       ctx.strokeStyle = this.coltab[2]; // Outline color
       ctx.lineWidth = 1;
-      ctx.stroke(); */
+      ctx.stroke();
+      */
     }
-  
+
     _setValue(v) {
       if (this.step)
         v = (Math.round((v - this.min) / this.step)) * this.step + this.min;
@@ -695,12 +757,12 @@ try {
       }
       return 0;
     }
-  
+
     setValue(v, f) {
       if (this._setValue(v) && f)
         this.sendEvent("input"), this.sendEvent("change");
     }
-  
+
     keydown(e) {
       let delta = this.step;
       if (delta === 0)
@@ -718,7 +780,7 @@ try {
       e.preventDefault();
       e.stopPropagation();
     }
-  
+
     wheel(e) {
       if (!this.enable)
         return;
@@ -741,111 +803,122 @@ try {
       e.preventDefault();
       e.stopPropagation();
     }
-  
+
     pointerdown(ev) {
       if (!this.enable)
         return;
       let e = ev;
-      if (ev.touches) {
-        e = ev.changedTouches[0];
-        this.identifier = e.identifier;
+
+      // Only handle primary buttons (usually left mouse button) and touch
+      if (e.pointerType === 'mouse' && e.button !== 0)
+        return;
+
+      // Prevent multiple pointers
+      if (this.drag) return;
+
+      this.elem.setPointerCapture(e.pointerId);
+      this.drag = true;
+      this.startVal = this.value;
+      this.startPosX = e.clientX;
+      this.startPosY = e.clientY;
+
+      // Listen for pointermove and pointerup events
+      this.elem.addEventListener('pointermove', this.onPointerMove);
+      this.elem.addEventListener('pointerup', this.onPointerUp);
+      this.elem.addEventListener('pointercancel', this.onPointerUp);
+
+      // Prevent default to avoid unwanted behaviors (e.g., text selection)
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    pointermove(ev) {
+      if (!this.drag)
+        return;
+
+      const deltaY = this.startPosY - ev.clientY;
+      const deltaX = ev.clientX - this.startPosX;
+      const delta = (deltaY + deltaX) * this.sensitivity;
+
+      let newValue;
+      if (this.log) {
+        let r = Math.log(this.startVal / this.min) / Math.log(this.max / this.min);
+        r += delta / ((ev.shiftKey ? 4 : 1) * 128);
+        r = Math.max(0, Math.min(1, r));
+        newValue = this.min * Math.pow(this.max / this.min, r);
       }
       else {
-        if (e.buttons !== 1 && e.button !== 0)
-          return;
+        newValue = this.startVal + (delta / 128) * (this.max - this.min);
       }
-      this.elem.focus();
-      this.drag = 1;
-      this.showtip(0);
-      this.oldvalue = this._value;
-  
-      let pointermove = (ev) => {
-        let e = ev;
-        if (ev.touches) {
-          for (let i = 0; i < ev.touches.length; ++i) {
-            if (ev.touches[i].identifier === this.identifier) {
-              e = ev.touches[i];
-              break;
-            }
-          }
-        }
-        if (this.lastShift !== e.shiftKey) {
-          this.lastShift = e.shiftKey;
-          this.startPosX = e.pageX;
-          this.startPosY = e.pageY;
-          this.startVal = this.value;
-        }
-        let offset = (this.startPosY - e.pageY - this.startPosX + e.pageX) * this.sensitivity;
-        if (this.log) {
-          let r = Math.log(this.startVal / this.min) / Math.log(this.max / this.min);
-          r += offset / ((e.shiftKey ? 4 : 1) * 128);
-          r = Math.max(0, Math.min(1, r));
-          this._setValue(this.min * Math.pow(this.max / this.min, r));
-        }
-        else {
-          this._setValue(this.min + ((((this.startVal + (this.max - this.min) * offset / ((e.shiftKey ? 4 : 1) * 128)) - this.min) / this.step) | 0) * this.step);
-        }
-        if (this.fireflag) {
-          this.sendEvent("input");
-          this.fireflag = false;
-        }
-        if (e.preventDefault)
-          e.preventDefault();
-        if (e.stopPropagation)
-          e.stopPropagation();
-        return false;
+
+      this.setValue(newValue, true);
+    }
+
+    pointerup(ev) {
+      if (!this.drag)
+        return;
+
+      this.drag = false;
+      this.elem.releasePointerCapture(ev.pointerId);
+      this.elem.removeEventListener('pointermove', this.onPointerMove);
+      this.elem.removeEventListener('pointerup', this.onPointerUp);
+      this.elem.removeEventListener('pointercancel', this.onPointerUp);
+
+      // Emit change event if value changed
+      this.sendEvent("change");
+    }
+
+    // Optional: Implement focus and blur handlers if needed
+    onFocus() {
+      // Handle focus event (e.g., visual feedback)
+    }
+
+    onBlur() {
+      // Handle blur event
+    }
+
+    // Implement other necessary methods like setupLabel, sendEvent, showtip, setMidiController, etc.
+    // These implementations depend on your existing codebase and are assumed to be present.
+
+    setupLabel() {
+      // Example implementation, adjust as necessary
+      if (this.label) {
+        this.label.style.position = 'absolute';
+        this.label.style.bottom = '0';
+        this.label.style.width = '100%';
+        this.label.style.textAlign = 'center';
+        // Additional styling can be added here
       }
-  
-      let pointerup = (ev) => {
-        let e = ev;
-        if (ev.touches) {
-          for (let i = 0;;) {
-            if (ev.changedTouches[i].identifier === this.identifier) {
-              break;
-            }
-            if (++i >= ev.changedTouches.length)
-              return;
-          }
-        }
-        this.drag = 0;
-        this.showtip(0);
-        this.startPosX = this.startPosY = null;
-        window.removeEventListener('mousemove', pointermove);
-        window.removeEventListener('touchmove', pointermove, { passive: false });
-        window.removeEventListener('mouseup', pointerup);
-        window.removeEventListener('touchend', pointerup);
-        window.removeEventListener('touchcancel', pointerup);
-        document.body.removeEventListener('touchstart', preventScroll, { passive: false });
-        this.sendEvent("change");
+    }
+
+    sendEvent(eventName) {
+      const event = new Event(eventName, { bubbles: true, composed: true });
+      this.dispatchEvent(event);
+    }
+
+    showtip(delay) {
+      // Implement tooltip display logic here
+      // This is a placeholder implementation
+      if (this.ttframe && this.valuetip) {
+        this.ttframe.textContent = this.convValue;
+        this.ttframe.style.opacity = '1';
+        setTimeout(() => {
+          if (this.ttframe) this.ttframe.style.opacity = '0';
+        }, delay * 1000 || 1000);
       }
-  
-      let preventScroll = (e) => {
-        e.preventDefault();
-      }
-  
-      if (e.ctrlKey || e.metaKey)
-        this.setValue(this.defvalue, true);
-      else {
-        this.startPosX = e.pageX;
-        this.startPosY = e.pageY;
-        this.startVal = this.value;
-        window.addEventListener('mousemove', pointermove);
-        window.addEventListener('touchmove', pointermove, { passive: false });
-      }
-  
-      window.addEventListener('mouseup', pointerup);
-      window.addEventListener('touchend', pointerup);
-      window.addEventListener('touchcancel', pointerup);
-      document.body.addEventListener('touchstart', preventScroll, { passive: false });
-      ev.preventDefault();
-      ev.stopPropagation();
-      return false;
+    }
+
+    setMidiController(channel, cc) {
+      // Implement MIDI controller setup here
+      // Placeholder implementation
+      this.midiController.channel = channel;
+      this.midiController.cc = cc;
+      // Additional MIDI setup logic
     }
   });
-  } catch (error) {
-    console.log("webaudio-knob already defined");
-  }
-
+} catch (error) {
+  console.log("webaudio-knob already defined");
+}
   try {
     customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
       constructor() {

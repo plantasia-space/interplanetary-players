@@ -39,6 +39,13 @@ export const Constants = {
             slider.setupCanvas(); // Recompute canvas dimensions and colors
             slider.redraw();      // Redraw the slider with new colors
         });
+        // Update the colors for all switches
+        const allSwitches = document.querySelectorAll('webaudio-switch');
+        allSwitches.forEach(webSwitch => {
+            webSwitch.setupCanvas(); // Recompute canvas dimensions and colors
+            webSwitch.redraw();      // Redraw the switch with new colors
+        });
+
     },
     /**
      * Sets and caches track data for the specified trackId.
