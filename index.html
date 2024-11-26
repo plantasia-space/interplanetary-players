@@ -137,11 +137,13 @@
                                             midilearn="1">
                                         </webaudio-knob>
                                         <!-- Balance Button -->
-                                        <button class="btn action-button balance-button" 
-                                                data-src="/assets/icons/balance.svg" 
-                                                aria-label="Balance 1">
-                                            <!-- Balance Icon or Content -->
-                                        </button>
+                    
+                                        <webaudio-switch id="xBalance"
+                                        type="kick"
+                                        class="medium-switch" 
+                                        midilearn="1"
+                                        colors="var(--col1);var(--col2);var(--col3)">
+                                       </webaudio-switch>
                                         <!-- WebAudio Param -->
                                         <webaudio-param 
                                             link="xKnob" 
@@ -162,15 +164,17 @@
                                         <!-- Balance Button -->
                     
                                         <webaudio-switch id="yBalance"
-                                        type="kick" 
-                                        width="54" height="54">
-                                      </webaudio-switch>
-                                    
+                                        type="kick"
+                                        class="medium-switch" 
+                                        midilearn="1"
+                                        colors="var(--col1);var(--col2);var(--col3)">
+                                        </webaudio-switch>
+
                                         <!-- WebAudio Param -->
                                         <webaudio-param 
                                             link="yKnob" 
-                                            colors="var(--col1);var(--col2)"
-                                            midilearn="1">
+                                            midilearn="1"
+                                            colors="var(--col1);var(--col2)">
                                         </webaudio-param>
                                     </div>
                                     
@@ -180,19 +184,23 @@
                                         <webaudio-knob 
                                             id="zKnob" 
                                             min="-100" 
-                                            max="100"
+                                            max="100" 
                                             colors="var(--col1);var(--col2);var(--col3)" 
                                             midilearn="1">
                                         </webaudio-knob>
                                         <!-- Balance Button -->
-                                        <button class="btn action-button balance-button" 
-                                                data-src="/assets/icons/balance.svg" 
-                                                aria-label="Balance 3">
-                                            <!-- Balance Icon or Content -->
-                                        </button>
+                    
+                                        <webaudio-switch id="zBalance"
+                                        type="kick"
+                                        class="medium-switch" 
+                                        midilearn="1"
+                                        colors="var(--col1);var(--col2);var(--col3)">
+                                        </webaudio-switch>
+
                                         <!-- WebAudio Param -->
                                         <webaudio-param 
-                                            link="zKnob"  
+                                            link="zKnob" 
+                                            midilearn="1"
                                             colors="var(--col1);var(--col2)">
                                         </webaudio-param>
                                     </div>

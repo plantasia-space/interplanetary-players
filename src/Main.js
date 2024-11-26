@@ -107,60 +107,54 @@ initializeApp().then(animate);
 let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
 
-// Handle Event Listeners after DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Application initialized.");
 
-    
     // Check if the WebAudioControlsWidgetManager is available
     if (window.webAudioControlsWidgetManager) {
         console.log("webAudioControlsWidgetManager is defined.");
-
 
         // Add external MIDI listeners if needed
         window.webAudioControlsWidgetManager.addMidiListener((event) => {
             if (midiDumpEnabled) {
                 console.log("MIDI DUMP:", event.data);
 
-                                // Log registered widgets after ensuring widgets have connected
+                // Log registered widgets after ensuring widgets have connected
                 setTimeout(() => {
                     console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
                 }, 100); // 100ms delay
-
             }
         });
-        
-        // Add event listeners to controls
-        const xKnob = document.getElementById('xKnob');
-        if (xKnob) {
-            xKnob.addEventListener('change', (e) => {
-                //console.log("xKnob value changed to:", xKnob.value);
-            });
-        } else {
-            console.warn("Element with id 'xKnob' not found.");
-        }
 
-        const yKnob = document.getElementById('yKnob');
-        if (yKnob) {
-            yKnob.addEventListener('change', (e) => {
-                //console.log("yKnob value changed to:", yKnob.value);
-            });
-        } else {
-            console.warn("Element with id 'yKnob' not found.");
-        }
+        // Function to handle switch state changes
+        const handleSwitchChange = (switchId) => {
+            const switchElement = document.getElementById(switchId);
+            if (switchElement) {
+                switchElement.addEventListener('change', (e) => {
+                    console.log(`${switchId} state changed to:`, switchElement.state);
+                });
+            } else {
+                console.warn(`Element with id '${switchId}' not found.`);
+            }
+        };
 
-        const zKnob = document.getElementById('zKnob');
-        if (zKnob) {
-            zKnob.addEventListener('change', (e) => {
-                //console.log("zKnob value changed to:", zKnob.value);
-            });
-        } else {
-            console.warn("Element with id 'zKnob' not found.");
-        }
+        // Attach event listeners to all switches
+        const switchIds = ['xBalance', 'yBalance', 'sequentialSwitch', 'radioSwitch1', 'radioSwitch2', 'radioSwitch3'];
+        switchIds.forEach(id => handleSwitchChange(id));
 
-        
-
-
+        // Add event listeners to knobs
+        const knobIds = ['xKnob', 'yKnob', 'zKnob'];
+        knobIds.forEach(id => {
+            const knob = document.getElementById(id);
+            if (knob) {
+                knob.addEventListener('change', (e) => {
+                    // Example: Log knob value changes
+                    console.log(`${id} value changed to:`, knob.value);
+                });
+            } else {
+                console.warn(`Element with id '${id}' not found.`);
+            }
+        });
     } else {
         console.error("webAudioControlsWidgetManager is not defined.");
     }

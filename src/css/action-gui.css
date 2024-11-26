@@ -151,3 +151,17 @@
     text-align: center;
 }
 
+/* Define CSS classes for different sizes */
+.small-switch {
+    width: 54px;
+    height: 54px;
+  }
+  
+  .medium-switch {
+    width: 30%;
+  }
+  
+  .large-switch {
+    width: 150px;
+    height: 150px;
+  }
