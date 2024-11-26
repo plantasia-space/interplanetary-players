@@ -7,7 +7,14 @@
     font-weight: 400; /* Regular */
     font-style: normal;
 }
-
+/* Space Mono Regular (Body Text - Regular) */
+@font-face {
+    font-family: 'SpaceMono';
+    src: url('/public/assets/fonts/SpaceMono-Regular.woff2') format('woff2'),
+         url('/public/assets/fonts/SpaceMono-Regular.ttf') format('truetype');
+    font-weight: 400; /* Regular */
+    font-style: normal;
+}
 /* Inter Thin (Body Text - Ultra Light) */
 @font-face {
     font-family: 'Inter';
