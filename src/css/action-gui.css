@@ -2,7 +2,7 @@
 :root {
     --size-xyz-knobs: clamp(14vmin, 14vmin, 140vmin); /* Middle part (circles) */
     --size-lower-buttons: clamp(4vmin, 4vmin, 40vmin); /* General lower buttons */
-    --size-lower-buttons-side: clamp(5vmin, 8vmin, 50vmin); /* Side buttons (Play, Regen) */
+    --size-lower-buttons-side: clamp(5vmin, 8vmin, 50vmin); /* Side buttons (Play, cosmic-lfo) */
 
 }
 
@@ -69,18 +69,18 @@
     height: 85%;
 }
 
-/* Regen Button */
-.regen-button {
+/* cosmic-lfo Button */
+.cosmic-lfo-button {
     width: var(--size-lower-buttons-side);
     height: var(--size-lower-buttons-side);
 }
 
-.regen-button svg {
+.cosmic-lfo-button svg {
     width: 90%; /* Scale SVG */
     height: 90%;
 }
 
-.regen-button:hover svg {
+.cosmic-lfo-button:hover svg {
     width: 95%;
     height: 95%;
 }
@@ -165,3 +165,89 @@
     width: 150px;
     height: 150px;
   }
+  .dropup-center {
+    pointer-events: auto;
+
+  }
+  .dropup-center-menu {
+    pointer-events: auto;
+    min-width: 100px; /* Customize width */
+  }
+  
+/* Interaction Button */
+.interaction-button {
+    width: clamp(8vmin, 50px, 100px);
+    height: clamp(8vmin, 50px, 100px);
+    border: 2px solid var(--col1); /* Add stroke */
+    border-radius: 8px; /* Slightly rounded corners */
+    background-color: transparent;
+    color: var(--col1); /* Dynamic color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover and Focus State (Pressed but not hovered) */
+.interaction-button:hover,
+.interaction-button:focus {
+    transform: scale(1.05);
+    border-color: var(--col2); /* Highlighted stroke */
+    color: var(--col2); /* Highlighted color */
+    background-color: var(--col3, #c5c5c5); /* Optional hover/focus background */
+    outline: none; /* Remove default outline on focus */
+}
+
+/* Icon in Button */
+#interactionMenuIcon {
+    display: inline-block;
+    width: 60%; /* Adjust size relative to the button */
+    height: 60%;
+    color: inherit; /* Inherit currentColor */
+}
+
+/* Dropdown Menu Styling */
+.dropdown-item {
+    font-family: 'SpaceMono', sans-serif;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Default State for Dropdown Items */
+.dropdown-item {
+    background-color: transparent;
+    color: #000000; /* White text */
+}
+
+/* Hover State for Dropdown Items */
+.dropdown-item:hover {
+    background-color:  #d9d9d9; /* Small grey background */
+    border-radius: 4px; /* Optional rounded corners */
+}
+
+/* Dropdown Menu Icon Styling */
+.menu-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+.menu-label {
+    font-size: 0.9rem; /* Adjust label size */
+}
+
+/* Ensuring SVG Icons Respect CurrentColor */
+.menu-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor; /* Apply dynamic color */
+}
+
+.icon-svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor; /* Dynamic color */
+}

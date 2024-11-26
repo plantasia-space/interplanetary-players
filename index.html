@@ -146,7 +146,7 @@
                                         max = "1"
                                         class="medium-switch" 
                                         midilearn="1"
-                                        colors="var(--col1);var(--col2);var(--col3)">
+                                        colors="var(--col2);var(--col1);var(--col3)">
                                        </webaudio-switch>
                                         <!-- WebAudio Param -->
                                         <webaudio-param 
@@ -173,7 +173,7 @@
                                         min = "0"
                                         max = "1"
                                         midilearn="1"
-                                        colors="var(--col1);var(--col2);var(--col3)">
+                                        colors="var(--col2);var(--col1);var(--col3)">
                                         </webaudio-switch>
 
                                         <!-- WebAudio Param -->
@@ -202,7 +202,7 @@
                                         min = "0"
                                         max = "1"
                                         midilearn="1"
-                                        colors="var(--col1);var(--col2);var(--col3)">
+                                        colors="var(--col2);var(--col1);var(--col3)">
                                         </webaudio-switch>
 
                                         <!-- WebAudio Param -->
@@ -215,17 +215,65 @@
                                 </div>
                             </div>
                             
-                            <!-- Regen Button Column (2 columns) -->
+                            <!-- cosmic-lfo Button Column (2 columns) -->
                             <div class="col-1 d-flex justify-content-center">
-                                <button class="btn action-button regen-button" 
-                                        data-src="/assets/icons/regen.svg" 
-                                        aria-label="Regen">
-                                    <!-- Regen Icon or Content -->
+                              <!-- Dropup Menu -->
+                              <div class="dropup-center dropup">
+                                <button
+                                  class="btn interaction-button dropdown-toggle"
+                                  type="button"
+                                  id="interactionMenuButton"
+                                  data-bs-toggle="dropdown"
+                                  aria-expanded="false"
+                                  aria-label="Jump"
+                                >
+                                  <span id="interactionMenuIcon" data-src="/assets/icons/jam.svg"></span>
                                 </button>
-                            </div>
-                        </div>
-                    </div>            
-                </div>            </div>
+                                <ul class="dropdown-menu" aria-labelledby="interactionMenuButton">
+                                  <li>
+                                    <a class="dropdown-item" href="#" data-value="Jump" data-icon="/assets/icons/jam.svg">
+                                      <img
+                                        src="/assets/icons/jam.svg"
+                                        alt="Jump"
+                                        style="width: 16px; height: 16px; margin-right: 8px;"
+                                      />
+                                      Jam
+                                    </a>
+                                  </li>
+                                  <li>
+                                    <a class="dropdown-item" href="#" data-value="MIDI" data-icon="/assets/icons/midi.svg">
+                                      <img
+                                        src="/assets/icons/midi.svg"
+                                        alt="MIDI"
+                                        style="width: 16px; height: 16px; margin-right: 8px;"
+                                      />
+                                      MIDI
+                                    </a>
+                                  </li>
+                                  <li>
+                                    <a class="dropdown-item" href="#" data-value="Sensors" data-icon="/assets/icons/motion-sensor.svg">
+                                      <img
+                                        src="/assets/icons/motion-sensor.svg"
+                                        alt="Sensors"
+                                        style="width: 16px; height: 16px; margin-right: 8px;"
+                                      />
+                                      Sensors
+                                    </a>
+                                  </li>
+                                  <li>
+                                    <a class="dropdown-item" href="#" data-value="Cosmic LFO" data-icon="/assets/icons/cosmic-lfo.svg">
+                                      <img
+                                        src="/assets/icons/cosmic-lfo.svg"
+                                        alt="Cosmic LFO"
+                                        style="width: 16px; height: 16px; margin-right: 8px;"
+                                      />
+                                      Cosmic LFO
+                                    </a>
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>                </div>            
+            </div>
         </div>
     </div>
 </div>

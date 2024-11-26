@@ -10,24 +10,34 @@ function loadDynamicSVGs() {
         const src = icon.getAttribute('data-src');
         if (src) {
             fetch(src)
-                .then((response) => response.text())
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load SVG: ${src}`);
+                    }
+                    return response.text();
+                })
                 .then((svgContent) => {
                     const parser = new DOMParser();
                     const svgDocument = parser.parseFromString(svgContent, 'image/svg+xml');
                     const svgElement = svgDocument.documentElement;
 
                     if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
+                        // Add compatibility with currentColor
                         svgElement.setAttribute('fill', 'currentColor');
-                        svgElement.classList.add('icon-svg');
-                        icon.innerHTML = ''; // Clear existing content
+                        svgElement.setAttribute('role', 'img'); // Accessibility
+                        svgElement.classList.add('icon-svg'); // Custom class for additional styling
+
+                        // Clear existing content and append the SVG
+                        icon.innerHTML = '';
                         icon.appendChild(svgElement);
                     }
                 })
-                .catch(console.error);
+                .catch((error) => {
+                    console.error(`Error loading SVG from ${src}:`, error);
+                });
         }
     });
 }
-
 
 /**
  * Toggles the play/pause button dynamically.
@@ -105,9 +115,9 @@ document.querySelectorAll('.action-button').forEach((button) => {
                     console.log(`Adjusting ${action}`);
                     // Add balance adjustment logic here
                     break;
-                case 'Regen':
+                case 'cosmic-lfo':
                     console.log('Regenerating...');
-                    // Add regen logic here
+                    // Add cosmic-lfo logic here
                     break;
                 default:
                     console.warn('Unknown action.');
@@ -189,4 +199,27 @@ collapseContent.addEventListener('shown.bs.collapse', () => {
 loadDynamicSVGs();
 
 
-/////////// KNOBS ////////////
+/////////// DROPDOWN MENU ////////////
+
+
+
+// Update the main button icon dynamically
+const dropdownItems = document.querySelectorAll('.dropdown-item');
+const interactionMenuIcon = document.getElementById('interactionMenuIcon');
+
+dropdownItems.forEach((item) => {
+    item.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // Get the selected icon path and value
+        const newIconPath = item.getAttribute('data-icon');
+        const newValue = item.getAttribute('data-value');
+
+        // Update the button's SVG dynamically
+        interactionMenuIcon.setAttribute('data-src', newIconPath);
+        interactionMenuIcon.setAttribute('aria-label', newValue);
+
+        // Reload the SVG for the button
+        loadDynamicSVGs();
+    });
+});
