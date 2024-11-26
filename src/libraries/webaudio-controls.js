@@ -1459,275 +1459,257 @@ try {
 
   
   try{
-customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
-  constructor(){
-    super();
+    customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
+      constructor(){
+        super();
+      }
+      connectedCallback(){
+        let root;
+        if(this.attachShadow)
+          root=this.attachShadow({mode: 'open'});
+        else
+          root=this;
+        root.innerHTML=
+  `<style>
+  ${this.basestyle}
+  :host{
+    display:inline-block;
+    position:relative;
+    margin:0;
+    padding:0;
+    font-family: sans-serif;
+    font-size: 11px;
+    cursor:pointer;
   }
-  connectedCallback(){
-    let root;
-    if(this.attachShadow)
-      root=this.attachShadow({mode: 'open'});
-    else
-      root=this;
-    root.innerHTML=
-`<style>
-${this.basestyle}
-:host{
-  display:inline-block;
-  position:relative;
-  margin:0;
-  padding:0;
-  font-family: sans-serif;
-  font-size: 11px;
-  cursor:pointer;
-}
-.webaudio-switch-body{
-  display:inline-block;
-  position:relative;
-  margin:0;
-  padding:0;
-  vertical-align:bottom;
-  white-space:pre;
-}
-.webaudioctrl-label{
-  position:absolute;
-  left:50%;
-  top:50%;
-}
-</style>
-<div class='webaudio-switch-body' tabindex='1' touch-action='none'><div class='webaudioctrl-tooltip'></div><div part="label" class="webaudioctrl-label"><slot></slot></div></div>
-`;
-    this.elem=root.childNodes[2];
-    this.ttframe=this.elem.firstChild;
-    this.label=this.ttframe.nextSibling;
-    this.enable=this.getAttr("enable",1);
-    this._src=this.getAttr("src",null); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
-    this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
-    this.defvalue=this.getAttr("defvalue",this._value);
-    this.type=this.getAttr("type","toggle");
-    this.group=this.getAttr("group","");
-    this._width=this.getAttr("width",null); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
-    this._height=this.getAttr("height",null); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
-    this._diameter=this.getAttr("diameter",null); if (!this.hasOwnProperty("diameter")) Object.defineProperty(this,"diameter",{get:()=>{return this._diameter},set:(v)=>{this._diameter=v;this.setupImage()}});
-    this.invert=this.getAttr("invert",0);
-    this._colors=this.getAttr("colors",opt.switchColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
-    this.outline=this.getAttr("outline",opt.outline);
-    this.setupLabel();
-    this.valuetip=0;
-    this.tooltip=this.getAttr("tooltip",null);
-    this.midilearn=this.getAttr("midilearn",opt.midilearn);
-    this.midicc=this.getAttr("midicc",null);
-    this.midiController={};
-    this.midiMode="normal";
-    if(this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
-    }
-    if(this.midilearn && this.id){
-      if(webAudioControlsWidgetManager && webAudioControlsWidgetManager.midiLearnTable){
-        const ml=webAudioControlsWidgetManager.midiLearnTable;
-        for(let i=0; i < ml.length; ++i){
-          if(ml[i].id==this.id){
-            this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-            break;
+  .webaudio-switch-body{
+    display:inline-block;
+    position:relative;
+    margin:0;
+    padding:0;
+    vertical-align:bottom;
+    white-space:pre;
+  }
+  .webaudioctrl-label{
+    position:absolute;
+    left:50%;
+    top:50%;
+  }
+  </style>
+  <div class='webaudio-switch-body' tabindex='1' touch-action='none'><div class='webaudioctrl-tooltip'></div><div part="label" class="webaudioctrl-label"><slot></slot></div></div>
+  `;
+        this.elem=root.childNodes[2];
+        this.ttframe=this.elem.firstChild;
+        this.label=this.ttframe.nextSibling;
+        this.enable=this.getAttr("enable",1);
+        this._src=this.getAttr("src",null); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
+        this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
+        this.defvalue=this.getAttr("defvalue",this._value);
+        this.type=this.getAttr("type","toggle");
+        this.group=this.getAttr("group","");
+        this._width=this.getAttr("width",null); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
+        this._height=this.getAttr("height",null); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
+        this._diameter=this.getAttr("diameter",null); if (!this.hasOwnProperty("diameter")) Object.defineProperty(this,"diameter",{get:()=>{return this._diameter},set:(v)=>{this._diameter=v;this.setupImage()}});
+        this.invert=this.getAttr("invert",0);
+        this._colors=this.getAttr("colors",opt.switchColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
+        this.outline=this.getAttr("outline",opt.outline);
+        this.setupLabel();
+        this.valuetip=0;
+        this.tooltip=this.getAttr("tooltip",null);
+        this.midilearn=this.getAttr("midilearn",opt.midilearn);
+        this.midicc=this.getAttr("midicc",null);
+        this.midiController={};
+        this.midiMode="normal";
+        if(this.midicc) {
+            let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+            let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+            this.setMidiController(ch, cc);
+        }
+        if(this.midilearn && this.id){
+          if(webAudioControlsWidgetManager && webAudioControlsWidgetManager.midiLearnTable){
+            const ml=webAudioControlsWidgetManager.midiLearnTable;
+            for(let i=0; i < ml.length; ++i){
+              if(ml[i].id==this.id){
+                this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+                break;
+              }
+            }
           }
         }
+        this.setupImage();
+        this.digits=0;
+        if(this.step && this.step < 1) {
+          for(let n = this.step ; n < 1; n *= 10)
+            ++this.digits;
+        }
+        if(window.webAudioControlsWidgetManager)
+  //        window.webAudioControlsWidgetManager.updateWidgets();
+          window.webAudioControlsWidgetManager.addWidget(this);
+        this.elem.onclick=(e)=>{e.stopPropagation()};
       }
-    }
-    this.setupImage();
-    this.digits=0;
-    if(this.step && this.step < 1) {
-      for(let n = this.step ; n < 1; n *= 10)
-        ++this.digits;
-    }
-    if(window.webAudioControlsWidgetManager)
-      window.webAudioControlsWidgetManager.addWidget(this);
-    this.elem.onclick=(e)=>{e.stopPropagation()};
-  }
-  disconnectedCallback(){}
-  setupImage(){
-    this.coltab = this.colors.split(";");
-    this.kw=this._width||this._diameter||opt.switchWidth||opt.switchDiameter;
-    this.kh=this._height||this._diameter||opt.switchHeight||opt.switchDiameter;
-    this.img=new Image();
-    this.srcurl=null;
-    if(this.src==null||this.src==""){
-      if(this.kw==null) this.kw=32;
-      if(this.kh==null) this.kh=32;
-      const mm=Math.min(this.kw,this.kh);
-      const kw=this.kw,kh=this.kh;
-      const svg=
-`<svg xmlns="http://www.w3.org/2000/svg" width="${this.kw}" height="${this.kh*2}" preserveAspectRatio="none">
-<defs>
-<linearGradient id="g1" x1="0%" y1="0%" x2="0%" y2="100%">
-  <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-  <stop offset="100%" stop-color="#000" stop-opacity="0.2"/>
-</linearGradient>
-<radialGradient id="g2" cx="50%" cy="30%">
-    <stop offset="0%" stop-color="${this.coltab[2]}"/>
-    <stop offset="100%" stop-color="${this.coltab[0]}"/>
-  </radialGradient>
-  <filter id="f1">
-    <feGaussianBlur in="SourceGraphic" stdDeviation=".4" />
-  </filter>
-</defs>
-<g id="p1">
-  <rect x="${kw*.075}" y="${kh*.075}" width="${kw*.85}" height="${kh*.85}" rx="${mm*.1}" ry="${mm*.1}" fill="#000"/>
-  <rect x="${kw*.1}" y="${kh*.1}" width="${kw*.8}" height="${kh*.8}" rx="${mm*.1}" ry="${mm*.1}" fill="${this.coltab[1]}"/>
-</g>
-<g id="p2">
-  <circle cx="${kw*0.5}" cy="${kh*0.5}" r="${mm*0.35}" stroke="#000" stroke-width="${mm*.03}" fill="${this.coltab[0]}" filter="url(#f1)"/>
-  <circle cx="${kw*0.5}" cy="${kh*0.5}" r="${mm*0.27}" stroke="#000" stroke-width="${mm*.03}" fill="#000" filter="url(#f1)"/>
-  <rect x="${kw*.075}" y="${kh*.075}" width="${kw*.85}" height="${kh*.85}" rx="${mm*.1}" ry="${mm*.1}" fill="url(#g1)"/>
-</g>
-<use href="#p1" y="${kh}"/>
-<use href="#p2" y="${kh}"/>
-<circle cx="${kw*.5}" cy="${kh*1.5}" r="${mm*.25}" fill="url(#g2)" filter="url(#f1)"/>
-<circle cx="${kw*.5}" cy="${kh*1.5}" r="${mm*.25}" fill="url(#g1)"/>
-</svg>`;
-      this.srcurl="data:image/svg+xml;base64,"+btoa(svg);
-    }
-    else
-      this.srcurl=this.src;
-    this.img.onload=()=>{
-      if(this.src!=""&&this.src!=null){
-        this.elem.style.backgroundImage = "url("+this.srcurl+")";
-        this.elem.style.backgroundSize = "100% 100%";
-        if(this._width==null) this._width=this.img.width;
-        if(this._height==null) this._height=this.img.height;
-      }
-      else{
-        this.elem.style.backgroundColor=this.coltab[1];
-      }
-      this.elem.style.width=this.kw+"px";
-      this.elem.style.height=this.kh+"px";
-      this.elem.style.fontSize=this.fontsize+"px";
-      let l=document.getElementById(this.link);
-      if(l&&typeof(l.value)!="undefined"){
-        if(typeof(l.convValue)=="number")
-          this.setValue(l.convValue.toFixed(l.digits));
+      disconnectedCallback(){}
+      setupImage(){
+        this.coltab = this.colors.split(";");
+        this.kw=this._width||this._diameter||opt.switchWidth||opt.switchDiameter;
+        this.kh=this._height||this._diameter||opt.switchHeight||opt.switchDiameter;
+        this.img=new Image();
+        this.srcurl=null;
+        if(this.src==null||this.src==""){
+          if(this.kw==null) this.kw=32;
+          if(this.kh==null) this.kh=32;
+          const mm=Math.min(this.kw,this.kh);
+          const kw=this.kw,kh=this.kh;
+          const svg=
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${this.kw}" height="${this.kh*2}" preserveAspectRatio="none">
+  <defs>
+  <linearGradient id="g1" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#000" stop-opacity="0.2"/>
+  </linearGradient>
+  <radialGradient id="g2" cx="50%" cy="30%">
+      <stop offset="0%" stop-color="${this.coltab[2]}"/>
+      <stop offset="100%" stop-color="${this.coltab[0]}"/>
+    </radialGradient>
+    <filter id="f1">
+      <feGaussianBlur in="SourceGraphic" stdDeviation=".4" />
+    </filter>
+  </defs>
+  <g id="p1">
+    <rect x="${kw*.075}" y="${kh*.075}" width="${kw*.85}" height="${kh*.85}" rx="${mm*.1}" ry="${mm*.1}" fill="#000"/>
+    <rect x="${kw*.1}" y="${kh*.1}" width="${kw*.8}" height="${kh*.8}" rx="${mm*.1}" ry="${mm*.1}" fill="${this.coltab[1]}"/>
+  </g>
+  <g id="p2">
+    <circle cx="${kw*0.5}" cy="${kh*0.5}" r="${mm*0.35}" stroke="#000" stroke-width="${mm*.03}" fill="${this.coltab[0]}" filter="url(#f1)"/>
+    <circle cx="${kw*0.5}" cy="${kh*0.5}" r="${mm*0.27}" stroke="#000" stroke-width="${mm*.03}" fill="#000" filter="url(#f1)"/>
+    <rect x="${kw*.075}" y="${kh*.075}" width="${kw*.85}" height="${kh*.85}" rx="${mm*.1}" ry="${mm*.1}" fill="url(#g1)"/>
+  </g>
+  <use href="#p1" y="${kh}"/>
+  <use href="#p2" y="${kh}"/>
+  <circle cx="${kw*.5}" cy="${kh*1.5}" r="${mm*.25}" fill="url(#g2)" filter="url(#f1)"/>
+  <circle cx="${kw*.5}" cy="${kh*1.5}" r="${mm*.25}" fill="url(#g1)"/>
+  </svg>`;
+          this.srcurl="data:image/svg+xml;base64,"+btoa(svg);
+        }
         else
-          this.setValue(l.convValue);
-        if(this.currentLink)
-          this.currentLink.target.removeEventListener("input",this.currentLink.func);
-        this.currentLink={target:l, func:(e)=>{
-          if(typeof(l.convValue)=="number")
-            this.setValue(l.convValue.toFixed(l.digits));
-          else
-            this.setValue(l.convValue);
-        }};
-        this.currentLink.target.addEventListener("input",this.currentLink.func);
+          this.srcurl=this.src;
+        this.img.onload=()=>{
+          if(this.kw==null) this.kw=this.img.width;
+          if(this.kh==null) this.kh=this.img.height*0.5;
+          this.elem.style.backgroundImage = "url("+this.srcurl+")";
+          this.elem.style.backgroundSize = "100% 200%";
+          this.elem.style.width=this.kw+"px";
+          this.elem.style.height=this.kh+"px";
+          this.redraw();
+        }
+        this.img.src=this.srcurl;
       }
-      this.redraw();
-    };
-    this.img.src=this.srcurl;
-  }
-  redraw() {
-    this.elem.value=this.value;
-  }
-  setValue(v,f){
-    this.value=v;
-    if(this.value!=this.oldvalue){
-      this.redraw();
-      this.showtip(0);
-      if(f){
-        this.sendEvent("input");
-        this.sendEvent("change");
+      redraw() {
+        let style = this.elem.style;
+        if(this.value^this.invert)
+          style.backgroundPosition = "0px -100%";
+        else
+          style.backgroundPosition = "0px 0px";
       }
-      this.oldvalue=this.value;
-    }
-  }
-  pointerdown(ev){
-    if(!this.enable)
-      return;
-    let e=ev;
-    if(ev.touches)
-        e = ev.touches[0];
-    else {
-      if(e.buttons!=1 && e.button!=0)
-        return;
-    }
-    this.elem.focus();
-    this.drag=1;
-    this.showtip(0);
-    let pointermove=(ev)=>{
-      if(!this.enable)
-        return;
-      let r=this.getBoundingClientRect();
-      let v=[],p;
-      if(ev.touches)
-        p=ev.targetTouches;
-      else if(this.press)
-        p=[ev];
-      else
-        p=[];
-      if(p.length>0)
+      setValue(v,f){
+        this.value=v;
+        this.checked=(!!v);
+        if(this.value!=this.oldvalue){
+          this.redraw();
+          this.showtip(0);
+          if(f){
+            this.sendEvent("input");
+            this.sendEvent("change");
+          }
+          this.oldvalue=this.value;
+        }
+      }
+      pointerdown(ev){
+        if(!this.enable)
+          return;
+        let e=ev;
+        if(ev.touches){
+          e = ev.changedTouches[0];
+          this.identifier=e.identifier;
+        }
+        else {
+          if(e.buttons!=1 && e.button!=0)
+            return;
+        }
+        this.elem.focus();
         this.drag=1;
-      for(let i=0;i<p.length;++i) {
-        let px=p[i].clientX-r.left;
-        let py=p[i].clientY-r.top;
-        let x,k,ko;
-        if(py>=0&&py<this.height){
-          if(py<this.bheight) {
-            x=px-this.wwidth*this.ko[this.min%12];
-            k=this.min+((x/this.bwidth)|0);
-          }
-          else {
-            k=(px/this.wwidth)|0;
-            ko=this.kp[this.min%12];
-            k+=ko;
-            k=this.min+((k/7)|0)*12+this.kn[k%7]-this.kn[ko%7];
-          }
-          if(k>=this.min&&k<=this.max)
-            v.push(k);
+        this.showtip(0);
+        let pointermove=(e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
         }
-      }
-      v.sort();
-      this.values=v;
-      this.sendevent();
-      this.redraw();
-    }
-      
-    let pointerup=(ev)=>{
-      if(this.enable) {
-        if(ev.touches)
-          this.press=ev.touches.length;
-        else
-          this.press=0;
-        pointermove(ev);
-        this.sendevent();
-        if(this.press==0){
+        let pointerup=(e)=>{
+          this.drag=0;
+          this.showtip(0);
           window.removeEventListener('mousemove', pointermove);
           window.removeEventListener('touchmove', pointermove, {passive:false});
           window.removeEventListener('mouseup', pointerup);
           window.removeEventListener('touchend', pointerup);
           window.removeEventListener('touchcancel', pointerup);
           document.body.removeEventListener('touchstart', preventScroll,{passive:false});
+          if(this.type=="kick"){
+            this.value=0;
+            this.checked=false;
+            this.redraw();
+            this.sendEvent("change");
+          }
+          this.sendEvent("click");
+          e.preventDefault();
+          e.stopPropagation();
         }
+        let preventScroll=(e)=>{
+          e.preventDefault();
+        }
+        switch(this.type){
+        case "kick":
+          this.setValue(1);
+          this.sendEvent("change");
+          break;
+        case "toggle":
+          if(e.ctrlKey || e.metaKey)
+            this.value=defvalue;
+          else
+            this.value=1-this.value;
+          this.checked=!!this.value;
+          this.sendEvent("change");
+          break;
+        case "radio":
+          let els=document.querySelectorAll("webaudio-switch[type='radio'][group='"+this.group+"']");
+          for(let i=0;i<els.length;++i){
+            if(els[i]==this)
+              els[i].setValue(1);
+            else
+              els[i].setValue(0);
+          }
+          this.sendEvent("change");
+          break;
+        }
+  
+        window.addEventListener('mouseup', pointerup);
+        window.addEventListener('touchend', pointerup);
+        window.addEventListener('touchcancel', pointerup);
+        document.body.addEventListener('touchstart', preventScroll,{passive:false});
         this.redraw();
+        ev.preventDefault();
+        ev.stopPropagation();
+        return false;
       }
-      this.drag=0;
-      ev.preventDefault();
-    }
-    let preventScroll=(ev)=>{
-      ev.preventDefault();
-    }
-    window.addEventListener('mousemove', pointermove);
-    window.addEventListener('touchmove', pointermove, {passive:false});
-    window.addEventListener('mouseup', pointerup);
-    window.addEventListener('touchend', pointerup);
-    window.addEventListener('touchcancel', pointerup);
-    document.body.addEventListener('touchstart', preventScroll,{passive:false});
-    pointermove(ev);
-    ev.preventDefault();
-    ev.stopPropagation();
+    });
+  } catch(error){
+    console.log("webaudio-switch already defined");
   }
-});
-} catch(error){
-  console.log("webaudio-switch already defined");
-}
+  
 
+
+
+
+
+
+  
 try{
   customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
     constructor(){
@@ -2334,7 +2316,7 @@ class WebAudioControlsWidgetManager {
 
   handleMIDIMessage(event) {
     // Retained: Log the incoming MIDI message data
-    console.log(`MIDI IN:`, event.data);
+   // console.log(`MIDI IN:`, event.data);
 
     // Handle external MIDI messages
     this.listOfExternalMidiListeners.forEach(function (externalListener) {

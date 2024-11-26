@@ -32,7 +32,7 @@ html, body {
     font-family: 'Orbit', sans-serif;
 }
 
-webaudio-knob, webaudio-param, webaudio-slider {
+webaudio-knob, webaudio-param, webaudio-slider, webaudio-switch {
     pointer-events: auto;
   }
 
