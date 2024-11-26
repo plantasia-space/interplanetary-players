@@ -317,40 +317,30 @@
     }
     
     processMidiEvent(event) {
-      // Log entry into processMidiEvent
-      //console.log(`MIDI LOG: processMidiEvent called for widget ${this.id || this.tagName}`);
-      
       const status = event.data[0];
       const channel = status & 0xf;
-      const messageType = status & 0xf0;
       const controlNumber = event.data[1];
       const controlValue = event.data[2];
-  
-      // Log received MIDI message details
-      //console.log(`MIDI LOG: Received MIDI message - Status: ${status}, Channel: ${channel}, Type: ${messageType.toString(16)}, CC: ${controlNumber}, Value: ${controlValue}`);
-  
-      if (this.midiMode === 'learn') {
-          this.setMidiController(channel, controlNumber);
-          // Log MIDI Learn action
-          console.log(`MIDI LOG: MIDI Learn activated for widget ${this.id || this.tagName}. Set controller to channel ${channel}, CC ${controlNumber}`);
-          window.webAudioControlsWidgetManager.contextMenuClose();
-          this.midiMode = 'normal';
-          window.webAudioControlsWidgetManager.preserveMidiLearn();
-          return; // Exit after setting the controller
+    
+      if (this.midiMode === "learn") {
+        this.setMidiController(channel, controlNumber);
+        window.webAudioControlsWidgetManager.contextMenuClose();
+        this.midiMode = "normal";
+        window.webAudioControlsWidgetManager.preserveMidiLearn();
+        return;
       }
-  
       if (this.listeningToThisMidiController(channel, controlNumber)) {
-          // Log that the widget is responding to this MIDI controller
-        //  console.log(`MIDI LOG: Widget ${this.id || this.tagName} is responding to MIDI controller - Channel: ${channel}, CC: ${controlNumber}`);
-          const val = this.min + (this.max - this.min) * controlValue / 127;
-          // Log the value being set
-         // console.log(`MIDI LOG: Setting widget ${this.id || this.tagName} value to ${val}`);
+
+        if (this.tagName === "WEBAUDIO-SWITCH") {
+
+          this.handleSwitchMidiMessage(event); // Call switch-specific handler
+        } else {
+          const val = this.min + (this.max - this.min) * (controlValue / 127);
           this.setValue(val, true);
-      } else {
-          // Log that the widget is ignoring this MIDI controller
-     //     console.log(`MIDI LOG: Widget ${this.id || this.tagName} is ignoring MIDI controller - Channel: ${channel}, CC: ${controlNumber}`);
+        }
       }
-  }
+    }
+
 }
 
 try {
@@ -1457,6 +1447,8 @@ try {
 
 
 
+  
+
   try {
     // Helper function to draw a hexagon
     function drawHexagon(ctx, x, y, radius, fillStyle, strokeStyle) {
@@ -1606,33 +1598,41 @@ try {
   
         // MIDI Initialization
         this.midilearn = this.getAttr("midilearn", opt.midilearn);
+        console.log("Initialized midilearn:", this.midilearn);
+        
         this.midicc = this.getAttr("midicc", null);
+        console.log("Initialized midicc:", this.midicc);
+        
         this.midiController = {};
         this.midiMode = "normal";
+        
         if (this.midicc) {
-          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-          this.setMidiController(ch, cc);
+            console.log("Parsing midicc:", this.midicc);
+            let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+            let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+            console.log("Setting MIDI controller - channel:", ch, "CC:", cc);
+            this.setMidiController(ch, cc);
         }
+        
         let retries = 0;
-        const maxRetries = 5; // Retry up to 5 times
+        const maxRetries = 5; // Retry up to 50 times (5 seconds total if 100ms delay)
         const attemptToLoadMidiLearn = () => {
-          if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-            const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-            for (let i = 0; i < ml.length; ++i) {
-              if (ml[i].id === this.id) {
-                console.log(`Loaded MIDI mapping for widget ${this.id}`);
-                this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-                return; // Stop retrying on success
-              }
+            if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
+                const ml = window.webAudioControlsWidgetManager.midiLearnTable;
+                for (let i = 0; i < ml.length; ++i) {
+                    if (ml[i].id === this.id) {
+                        console.log(`Loaded MIDI mapping for widget ${this.id}`);
+                        this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+                        return; // Stop retrying on success
+                    }
+                }
+                console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
+            } else if (retries < maxRetries) {
+                console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
+                setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
+            } else {
+                console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
             }
-            console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
-          } else if (retries < maxRetries) {
-            console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
-            setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
-          } else {
-            console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
-          }
         };
         attemptToLoadMidiLearn();
   
@@ -1734,38 +1734,51 @@ try {
         }
       }
   
-      // MIDI Methods
-      setMidiController(channel, cc) {
-        this.midiController.channel = channel;
-        this.midiController.cc = cc;
-        if (window.webAudioControlsMidiManager) {
-          window.webAudioControlsMidiManager.addWidget(this);
+  
+      setValue(v,f){
+      this.value=v;
+      this.checked=(!!v);
+      if(this.value!=this.oldvalue){
+        this.redraw();
+        this.showtip(0);
+        if(f){
+          this.sendEvent("input");
+          this.sendEvent("change");
+        }
+        this.oldvalue=this.value;
+      }
+    }
+
+    handleSwitchMidiMessage(event) {
+
+      //console.log("handleSwitchMidiMessage:", event.data);
+      const data = event.data;
+      const status = data[0];
+      const channel = status & 0x0F;
+      const type = status & 0xF0;
+      const cc = data[1];
+      const value = data[2];
+    
+      if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
+        if (this.type === "toggle" || this.type === "radio") {
+          const newState = value > 0 ? 1 : 0;
+          this.setState(newState, true);
+        } else if (this.type === "kick") {
+          if (value > 0) {
+            this.triggerKick();
+          }
+        } else if (this.type === "sequential") {
+          // For sequential type, map MIDI value to state within min and max
+          const range = this._max - this._min + 1;
+          const mappedState = this._min + Math.floor((value / 128) * range);
+          this.setState(mappedState, true);
         }
       }
   
-      onMidiMessage(event) {
-        const data = event.data;
-        const status = data[0];
-        const channel = status & 0x0F;
-        const type = status & 0xF0;
-        const cc = data[1];
-        const value = data[2];
+    }
   
-        if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
-          if (this.type === "toggle" || this.type === "radio") {
-            const newState = value > 0 ? 1 : 0;
-            this.setState(newState, true);
-          } else if (this.type === "kick") {
-            if (value > 0) {
-              this.triggerKick();
-            }
-          } else if (this.type === "sequential") {
-            // For sequential type, map MIDI value to state within min and max
-            const range = this._max - this._min + 1;
-            const mappedState = this._min + Math.floor((value / 128) * range);
-            this.setState(mappedState, true);
-          }
-        }
+      onMidiMessage(event) {
+
       }
   
       setupCanvas() {
@@ -2140,6 +2153,35 @@ try {
   } catch (error) {
     console.error("webaudio-switch already defined or error in definition:", error);
   }
+  
+  
+  
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 
   
