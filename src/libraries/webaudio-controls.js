@@ -2303,7 +2303,7 @@ ${this.basestyle}
   border:none;
 }
 </style>
-<input class='webaudio-param-body' value='0' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
+<input class='webaudio-param-body' value='0' inputmode='numeric' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
 `;
       this.elem=root.childNodes[2];
       this.ttframe=root.childNodes[3];
