@@ -79,11 +79,33 @@
       <div class="col-10 text-center">
         <h1 class="responsive-title">jamming</h1>
       </div>
+        <!-- More Button with Dropdown Menu -->
+        <div class="col-1 d-flex justify-content-end align-items-center">
+          <div class="dropdown">
+            <button class="btn info-button dropdown-toggle" type="button" id="moreMenuButton"
+              data-bs-toggle="dropdown" aria-expanded="false" aria-label="more">
+              <img src="/assets/icons/more.svg" alt="More" style="width: 16px; height: 16px; margin-right: 8px;">
+              . . . 
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="moreMenuButton">
+              <li>
+                  <a class="dropdown-item" href="#" data-value="Share">
+                      <img src="/assets/icons/share.svg" alt="Share" class="menu-item-icon"
+                          style="width: 16px; height: 16px; margin-right: 8px;">
+                      Share
+                  </a>
+              </li>
+              <li>
+                  <a class="dropdown-item" href="#" data-value="Fullscreen">
+                      <img src="/assets/icons/fullscreen.svg" alt="Fullscreen"
+                          class="menu-item-icon" style="width: 16px; height: 16px; margin-right: 8px;">
+                      Open in Fullscreen
+                  </a>
+              </li>
+          </ul>          
+        </div>
+        </div>
 
-      <!-- Tutor Button (Right, optional) -->
-      <div class="col-1 d-flex justify-content-end align-items-center">
-        <!-- Add tutor button if needed -->
-      </div>
     </div>
 
     <!-- Grid Row -->
@@ -167,6 +189,20 @@
                           <img src="/assets/icons/stop_circle.svg" alt="Stop" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Stop
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Rec" data-icon="/assets/icons/rec_circle.svg">
+                          <img src="/assets/icons/rec_circle.svg" alt="Rec" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Rec
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Playback" data-icon="/assets/icons/playback.svg">
+                          <img src="/assets/icons/playback.svg" alt="Playback" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Playback
                         </a>
                       </li>
                     </ul>

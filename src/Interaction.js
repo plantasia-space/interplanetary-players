@@ -12,7 +12,13 @@ export function setupInteractions(dataManager, audioPlayer) {
         console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
         return;
     }
-
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', event => {
+            event.preventDefault(); // Prevent default link behavior
+            const action = item.getAttribute('data-value'); // Get action value
+            handleMoreDropdown(action); // Call the handler
+        });
+    });
     // Initialize all button groups
     document.querySelectorAll('.button-group-container').forEach(group => {
         const groupType = group.getAttribute('data-group');
@@ -52,4 +58,21 @@ export function setupInteractions(dataManager, audioPlayer) {
             });
         }
     });
+
+
+
+    
+}
+
+function handleMoreDropdown(action) {
+    switch (action) {
+        case 'Share':
+            console.log('Share action triggered');
+            break;
+        case 'Fullscreen':
+            console.log('Fullscreen action triggered');
+            break;
+        default:
+            console.log('Unknown action');
+    }
 }
