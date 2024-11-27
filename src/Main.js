@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (knob) {
                 knob.addEventListener('change', (e) => {
                     // Example: Log knob value changes
-                    console.log(`${id} value changed to:`, knob.value);
+                   // console.log(`${id} value changed to:`, knob.value);
                 });
             } else {
                 console.warn(`Element with id '${id}' not found.`);
