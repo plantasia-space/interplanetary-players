@@ -6,6 +6,7 @@ import { DataManager } from './DataManager.js';
 import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
 import { setupInteractions } from './Interaction.js';
+import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -15,28 +16,14 @@ const renderer = initRenderer(canvas3D);
 addLights(scene);
 
 const dataManager = new DataManager();
+const audioPlayer = new AudioPlayer(); // Instantiate AudioPlayer
 
 let animationRunning = false;
 
-// Define Play and Pause Handlers
-function handlePlay() {
-    if (!animationRunning) {
-        animationRunning = true;
-        console.log('Play button clicked: Animations/Sound started.');
-        // Implement actual play functionality here (e.g., start sound, animations)
-    }
-}
-
-function handlePause() {
-    if (animationRunning) {
-        animationRunning = false;
-        console.log('Pause button clicked: Animations/Sound paused.');
-        // Implement actual pause functionality here (e.g., stop sound, animations)
-    }
-}
-
 
 // Initialize Application
+// src/Main.js
+
 async function initializeApp() {
     try {
         console.log('[APP] Starting application...');
@@ -63,7 +50,7 @@ async function initializeApp() {
         window.webAudioControlsWidgetManager.setTrackId(trackId);
 
         // Populate placeholders using the default type 'monitorInfo'
-        setupInteractions(dataManager);
+        setupInteractions(dataManager, audioPlayer); // Pass audioPlayer here
         dataManager.populatePlaceholders('monitorInfo');
 
         // Load the model and display it in the scene
@@ -73,7 +60,6 @@ async function initializeApp() {
         console.error('[APP] Error during application initialization:', error);
     }
 }
-
 window.addEventListener('resize', () => {
     const MIN_SIZE = 340; // Minimum frame size
 
@@ -102,13 +88,14 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-initializeApp().then(animate);
-
 let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Application initialized.");
+
+    // Initialize the application and start the animation loop
+    initializeApp().then(animate);
 
     // Check if the WebAudioControlsWidgetManager is available
     if (window.webAudioControlsWidgetManager) {
