@@ -78,6 +78,29 @@ h1.responsive-title {
     color: inherit; /* Inherit currentColor */
 }
 
+/* info Button */
+.more-button {
+    width: clamp(8vmin, 50px, 100px);
+    height: clamp(8vmin, 50px, 100px);
+    /*border: 2px solid var(--col1);  Add stroke */
+    border-radius: 8px; /* Slightly rounded corners */
+    background-color: transparent;
+    color: var(--col1); /* Dynamic color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover and Focus State (Pressed but not hovered) */
+.more-button:hover,
+.more-button:focus {
+    transform: scale(1.05);
+    /*border-color: var(--col2);  Highlighted stroke */
+    color: var(--col2); /* Highlighted color */
+    outline: none; /* Remove default outline on focus */
+}
+
 
 .grid-row {
     display: flex;
