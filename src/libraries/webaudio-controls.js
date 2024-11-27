@@ -782,24 +782,29 @@ try {
     }
 
     wheel(e) {
-      if (!this.enable)
-        return;
+      if (!this.enable) return;
+    
+      // Determine scroll direction
+      let direction = e.deltaY || (e.wheelDelta ? -e.wheelDelta : 0); // Use wheelDelta for fallback
+      direction = Math.sign(direction); // Normalize to -1 or 1
+    
       if (this.log) {
+        // Logarithmic mode
         let r = Math.log(this.value / this.min) / Math.log(this.max / this.min);
-        let d = (e.deltaY > 0 ? -0.01 : 0.01);
-        if (!e.shiftKey)
-          d *= 5;
+        let d = direction * 0.01; // Base delta for logarithmic scaling
         r += d;
-        r = Math.max(0, Math.min(1, r)); // Clamp between 0 and 1
-        this.setValue(this.min * Math.pow(this.max / this.min, r), true);
+        r = Math.max(0, Math.min(1, r)); // Clamp ratio between 0 and 1
+        const newValue = this.min * Math.pow(this.max / this.min, r);
+        this.setValue(newValue, true);
+      } else {
+        // Linear mode
+        let delta = this.step || (this.max - this.min) * 0.05; // Default 5% range step
+        delta *= direction; // Apply direction
+        const newValue = +this.value + delta;
+        this.setValue(newValue, true);
       }
-      else {
-        let delta = Math.max(this.step, (this.max - this.min) * 0.05);
-        if (e.shiftKey)
-          delta = this.step ? this.step : 1;
-        delta = e.deltaY > 0 ? -delta : delta;
-        this.setValue(+this.value + delta, true);
-      }
+    
+      // Prevent default scrolling behavior
       e.preventDefault();
       e.stopPropagation();
     }
@@ -1025,7 +1030,7 @@ try {
         this._direction = this.getAttribute("direction") || "horz";
         this.log = this.getAttr("log", 0);
         this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
-        this.outline = this.getAttribute("outline") || "1px solid #444";
+        this.outline = this.getAttribute("outline") || "none";        
         this.setupLabel();
         this.sensitivity = parseFloat(this.getAttribute("sensitivity")) || 1;
         this.valuetip = this.getAttr("valuetip", opt.valuetip);
@@ -1294,42 +1299,52 @@ try {
       }
   
   
-      /**
-       * Draws the slider on the canvas based on the provided ratio.
-       * @param {number} ratio - A value between 0 and 1 representing the current slider position.
-       */
-      drawSlider(ratio) {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this._width, this._height);
-      
+        /**
+         * Draws the slider on the canvas based on the provided ratio.
+         * @param {number} ratio - A value between 0 and 1 representing the current slider position.
+         */
+        drawSlider(ratio) {
+          const ctx = this.ctx;
+          ctx.clearRect(0, 0, this._width, this._height);
+          // Draw track
+
         // Draw background track
-        ctx.fillStyle = "#00000000"; // Background color
+        ctx.fillStyle = "#00000000"; // Transparent background
         ctx.fillRect(0, 0, this._width, this._height);
-      
-        // Draw track
-        ctx.fillStyle = this.coltab[1] || '#333'; // Track color
+
+        // Draw centered track line
+        ctx.strokeStyle = "white" || '#333'; // Track color
+        ctx.lineWidth = 1; // 1-pixel line
+        ctx.beginPath();
         if (this.isHorizontal) {
-          ctx.fillRect(this.trackX, this.trackY, this.trackLength, this.trackHeight);
-          // No stroke
+          // Centered horizontal line
+          const centerY = this.trackY + this.trackHeight / 2; // Vertical center of the track
+          ctx.moveTo(this.trackX, centerY);
+          ctx.lineTo(this.trackX + this.trackLength, centerY);
         } else {
-          ctx.fillRect(this.trackX, this.trackY, this.trackHeight, this.trackLength);
-          // No stroke
+          // Centered vertical line
+          const centerX = this.trackX + this.trackHeight / 2; // Horizontal center of the track
+          ctx.moveTo(centerX, this.trackY);
+          ctx.lineTo(centerX, this.trackY + this.trackLength);
         }
-      
-/*         // Draw filled portion
-        ctx.fillStyle = this.coltab[0] || '#e00'; // Fill color
+        ctx.stroke();
+
+        // Draw filled portion
+        ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
+        ctx.lineWidth = 1; // Same thickness
+        ctx.beginPath();
         if (this.isHorizontal) {
-          ctx.fillRect(this.trackX, this.trackY, this.trackLength * ratio, this.trackHeight);
+          const centerY = this.trackY + this.trackHeight / 2; // Vertical center of the track
+          ctx.moveTo(this.trackX, centerY);
+          ctx.lineTo(this.trackX + this.trackLength * ratio, centerY);
         } else {
-          ctx.fillRect(
-            this.trackX,
-            this.trackY + this.trackLength * (1 - ratio),
-            this.trackHeight,
-            this.trackLength * ratio
-          );
+          const centerX = this.trackX + this.trackHeight / 2; // Horizontal center of the track
+          ctx.moveTo(centerX, this.trackY + this.trackLength * (1 - ratio));
+          ctx.lineTo(centerX, this.trackY + this.trackLength);
         }
+        ctx.stroke();
       
- */        // Draw triangle knob/pointer
+         // Draw triangle knob/pointer
         ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
         ctx.strokeStyle = this.coltab[3] || '#777'; // Outline color
         ctx.lineWidth = 1;
@@ -1404,9 +1419,14 @@ try {
   
       wheel(e) {
         if (!this.enable) return;
+      
+        // Determine scroll direction
         let delta = e.deltaY < 0 ? this._step || 1 : -(this._step || 1);
-        if (e.shiftKey) delta *= 5; // Increase sensitivity with shift
+      
+        // Update the value
         this.setValue(this._value + delta, true);
+      
+        // Prevent default scrolling behavior
         e.preventDefault();
         e.stopPropagation();
       }
@@ -2346,6 +2366,7 @@ ${this.basestyle}
         }
       }
     }
+    
     disconnectedCallback(){}
     setupImage(){
       this.imgloaded=()=>{
@@ -2413,17 +2434,17 @@ ${this.basestyle}
         this.oldvalue=this.value;
       }
     }
-    pointerdown(ev){
-      if(!this.enable)
-        return;
-      let e=ev;
-      if(ev.touches)
-          e = ev.touches[0];
-      else {
-        if(e.buttons!=1 && e.button!=0)
-          return;
-      }
+    pointerdown(ev) {
+      ev.preventDefault(); // Stop default behavior
+      console.log("Debug: pointerdown triggered", ev);
+    
+      if (!this.enable) return;
+    
+      const e = ev.touches ? ev.touches[0] : ev;
+      if (!ev.touches && (e.buttons !== 1 && e.button !== 0)) return;
+    
       this.elem.focus();
+      console.log("Debug: Focus set on element", this.elem);
       this.redraw();
     }
   });
