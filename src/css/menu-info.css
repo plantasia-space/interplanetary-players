@@ -12,8 +12,6 @@
     z-index: 10; /* Place above other elements */
     max-height: 80vh; /* Prevent overflow */
     overflow-y: auto; /* Enable scrolling if content exceeds height */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add subtle shadow */
-    border: 1px solid rgba(0, 0, 0, 0.1); /* Optional: Add a border for clarity */
     transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth expand/collapse */
     opacity: 0; /* Hidden by default */
     transform: scaleY(0); /* Collapsed state */
@@ -69,7 +67,6 @@ h1.responsive-title {
     transform: scale(1.05);
     /*border-color: var(--col2);  Highlighted stroke */
     color: var(--col2); /* Highlighted color */
-    background-color: var(--col3, #c5c5c5); /* Optional hover/focus background */
     outline: none; /* Remove default outline on focus */
 }
 

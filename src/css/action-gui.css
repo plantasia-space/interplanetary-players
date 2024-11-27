@@ -187,7 +187,6 @@
     transform: scale(1.05);
     /*border-color: var(--col2);  Highlighted stroke */
     color: var(--col2); /* Highlighted color */
-    background-color: var(--col3, #c5c5c5); /* Optional hover/focus background */
     outline: none; /* Remove default outline on focus */
 }
 
@@ -220,7 +219,6 @@
     transform: scale(1.05);
     /*border-color: var(--col2);  Highlighted stroke */
     color: var(--col2); /* Highlighted color */
-    background-color: var(--col3, #c5c5c5); /* Optional hover/focus background */
     outline: none; /* Remove default outline on focus */
 }
 
