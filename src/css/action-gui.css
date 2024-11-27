@@ -156,13 +156,12 @@
 
 
 
-
-
-
+  .dropdown,
   .dropup-center {
     pointer-events: auto;
 
   }
+  .dropdown-menu,
   .dropup-center-menu {
     pointer-events: auto;
     min-width: 100px; /* Customize width */
@@ -201,7 +200,7 @@
 }
 
 
-/* Interaction Button */
+/* Transport Button */
 .transport-button {
     width: clamp(8vmin, 50px, 100px);
     height: clamp(8vmin, 50px, 100px);

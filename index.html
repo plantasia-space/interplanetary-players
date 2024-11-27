@@ -1,354 +1,299 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Interplanetary Players</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/src/css/style.css">
 
-    <script type="module" src="/src/libraries/webaudio-controls.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <title>Interplanetary Players</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/src/css/style.css">
+
+  <script type="module" src="/src/libraries/webaudio-controls.js"></script>
 </head>
+
 <body>
 
-<div class="ratio-frame">
-    <div class="interface-content">
+  <div class="ratio-frame">
+    <!-- Canvas for Three.js -->
+    <canvas id="canvas3D" class="webgl"></canvas>
 
-        <!-- Canvas for Three.js -->
-        <canvas id="canvas3D" class="webgl"></canvas>
+    <!-- UI Overlay -->
+<!-- UI Overlay -->
+<div class="ui-overlay">
+  <div class="sub-frame d-flex flex-column">
 
-        <!-- UI Overlay -->
-        <div class="ui-overlay">
-            <div class="sub-frame d-flex flex-column">
-                <!-- Header Row -->
-                <div class="d-flex justify-content-between">
-                    <div class="info-row">
-                        <!-- Info Button (Left) -->
-                        <div class="col-1 d-flex justify-content-start align-items-center">
-                            <button class="btn btn-outline-primary menu-info-toggle" type="button" aria-expanded="false" aria-controls="collapseInfoMenu"></button>
-                        </div>
-
-                        <!-- Title (Center) -->
-                        <div class="col-10 text-center">
-                            <h1 class="responsive-title">jamming</h1>
-                        </div>
-
-                        <!-- Tutor Button (Right) -->
-                        <div class="col-1 d-flex justify-content-end align-items-center">
-                            <!-- Add tutor button if needed -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Collapsible Menu -->
-                <div class="collapse mt-3" id="collapseInfoMenu">
-                    <div class="info-collapse-container">
-                        <!-- Vertical Button Group (Left Column) -->
-                        <div class="btn-group-vertical-container">
-                            <div class="button-group-container" data-group="information">
-                                <div class="btn-group-vertical" role="group" aria-label="Menu Info Icon Group">
-                                    <input type="radio" class="btn-check" name="iconGroup" id="monitorInfo" autocomplete="off" checked>
-                                    <label class="btn btn-outline-primary menu-info-icon" for="monitorInfo" data-target="monitorInfo" data-src="/assets/icons/control_monitor.svg"></label>
-
-                                    <input type="radio" class="btn-check" name="iconGroup" id="trackInfo" autocomplete="off">
-                                    <label class="btn btn-outline-primary menu-info-icon" for="trackInfo" data-target="trackInfo" data-src="/assets/icons/track.svg"></label>
-
-                                    <input type="radio" class="btn-check" name="iconGroup" id="interplanetaryPlayerInfo" autocomplete="off">
-                                    <label class="btn btn-outline-primary menu-info-icon" for="interplanetaryPlayerInfo" data-target="interplanetaryPlayerInfo" data-src="/assets/icons/interplanetary-player.svg"></label>
-
-                                    <input type="radio" class="btn-check" name="iconGroup" id="soundEngineInfo" autocomplete="off">
-                                    <label class="btn btn-outline-primary menu-info-icon" for="soundEngineInfo" data-target="soundEngineInfo" data-src="/assets/icons/sound_engine.svg"></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Grid Content (Right Columns) -->
-                        <div class="grid-content">
-                            <div id="placeholder_1"></div>
-                            <div id="placeholder_2"></div>
-                            <div id="placeholder_3"></div>
-                            <div id="placeholder_4"></div>
-                            <div id="placeholder_5"></div>
-                            <div id="placeholder_6"></div>
-                            <div id="placeholder_7"></div>
-                            <div id="placeholder_8"></div>
-                            <div id="placeholder_9"></div>
-                            <div id="placeholder_10"></div>
-                            <div id="placeholder_11"></div>
-                            <div id="placeholder_12"></div>
-                            <div id="placeholder_13"></div>
-                            <div id="placeholder_14"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Mid Container -->
-                <div class="mid-container"> 
-                    <div class="col-1">
-                        <!-- Vertical Slider -->
-                        <webaudio-slider 
-                            id="gSlider" 
-                            tracking="rel"
-                            colors="#00000000;#00000000;var(--col2);var(--col1)" 
-                            value="50" 
-                            min="0" 
-                            max="100" 
-                            step="1"
-                            midilearn="1"
-                            direction="vert">
-                        </webaudio-slider>
-
-                        <webaudio-param 
-                            link="gSlider" 
-                            colors="var(--col1);var(--col2)">
-                        </webaudio-param>
-                    </div>
-                </div>
-
-                <!-- Bottom-Aligned Buttons -->
-                <div class="action-gui-container"> 
-                    <div class="container">
-                        <!-- Main Row -->
-                        <div class="row align-items-center">
-                            <!-- Play Button Column (2 columns) -->
-                            <div class="col-1 d-flex justify-content-center">
-                                <!-- Transport Button Group -->
-                                <div class="button-group-container" data-group="transport">
-                                  <div class="dropup-center dropup">
-                                      <button
-                                          class="btn transport-button dropdown-toggle"
-                                          type="button"
-                                          id="transportMenuButton"
-                                          data-bs-toggle="dropdown"
-                                          aria-expanded="false"
-                                          aria-label="Play"
-                                          data-src="/assets/icons/play_circle.svg"
-                                      >
-                                          <span class="button-icon" data-src="/assets/icons/play_circle.svg" aria-label="Play"></span>
-                                      </button>
-                                      <ul class="dropdown-menu" aria-labelledby="transportMenuButton">
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="Play" data-icon="/assets/icons/play_circle.svg">
-                                                  <img
-                                                      src="/assets/icons/play_circle.svg"
-                                                      alt="Play"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  Play
-                                              </a>
-                                          </li>
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="Pause" data-icon="/assets/icons/pause_circle.svg">
-                                                  <img
-                                                      src="/assets/icons/pause_circle.svg"
-                                                      alt="Pause"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  Pause
-                                              </a>
-                                          </li>
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="Stop" data-icon="/assets/icons/stop_circle.svg">
-                                                  <img
-                                                      src="/assets/icons/stop_circle.svg"
-                                                      alt="Stop"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  Stop
-                                              </a>
-                                          </li>
-                                      </ul>
-                                  </div>
-                              </div>
-                            </div>
-                            
-                            <!-- Main Controls Column (8 columns) -->
-                            <div class="col-10">
-                                <div class="row">
-                                    <!-- Sub-Column 1 -->
-                                    <div class="col-4 d-flex flex-column align-items-center">
-                                        <!-- Knob -->
-                                        <webaudio-knob 
-                                            id="xKnob"
-                                            class="medium-knob"  
-                                            min="-100" 
-                                            max="100" 
-                                            colors="var(--col1);var(--col2);var(--col3)" 
-                                            midilearn="1">
-                                        </webaudio-knob>
-                                        <!-- Balance Button -->
-                                        <webaudio-switch id="xBalance"
-                                            type="kick"
-                                            min="0"
-                                            max="1"
-                                            class="medium-switch" 
-                                            midilearn="1"
-                                            colors="var(--col2);var(--col1);var(--col3)">
-                                        </webaudio-switch>
-                                        <!-- WebAudio Param -->
-                                        <webaudio-param 
-                                            link="xKnob" 
-                                            colors="var(--col1);var(--col2)">
-                                        </webaudio-param>
-                                    </div>
-                                    
-                                    <!-- Sub-Column 2 -->
-                                    <div class="col-4 d-flex flex-column align-items-center">
-                                        <!-- Knob -->
-                                        <webaudio-knob 
-                                            id="yKnob"
-                                            class="medium-knob" 
-                                            min="-100" 
-                                            max="100" 
-                                            colors="var(--col1);var(--col2);var(--col3)" 
-                                            midilearn="1">
-                                        </webaudio-knob>
-                                        <!-- Balance Button -->
-                                        <webaudio-switch id="yBalance"
-                                            type="kick"
-                                            class="medium-switch" 
-                                            min="0"
-                                            max="1"
-                                            midilearn="1"
-                                            colors="var(--col2);var(--col1);var(--col3)">
-                                        </webaudio-switch>
-
-                                        <!-- WebAudio Param -->
-                                        <webaudio-param 
-                                            link="yKnob" 
-                                            midilearn="1"
-                                            colors="var(--col1);var(--col2)">
-                                        </webaudio-param>
-                                    </div>
-                                    
-                                    <!-- Sub-Column 3 -->
-                                    <div class="col-4 d-flex flex-column align-items-center">
-                                        <!-- Knob -->
-                                        <webaudio-knob 
-                                            id="zKnob"
-                                            class="medium-knob" 
-                                            min="-100" 
-                                            max="100" 
-                                            colors="var(--col1);var(--col2);var(--col3)" 
-                                            midilearn="1">
-                                        </webaudio-knob>
-                                        <!-- Balance Button -->
-                                        <webaudio-switch id="zBalance"
-                                            type="kick"
-                                            class="medium-switch" 
-                                            min="0"
-                                            max="1"
-                                            midilearn="1"
-                                            colors="var(--col2);var(--col1);var(--col3)">
-                                        </webaudio-switch>
-
-                                        <!-- WebAudio Param -->
-                                        <webaudio-param 
-                                            link="zKnob" 
-                                            midilearn="1"
-                                            colors="var(--col1);var(--col2)">
-                                        </webaudio-param>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Cosmic-LFO Button Column (2 columns) -->
-                            <div class="col-1 d-flex justify-content-center">
-                              <!-- Interaction Button Group -->
-                              <div class="button-group-container" data-group="interaction">
-                                  <div class="dropup-center dropup">
-                                    <button
-                                    class="btn interaction-button dropdown-toggle"
-                                    type="button"
-                                    id="interactionMenuButton"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                    aria-label="Jam"
-                                    data-src="/assets/icons/jam.svg"
-                                >
-                                    <span class="button-icon" data-src="/assets/icons/jam.svg" aria-label="Jam"></span>
-                                </button>
-                                      <ul class="dropdown-menu" aria-labelledby="interactionMenuButton">
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="Jam" data-icon="/assets/icons/jam.svg">
-                                                  <img
-                                                      src="/assets/icons/jam.svg"
-                                                      alt="Jam"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  Jam
-                                              </a>
-                                          </li>
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="MIDI" data-icon="/assets/icons/midi.svg">
-                                                  <img
-                                                      src="/assets/icons/midi.svg"
-                                                      alt="MIDI"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  MIDI
-                                              </a>
-                                          </li>
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="Sensors" data-icon="/assets/icons/motion-sensor.svg">
-                                                  <img
-                                                      src="/assets/icons/motion-sensor.svg"
-                                                      alt="Sensors"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  Sensors
-                                              </a>
-                                          </li>
-                                          <li>
-                                              <a class="dropdown-item" href="#" data-value="Cosmic LFO" data-icon="/assets/icons/cosmic-lfo.svg">
-                                                  <img
-                                                      src="/assets/icons/cosmic-lfo.svg"
-                                                      alt="Cosmic LFO"
-                                                      class="menu-item-icon"
-                                                      style="width: 16px; height: 16px; margin-right: 8px;"
-                                                  />
-                                                  Cosmic LFO
-                                              </a>
-                                          </li>
-                                      </ul>
-                                  </div>
-                              </div>
-                          </div>
-
-
-                            </div>                
-                        </div>            
-                    </div>   
-                </div>
-            </div>
+    <!-- Header Row -->
+    <div class="header-row d-flex justify-content-between align-items-center">
+      <!-- Information Dropdown -->
+      <div class="info-row">
+        <div class="button-group-container" data-group="information-dropdown">
+          <div class="dropdown">
+            <button class="btn info-button dropdown-toggle" type="button" id="informationMenuButton"
+              data-bs-toggle="dropdown" aria-expanded="false" aria-label="Information"
+              data-src="/assets/icons/control_monitor.svg">
+              <span class="button-icon" data-src="/assets/icons/control_monitor.svg"
+                aria-label="Information"></span>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="informationMenuButton">
+              <li>
+                <a class="dropdown-item" href="#" data-value="Control Monitor"
+                  data-icon="/assets/icons/control_monitor.svg">
+                  <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon"
+                    style="width: 16px; height: 16px; margin-right: 8px;">
+                  Control Monitor
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" data-value="Track" data-icon="/assets/icons/track.svg">
+                  <img src="/assets/icons/track.svg" alt="Track" class="menu-item-icon"
+                    style="width: 16px; height: 16px; margin-right: 8px;">
+                  Track
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" data-value="Interplanetary Player"
+                  data-icon="/assets/icons/interplanetary-player.svg">
+                  <img src="/assets/icons/interplanetary-player.svg" alt="Interplanetary Player"
+                    class="menu-item-icon" style="width: 16px; height: 16px; margin-right: 8px;">
+                  Interplanetary Player
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" data-value="Sound Engine"
+                  data-icon="/assets/icons/sound_engine.svg">
+                  <img src="/assets/icons/sound_engine.svg" alt="Sound Engine" class="menu-item-icon"
+                    style="width: 16px; height: 16px; margin-right: 8px;">
+                  Sound Engine
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
+      </div>
+
+      <!-- Title -->
+      <div class="col-10 text-center">
+        <h1 class="responsive-title">jamming</h1>
+      </div>
+
+      <!-- Tutor Button (Right, optional) -->
+      <div class="col-1 d-flex justify-content-end align-items-center">
+        <!-- Add tutor button if needed -->
+      </div>
+    </div>
+
+    <!-- Grid Row -->
+    <div class="grid-row mt-3">
+      <!-- Collapsible Menu -->
+      <div class="collapse" id="collapseInfoMenu">
+        <div class="info-collapse-container">
+          <button class="close-grid-btn" aria-label="Close Grid">
+            <img src="/assets/icons/close.svg" alt="Close" class="close-grid-icon">
+          </button>
+
+          <!-- Grid Wrapper -->
+          <div class="grid-wrapper">
+            <div class="grid-content">
+              <div id="placeholder_1"></div>
+              <div id="placeholder_2"></div>
+              <div id="placeholder_3"></div>
+              <div id="placeholder_4"></div>
+              <div id="placeholder_5"></div>
+              <div id="placeholder_6"></div>
+              <div id="placeholder_7"></div>
+              <div id="placeholder_8"></div>
+              <div id="placeholder_9"></div>
+              <div id="placeholder_10"></div>
+              <div id="placeholder_11"></div>
+              <div id="placeholder_12"></div>
+              <div id="placeholder_13"></div>
+              <div id="placeholder_14"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
 
-    <script>
-        WebAudioControlsOptions={
-         useMidi:1,      
-         preserveMidiLearn:1,
-          knobDiameter:140,
-          switchWidth:40,
-          switchHeight:20,
-          
-        };    
-    </script>
+        <!-- Mid Container -->
+        <div class="mid-container">
+          <div class="col-1">
+            <!-- Vertical Slider -->
+            <webaudio-slider id="gSlider" tracking="rel" colors="#00000000;#00000000;var(--col2);var(--col1)" value="50"
+              min="0" max="100" step="1" midilearn="1" direction="vert">
+            </webaudio-slider>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <!-- Custom JS -->
-    
-    <script type="module" src="/src/Main.js"></script>
+            <webaudio-param link="gSlider" colors="var(--col1);var(--col2)">
+            </webaudio-param>
+          </div>
+        </div>
+
+        <!-- Bottom-Aligned Buttons -->
+        <div class="action-gui-container">
+          <div class="container">
+            <!-- Main Row -->
+            <div class="row align-items-center">
+              <!-- Play Button Column (1 column) -->
+              <div class="col-1 d-flex justify-content-center">
+                <!-- Transport Button Group -->
+                <div class="button-group-container" data-group="transport-dropdown">
+                  <div class="dropup-center dropup">
+                    <button class="btn transport-button dropdown-toggle" type="button" id="transportMenuButton"
+                      data-bs-toggle="dropdown" aria-expanded="false" aria-label="Play"
+                      data-src="/assets/icons/play_circle.svg">
+                      <span class="button-icon" data-src="/assets/icons/play_circle.svg" aria-label="Play"></span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="transportMenuButton">
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Play" data-icon="/assets/icons/play_circle.svg">
+                          <img src="/assets/icons/play_circle.svg" alt="Play" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Play
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Pause" data-icon="/assets/icons/pause_circle.svg">
+                          <img src="/assets/icons/pause_circle.svg" alt="Pause" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Pause
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Stop" data-icon="/assets/icons/stop_circle.svg">
+                          <img src="/assets/icons/stop_circle.svg" alt="Stop" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Stop
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Controls Column (10 columns) -->
+              <div class="col-10">
+                <div class="row">
+                  <!-- Sub-Column 1 -->
+                  <div class="col-4 d-flex flex-column align-items-center">
+                    <!-- Knob -->
+                    <webaudio-knob id="xKnob" class="medium-knob" min="-100" max="100"
+                      colors="var(--col1);var(--col2);var(--col3)" midilearn="1">
+                    </webaudio-knob>
+                    <!-- Balance Button -->
+                    <webaudio-switch id="xBalance" type="kick" min="0" max="1" class="medium-switch" midilearn="1"
+                      colors="var(--col2);var(--col1);var(--col3)">
+                    </webaudio-switch>
+                    <!-- WebAudio Param -->
+                    <webaudio-param link="xKnob" colors="var(--col1);var(--col2)">
+                    </webaudio-param>
+                  </div>
+
+                  <!-- Sub-Column 2 -->
+                  <div class="col-4 d-flex flex-column align-items-center">
+                    <!-- Knob -->
+                    <webaudio-knob id="yKnob" class="medium-knob" min="-100" max="100"
+                      colors="var(--col1);var(--col2);var(--col3)" midilearn="1">
+                    </webaudio-knob>
+                    <!-- Balance Button -->
+                    <webaudio-switch id="yBalance" type="kick" class="medium-switch" min="0" max="1" midilearn="1"
+                      colors="var(--col2);var(--col1);var(--col3)">
+                    </webaudio-switch>
+
+                    <!-- WebAudio Param -->
+                    <webaudio-param link="yKnob" midilearn="1" colors="var(--col1);var(--col2)">
+                    </webaudio-param>
+                  </div>
+
+                  <!-- Sub-Column 3 -->
+                  <div class="col-4 d-flex flex-column align-items-center">
+                    <!-- Knob -->
+                    <webaudio-knob id="zKnob" class="medium-knob" min="-100" max="100"
+                      colors="var(--col1);var(--col2);var(--col3)" midilearn="1">
+                    </webaudio-knob>
+                    <!-- Balance Button -->
+                    <webaudio-switch id="zBalance" type="kick" class="medium-switch" min="0" max="1" midilearn="1"
+                      colors="var(--col2);var(--col1);var(--col3)">
+                    </webaudio-switch>
+
+                    <!-- WebAudio Param -->
+                    <webaudio-param link="zKnob" midilearn="1" colors="var(--col1);var(--col2)">
+                    </webaudio-param>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cosmic-LFO Button Column (1 column) -->
+              <div class="col-1 d-flex justify-content-center">
+                <!-- Interaction Button Group -->
+                <div class="button-group-container" data-group="interaction-dropdown">
+                  <div class="dropup-center dropup">
+                    <button class="btn interaction-button dropdown-toggle" type="button" id="interactionMenuButton"
+                      data-bs-toggle="dropdown" aria-expanded="false" aria-label="Jam" data-src="/assets/icons/jam.svg">
+                      <span class="button-icon" data-src="/assets/icons/jam.svg" aria-label="Jam"></span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="interactionMenuButton">
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Jam" data-icon="/assets/icons/jam.svg">
+                          <img src="/assets/icons/jam.svg" alt="Jam" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Jam
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="MIDI" data-icon="/assets/icons/midi.svg">
+                          <img src="/assets/icons/midi.svg" alt="MIDI" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          MIDI
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Sensors"
+                          data-icon="/assets/icons/motion-sensor.svg">
+                          <img src="/assets/icons/motion-sensor.svg" alt="Sensors" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Sensors
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-value="Cosmic LFO"
+                          data-icon="/assets/icons/cosmic-lfo.svg">
+                          <img src="/assets/icons/cosmic-lfo.svg" alt="Cosmic LFO" class="menu-item-icon"
+                            style="width: 16px; height: 16px; margin-right: 8px;">
+                          Cosmic LFO
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    WebAudioControlsOptions = {
+      useMidi: 1,
+      preserveMidiLearn: 1,
+      knobDiameter: 140,
+      switchWidth: 40,
+      switchHeight: 20
+    };    
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+  <!-- Custom JS -->
+  <script type="module" src="/src/Main.js"></script>
 </body>
+
 </html>

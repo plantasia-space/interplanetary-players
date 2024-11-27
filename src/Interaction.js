@@ -4,8 +4,8 @@ import { ButtonGroup } from './ButtonGroup.js';
 
 /**
  * Setup interactions for dynamic placeholder updates.
- * @param {DataManager} dataManager - The DataManager instance.
- * @param {AudioPlayer} audioPlayer - The AudioPlayer instance.
+ * @param {DataManager} dataManager - The shared DataManager instance.
+ * @param {AudioPlayer} audioPlayer - The shared AudioPlayer instance.
  */
 export function setupInteractions(dataManager, audioPlayer) {
     if (typeof bootstrap === 'undefined') {
@@ -14,21 +14,22 @@ export function setupInteractions(dataManager, audioPlayer) {
     }
 
     // Initialize all button groups
-    const buttonGroups = document.querySelectorAll('.button-group-container');
-    buttonGroups.forEach((group) => {
+    document.querySelectorAll('.button-group-container').forEach(group => {
         const groupType = group.getAttribute('data-group');
+
         new ButtonGroup(
             `.button-group-container[data-group="${groupType}"]`,
             'ul.dropdown-menu',
             'button.dropdown-toggle',
             'a.dropdown-item',
             '.button-icon',
-            audioPlayer // Pass audioPlayer here
+            audioPlayer,    // Pass shared AudioPlayer
+            dataManager     // Pass shared DataManager
         );
     });
 
     // Handle other action buttons (if any)
-    document.querySelectorAll('.action-button').forEach((button) => {
+    document.querySelectorAll('.action-button').forEach(button => {
         const action = button.getAttribute('aria-label'); // Use aria-label for action
 
         if (!button.classList.contains('toggle-play-pause')) {
@@ -41,11 +42,9 @@ export function setupInteractions(dataManager, audioPlayer) {
                     case 'balance 2':
                     case 'balance 3':
                         console.log(`Adjusting ${action}`);
-                        // Add balance adjustment logic here
                         break;
                     case 'cosmic lfo':
                         console.log('Regenerating...');
-                        // Add cosmic-lfo logic here
                         break;
                     default:
                         console.warn('Unknown action.');
@@ -53,6 +52,4 @@ export function setupInteractions(dataManager, audioPlayer) {
             });
         }
     });
-
-    // Initialize other UI components or interactions as needed
 }

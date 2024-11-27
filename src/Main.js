@@ -7,6 +7,7 @@ import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
 import { setupInteractions } from './Interaction.js';
 import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
+import { ButtonGroup } from './ButtonGroup.js';
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -91,11 +92,18 @@ function animate() {
 let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
 
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Application initialized.");
 
+
+
+
     // Initialize the application and start the animation loop
     initializeApp().then(animate);
+
+
+
 
     // Check if the WebAudioControlsWidgetManager is available
     if (window.webAudioControlsWidgetManager) {

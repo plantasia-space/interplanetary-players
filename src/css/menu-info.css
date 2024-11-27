@@ -2,14 +2,12 @@
 :root {
     --size-upper-buttons: clamp(10vmin, 10vmin, 100vmin); /* Upper part (info, radio group) 90 */
     --size-vertical-menu-buttons: clamp(7vmin, 7vmin, 70vmin); /* Upper part (info, radio group) 90 */
-
     --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, cosmic-lfo) */
-
 }
 
 #collapseInfoMenu {
     position: absolute; /* Keep it positioned absolutely */
-    top: 3rem; /* Adjust based on the toggle button's position */
+    /*top: 3rem;  THIS IS THE DISTANCE TO THE TOP OF THE FRAME  */
     left: 0; /* Align to the left of the parent container */
     z-index: 10; /* Place above other elements */
     max-height: 80vh; /* Prevent overflow */
@@ -28,7 +26,7 @@
     transform: scaleY(1); /* Fully expanded */
 }
 
-/* Row Styling */
+/* Row Styling FOR UP MENU BAR */
 .info-row {
     display: flex;
     justify-content: space-between; /* Even spacing between items */
@@ -50,188 +48,53 @@ h1.responsive-title {
     text-align: center;
 }
 
-button, .btn {
-    outline: none; /* Remove browser default focus outline */
-    box-shadow: none; /* Prevent any default box shadows */
-    background: none; /* Ensure transparent background */
-    border: none; /* Prevent default borders */
-    padding: 0; /* Reset padding */
-    margin: 0; /* Reset margin */
-    appearance: none; /* Normalize button appearance across browsers */
-}
 
-
-
-/* Toggle Button */
-button.menu-info-toggle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 80%; 
-    height: 100%; 
-    cursor: pointer;
+/* info Button */
+.info-button {
+    width: clamp(8vmin, 50px, 100px);
+    height: clamp(8vmin, 50px, 100px);
+    /*border: 2px solid var(--col1);  Add stroke */
+    border-radius: 8px; /* Slightly rounded corners */
     background-color: transparent;
-    border: none;
-    border-radius: 10%; /* Optional styling */
-    font-size: calc(var(--size-upper-buttons) );
-    color: var(--col1);
-    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-    margin: 0 auto; /* Center horizontally */
-    pointer-events: auto;
+    color: var(--col1); /* Dynamic color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
-button.menu-info-toggle::after {
-    content: "i";
+/* Hover and Focus State (Pressed but not hovered) */
+.info-button:hover,
+.info-button:focus {
+    transform: scale(1.05);
+    /*border-color: var(--col2);  Highlighted stroke */
+    color: var(--col2); /* Highlighted color */
+    background-color: var(--col3, #c5c5c5); /* Optional hover/focus background */
+    outline: none; /* Remove default outline on focus */
+}
+
+/* Icon in Button */
+#infoMenuIcon {
     display: inline-block;
-    font-size: calc(var(--size-upper-buttons) / 2.5);
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: inherit;
-}
-
-button.menu-info-toggle:hover {
-    transform: scale(1.1);
-    border-color: var(--col2);
-    color: var(--col2);
-}
-
-button.menu-info-toggle[aria-expanded="true"] {
-    background-color: transparent;
-    border-color: var(--col2);
-    color: var(--col2);
-}
-
-button.menu-info-toggle[aria-expanded="true"]::after {
-    transform: rotate(180deg);
-}
-
-button.menu-info-toggle[aria-expanded="false"] {
-    background-color: transparent;
-    border-color: var(--col1);
-    color: var(--col1);
-}
-
-button.menu-info-toggle[aria-expanded="false"]::after {
-    transform: rotate(0deg);
-}
-
-.menu-info-icon {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: var(--size-upper-buttons);
-    height: var(--size-upper-buttons);
-    cursor: pointer;
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: var(--col1);
-    pointer-events: auto;
-}
-
-.menu-info-icon:hover {
-    color: var(--col2);
+    width: 100%; /* Adjust size relative to the button */
+    height: 100%;
+    color: inherit; /* Inherit currentColor */
 }
 
 
-
-/* Flex Container for Button Group and Grid Content */
-.info-collapse-container {
-    display: flex; /* Enable horizontal alignment */
-    flex-direction: row; /* Align items side by side */
-    align-items: flex-start; /* Align items to the top */
-    gap: 0rem; /* Add spacing between button group and grid content */
-    width: 100%; /* Full width within the parent container */
-    
-    box-sizing: border-box; /* Include padding in width */
-}
-/* Button group vertical layout */
-.btn-group-vertical {
+.grid-row {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    
-    gap: 1rem; /* Space between buttons */
-    width: 100%; /* Full width of the container */
-    max-width: var(--size-vertical-menu-buttons); /* Restrict to the same width as heading */
-}
+    margin-top: 1rem; /* Space between header and grid */
+  }
+  
+  .header-row,
+  .grid-row {
+      width: 100%;
+      max-width: 100%;
+  }
 
-/* Button styles when linked with checkboxes/radios */
-.btn-check + .btn {
-    width: var(--size-vertical-menu-buttons); /* Equal width and height for square buttons */
-    height: var(--size-vertical-menu-buttons); /* Square buttons */
-    display: flex;
-    justify-content: center; /* Center the icon horizontally */
-    align-items: center; /* Center the icon vertically */
-    font-size: calc(var(--size-vertical-menu-buttons) / 3); /* Icon scales proportionally */
-    overflow: hidden; /* Prevent content overflow */
-    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-/*     border-radius: 10%; */ /* Rounded edges */
-    padding: 0; /* Ensure no extra padding */
-}
-
-/* Remove focus outline and shadow */
-.btn-check:focus + .btn {
-    outline: none;
-    box-shadow: none;
-    background-color: rgba(255, 105, 105, 0.1); /* Optional: Subtle background change */
-
-}
-
-/* Default button styles */
-.btn-outline-primary {
-    background-color: rgba(0, 0, 0, 0);
-    border-color: var(--col1);
-    color: var(--col1);
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    width: var(--size-vertical-menu-buttons); /* Ensure buttons remain square */
-    height: var(--size-vertical-menu-buttons);
-    --bs-btn-active-bg: var(--col1);
-    --bs-btn-active-border-color: var(--col1);
-    --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
-    --bs-btn-active-color: var(--col2);
-
-}
-
-/* Hover state */
-.btn-check:hover + .btn-outline-primary,
-.btn-outline-primary:hover {
-    background-color: rgba(0, 0, 0, 0); /* Keep transparent background */
-    /* border-color: var(--col2); */ /* Highlight border */
-    color: var(--col2); /* Change text/icon color */
-}
-
-/* Focus state */
-.btn-check:focus + .btn-outline-primary {
-    /* border: 2px solid var(--col2); */ /* Highlight border on focus */
-    background-color: rgba(255, 105, 105, 0.1); /* Optional: Subtle background change */
-
-}
-
-/* Checked state */
-.btn-check:checked + .btn-outline-primary {
-    background-color: rgba(255, 0, 0, 0); /* Transparent background */
-    border-color: var(--col1); /* Default border color */
-    color: var(--col2); /* Highlight color */
-}
-
-/* Icon container adjustments for btn-outline-primary */
-.btn-outline-primary svg {
-    width: 80%; /* Ensure icon scales proportionally within the button */
-    height: 80%; /* Maintain aspect ratio */
-    object-fit: contain; /* Prevent icon distortion */
-    
-}
-
-
-/* Ensure vertical alignment of button group and heading */
-.btn-group-vertical-container {
-    display: flex;
-    justify-self: stretch;
-    flex-direction: column;
-    align-items: center;
-    width: 100%; /* Full width */
-    max-width: calc(var(--size-vertical-menu-buttons) *1.5);; /* Match width to heading */
-}
-
-
+  
 /* Main Grid Layout */
 .grid-content {
     display: grid;
@@ -248,7 +111,7 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     flex-direction: column;
     justify-content: flex-start;
     align-items: flex-start;
-    background-color: var(--col1-light);
+    background-color: none;
     font-family: 'SpaceMono', sans-serif;
     font-weight: 250; /* Default for larger screens */
     font-size: clamp(10px, 2.5vmin, 36px); /* Responsive font size */
@@ -266,4 +129,46 @@ button.menu-info-toggle[aria-expanded="false"]::after {
     .grid-content div {
         font-weight: 350; /* Increase font weight for mobile screens */
     }
+}
+
+/* Main Grid Wrapper */
+.grid-wrapper {
+    position: relative; /* Position for floating the close button */
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Ensure it spans the full container */
+    padding: clamp(10px, 2vmin, 20px); /* Padding around the grid */
+    background-color: transparent; /* Keep transparent background as requested */
+    box-sizing: border-box; /* Include padding in dimensions */
+}
+
+/* Main Grid Layout (inherits styles from your current grid-content) */
+.grid-content {
+    display: grid;
+    grid-template-columns: max-content 1fr; /* Match existing layout */
+    gap: clamp(0.5em, 1vmin, 3vw); /* Maintain existing spacing */
+    align-items: start;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Close Button */
+.close-grid-btn {
+    pointer-events: auto;
+    position: absolute; /* Position relative to the grid-wrapper */
+    top: 10px; /* Fine-tune positioning */
+    right: 10px; /* Align to the top-right */
+    border: none; /* No border */
+    padding: 0em; /* Consistent padding */
+    cursor: pointer; /* Pointer cursor */
+}
+
+/* Close Icon Styling */
+.close-grid-icon {
+    pointer-events: auto;
+    color: var(--col1);
+    width: 20px; /* Fixed size for simplicity */
+    height: 20px;
+    display: block;
+    margin: 0 auto; /* Center icon */
 }
