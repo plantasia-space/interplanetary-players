@@ -959,619 +959,670 @@ try {
 } catch (error) {
   console.log("webaudio-knob already defined");
 }
-  try {
-    customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
-      constructor() {
-        super();
-  
-        // Bind methods
-        this.pointerdown = this.pointerdown.bind(this);
-        this.pointermove = this.pointermove.bind(this);
-        this.pointerup = this.pointerup.bind(this);
-        this.keydown = this.keydown.bind(this);
-        this.wheel = this.wheel.bind(this);
-        this.redraw = this.redraw.bind(this);
-        this.handleParamChange = this.handleParamChange.bind(this);
-        this.onMidiMessage = this.onMidiMessage.bind(this);
-  
-        // Initialize properties for ResizeObserver
-        this.resizeObserver = null;
-      }
-  
-      connectedCallback() {
-        let root;
-        if (this.attachShadow) {
-          root = this.attachShadow({ mode: 'open' });
-        } else {
-          root = this;
-        }
-  
-        // Define HTML structure
-        root.innerHTML = `
-          <style>
-            ${this.basestyle}
-            :host {
-              display: inline-block;
-              position: relative;
-              margin: 0;
-              padding: 0;
-              font-family: sans-serif;
-              font-size: 11px;
-              cursor: pointer;
-              user-select: none;
-              width: 100%;
-              height: 100%;
-            }
-            .webaudio-slider-body {
-              position: relative;
-              width: 100%;
-              height: 100%;
-              touch-action: none;
-            }
-            canvas.webaudio-slider-canvas {
-              display: block;
-              width: 100%;
-              height: 100%;
-            }
-            .webaudioctrl-tooltip {
-              position: absolute;
-              top: -25px;
-              left: 50%;
-              transform: translateX(-50%);
-              background: rgba(0, 0, 0, 0.7);
-              color: #fff;
-              padding: 2px 5px;
-              border-radius: 3px;
-              font-size: 10px;
-              white-space: nowrap;
-              pointer-events: none;
-              opacity: 0;
-              transition: opacity 0.2s;
-            }
-            .webaudioctrl-label {
-              position: absolute;
-              width: 100%;
-              text-align: center;
-              top: 100%;
-              left: 0;
-              transform: translateY(4px);
-            }
-            :host(:focus) .webaudio-slider-body {
-              outline: none;
-            }
-          </style>
-          <div class='webaudio-slider-body' tabindex='1'>
-            <canvas class='webaudio-slider-canvas'></canvas>
-            <div class='webaudioctrl-tooltip'></div>
-            <div part="label" class="webaudioctrl-label"><slot></slot></div>
-          </div>
-        `;
-  
-        // Reference elements
-        this.elem = root.querySelector('.webaudio-slider-body');
-        this.canvas = root.querySelector('canvas.webaudio-slider-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.ttframe = root.querySelector('.webaudioctrl-tooltip');
-        this.label = root.querySelector('.webaudioctrl-label');
-  
-        // Initialize properties
-        this.enable = this.getAttr("enable", 1);
-        this.tracking = this.getAttr("tracking", "rel");
-        this._value = parseFloat(this.getAttribute("value")) || 0;
-        this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
-        this._min = parseFloat(this.getAttribute("min")) || 0;
-        this._max = parseFloat(this.getAttribute("max")) || 100;
-        this._step = parseFloat(this.getAttribute("step")) || 1;
-        this._direction = this.getAttribute("direction") || "horz";
-        this.log = this.getAttr("log", 0);
-        this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
-        this.outline = this.getAttribute("outline") || "none";        
-        this.setupLabel();
-        this.sensitivity = parseFloat(this.getAttribute("sensitivity")) || 1;
-        this.valuetip = this.getAttr("valuetip", opt.valuetip);
-        this.tooltip = this.getAttribute("tooltip") || null;
-        this.conv = this.getAttribute("conv") || null;
-        this.link = this.getAttribute("link") || "";
-  
-        // Process colors
-        this.coltab = this._colors.split(";").map(color => {
-          color = color.trim();
-          if (color.startsWith("var(") && color.endsWith(")")) {
-            const varName = color.slice(4, -1).trim();
-            const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-            return resolvedColor || "#000";
-          }
-          return color;
-        });
-        while (this.coltab.length < 5) this.coltab.push("#000");
-  
-        // Define 'value' property
-        Object.defineProperty(this, 'value', {
-          get: () => this._value,
-          set: (v) => { this.setValue(v, true); }
-        });
-  
-        // Additional properties
-        this.convValue = this._value;
-        this.digits = 0;
-        if (this._step && this._step < 1) {
-          let n = this._step;
-          while (n < 1) {
-            n *= 10;
-            ++this.digits;
-          }
-        }
-        this.fireflag = true;
-  
-        // MIDI Initialization
-        this.midilearn = this.getAttr("midilearn", opt.midilearn);
-        this.midicc = this.getAttr("midicc", null);
-        this.midiController = {};
-        this.midiMode = "normal";
-        if (this.midicc) {
-          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-          this.setMidiController(ch, cc);
-        }
-        let retries = 0;
-        const maxRetries = 5; // Retry up to 50 times (5 seconds total if 100ms delay)
-        const attemptToLoadMidiLearn = () => {
-            if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-                const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-                for (let i = 0; i < ml.length; ++i) {
-                    if (ml[i].id === this.id) {
-                        console.log(`Loaded MIDI mapping for widget ${this.id}`);
-                        this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-                        return; // Stop retrying on success
-                    }
-                }
-                console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
-            } else if (retries < maxRetries) {
-                console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
-                setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
-            } else {
-                console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
-            }
-        };
-        attemptToLoadMidiLearn();
-  
 
-        
-        // Global registration
-        window.webaudioSliders = window.webaudioSliders || {};
-        if (this.id) {
-          window.webaudioSliders[this.id] = this;
-        }
-  
-        // Initial setup
-        this.setupCanvas();
-        this.redraw();
-  
-        if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
-          get: () => { return this._min },
-          set: (v) => { this._min = +v; this.redraw() }
-        });
-        
-        if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
-          get: () => { return this._max },
-          set: (v) => { this._max = +v; this.redraw() }
-        });
 
-        // Event listeners
-        this.elem.addEventListener('keydown', this.keydown);
-        this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
-        this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
-        this.elem.addEventListener('wheel', this.wheel, { passive: false });
-  
-        // ResizeObserver for responsive behavior
-        this.resizeObserver = new ResizeObserver(entries => {
-          for (let entry of entries) {
-            this.setupCanvas();
-            this.redraw();
+
+
+
+try {
+  customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
+    constructor() {
+      super();
+
+      // Bind methods
+      this.pointerdown = this.pointerdown.bind(this);
+      this.pointermove = this.pointermove.bind(this);
+      this.pointerup = this.pointerup.bind(this);
+      this.keydown = this.keydown.bind(this);
+      this.wheel = this.wheel.bind(this);
+      this.redraw = this.redraw.bind(this);
+      this.handleParamChange = this.handleParamChange.bind(this);
+      this.onMidiMessage = this.onMidiMessage.bind(this);
+
+      // Initialize properties for ResizeObserver
+      this.resizeObserver = null;
+    }
+
+    connectedCallback() {
+      let root;
+      if (this.attachShadow) {
+        root = this.attachShadow({ mode: 'open' });
+      } else {
+        root = this;
+      }
+
+      // Define HTML structure with ARIA attributes for accessibility
+      root.innerHTML = `
+        <style>
+          ${this.basestyle}
+          :host {
+            display: inline-block;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            font-size: 11px;
+            cursor: pointer;
+            user-select: none;
+            width: 100%;
+            height: 100%;
           }
-        });
-        this.resizeObserver.observe(this);
-        // Add to widget manager
-        if (window.webAudioControlsWidgetManager)
-          window.webAudioControlsWidgetManager.addWidget(this);
-  
-      }
-  
-      disconnectedCallback() {
-        // Remove event listeners
-        this.elem.removeEventListener('keydown', this.keydown);
-        this.elem.removeEventListener('mousedown', this.pointerdown);
-        this.elem.removeEventListener('touchstart', this.pointerdown);
-        this.elem.addEventListener('wheel', this.wheel, { passive: false });
-  
-        // Unobserve ResizeObserver
-        if (this.resizeObserver) {
-          this.resizeObserver.unobserve(this);
-        }
-  
-        // Additional cleanup
-        if (this.linkedParam) {
-          this.linkedParam.removeEventListener("input", this.handleParamChange);
-        }
-  
-        // Remove from widget manager
-        if (window.webAudioControlsWidgetManager)
-          window.webAudioControlsWidgetManager.removeWidget(this);
-      }
-  
-      // ... (Rest of your existing methods remain unchanged)
-  
-      // Implement MIDI methods similar to webaudio-knob
-      setMidiController(channel, cc) {
-        this.midiController.channel = channel;
-        this.midiController.cc = cc;
-        if (window.webAudioControlsMidiManager) {
-          window.webAudioControlsMidiManager.addWidget(this);
-        }
-      }
-  
-      onMidiMessage(event) {
-        const data = event.data;
-        const status = data[0];
-        const channel = status & 0x0F;
-        const type = status & 0xF0;
-        const cc = data[1];
-        const value = data[2];
-  
-        if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
-          const midiValue = (value / 127) * (this._max - this._min) + this._min;
-          this.setValue(midiValue, true);
-        }
-      }
-  
-      setupCanvas() {
-        // Get actual size
-        const rect = this.elem.getBoundingClientRect();
-        const knobSizeMultiplier = 0.4; 
-        this._width = rect.width;
-        this._height = rect.height;
+          .webaudio-slider-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+          }
+          canvas.webaudio-slider-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+          }
+          .webaudioctrl-tooltip {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+          }
+          .webaudioctrl-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 100%;
+            left: 0;
+            transform: translateY(4px);
+          }
+          :host(:focus) .webaudio-slider-body {
+            outline: none;
+          }
+        </style>
+        <div class='webaudio-slider-body' tabindex='1' role='slider' aria-valuemin='${this._min}' aria-valuemax='${this._max}' aria-valuenow='${this._value}' aria-orientation='${this.isHorizontal ? "horizontal" : "vertical"}' aria-label='${this.tooltip || "Audio Slider"}'>
+          <canvas class='webaudio-slider-canvas'></canvas>
+          <div class='webaudioctrl-tooltip'></div>
+          <div part="label" class="webaudioctrl-label"><slot></slot></div>
+        </div>
+      `;
 
-        // High DPI handling
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = this._width * dpr;
-        this.canvas.height = this._height * dpr;
-        this.ctx.scale(dpr, dpr);
-  
-        // Recalculate colors
-        this.coltab = this._colors.split(";").map(color => {
-            color = color.trim();
-            if (color.startsWith("var(") && color.endsWith(")")) {
-                const varName = color.slice(4, -1).trim();
-                const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-                return resolvedColor || "#000";
+      // Reference elements
+      this.elem = root.querySelector('.webaudio-slider-body');
+      this.canvas = root.querySelector('canvas.webaudio-slider-canvas');
+      this.ctx = this.canvas.getContext('2d');
+      this.ttframe = root.querySelector('.webaudioctrl-tooltip');
+      this.label = root.querySelector('.webaudioctrl-label');
+
+      // Initialize properties
+      this.enable = this.getAttr("enable", 1);
+      this.tracking = this.getAttr("tracking", "rel");
+      this._value = parseFloat(this.getAttribute("value")) || 0;
+      this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
+      this._min = parseFloat(this.getAttribute("min")) || 0;
+      this._max = parseFloat(this.getAttribute("max")) || 100;
+      this._step = parseFloat(this.getAttribute("step")) || 1;
+      this._direction = this.getAttribute("direction") || "horz";
+      this.log = this.getAttr("log", 0);
+      this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
+      this.outline = this.getAttribute("outline") || "none";        
+      this.setupLabel();
+      this.sensitivity = parseFloat(this.getAttribute("sensitivity")) || 1;
+      this.valuetip = this.getAttr("valuetip", opt.valuetip);
+      this.tooltip = this.getAttribute("tooltip") || null;
+      this.conv = this.getAttribute("conv") || null;
+      this.link = this.getAttribute("link") || "";
+
+      // Process colors
+      this.coltab = this._colors.split(";").map(color => {
+        color = color.trim();
+        if (color.startsWith("var(") && color.endsWith(")")) {
+          const varName = color.slice(4, -1).trim();
+          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+          return resolvedColor || "#000";
+        }
+        return color;
+      });
+      while (this.coltab.length < 5) this.coltab.push("#000");
+
+      // Define 'value' property
+      Object.defineProperty(this, 'value', {
+        get: () => this._value,
+        set: (v) => { this.setValue(v, true); }
+      });
+
+      // Additional properties
+      this.convValue = this._value;
+      this.digits = 0;
+      if (this._step && this._step < 1) {
+        let n = this._step;
+        while (n < 1) {
+          n *= 10;
+          ++this.digits;
+        }
+      }
+      this.fireflag = true;
+
+      // MIDI Initialization
+      this.midilearn = this.getAttr("midilearn", opt.midilearn);
+      this.midicc = this.getAttr("midicc", null);
+      this.midiController = {};
+      this.midiMode = "normal";
+      if (this.midicc) {
+        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+        this.setMidiController(ch, cc);
+      }
+      let retries = 0;
+      const maxRetries = 5; // Retry up to 5 times (500ms total if 100ms delay)
+      const attemptToLoadMidiLearn = () => {
+        if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
+          const ml = window.webAudioControlsWidgetManager.midiLearnTable;
+          for (let i = 0; i < ml.length; ++i) {
+            if (ml[i].id === this.id) {
+              console.log(`Loaded MIDI mapping for widget ${this.id}`);
+              this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
+              return; // Stop retrying on success
             }
-            return color;
-        });
-        while (this.coltab.length < 5) this.coltab.push("#000");
-  
-        // Recalculate dimensions proportionally
-        if (this._direction.toLowerCase() === "horz") {
-          this.isHorizontal = true;
-          this.knobSize = this._height * knobSizeMultiplier; // 40% of height
-          const padding = this.knobSize;
-          this.trackLength = this._width - 2 * padding;
-          this.trackHeight = this._height * 0.2; // 20% of height
-          this.trackX = padding;
-          this.trackY = (this._height - this.trackHeight) / 2;
-        } else if (this._direction.toLowerCase() === "vert") {
-          this.isHorizontal = false;
-          this.knobSize = this._width * knobSizeMultiplier; // 40% of width
-          const padding = this.knobSize;
-          this.trackLength = this._height - 2 * padding;
-          this.trackHeight = this._width * knobSizeMultiplier; // 20% of width
-          this.trackX = (this._width - this.trackHeight) / 2;
-          this.trackY = padding;
+          }
+          console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
+        } else if (retries < maxRetries) {
+          console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
+          setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
         } else {
-          console.warn(`webaudio-slider: Invalid direction "${this._direction}". Defaulting to horizontal.`);
-          this.isHorizontal = true;
-          this.knobSize = this._height * knobSizeMultiplier;
-          const padding = this.knobSize;
-          this.trackLength = this._width - 2 * padding;
-          this.trackHeight = this._height * knobSizeMultiplier;
-          this.trackX = padding;
-          this.trackY = (this._height - this.trackHeight) / 2;
+          console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
         }
+      };
+      attemptToLoadMidiLearn();
+
+      // Global registration
+      window.webaudioSliders = window.webaudioSliders || {};
+      if (this.id) {
+        window.webaudioSliders[this.id] = this;
       }
-  
-      redraw() {
-        // Clamp value within min and max
-        this._value = Math.min(this._max, Math.max(this._min, this._value));
-  
-        // Calculate ratio
-        let ratio;
-        if (this.log) {
-          if (this._value <= 0 || this._min <= 0) {
-            ratio = 0;
-          } else {
-            ratio = Math.log(this._value / this._min) / Math.log(this._max / this._min);
-          }
-        } else {
-          ratio = (this._value - this._min) / (this._max - this._min);
+
+      // Initial setup
+      this.setupCanvas();
+      this.redraw();
+
+      if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
+        get: () => { return this._min },
+        set: (v) => { this._min = +v; this.redraw() }
+      });
+      
+      if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
+        get: () => { return this._max },
+        set: (v) => { this._max = +v; this.redraw() }
+      });
+
+      // Event listeners
+      this.elem.addEventListener('keydown', this.keydown);
+      this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
+      this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
+      this.elem.addEventListener('wheel', this.wheel, { passive: false });
+
+      // ResizeObserver for responsive behavior
+      this.resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          this.setupCanvas();
+          this.redraw();
         }
-        ratio = Math.max(0, Math.min(1, ratio));
-  
-        // Update convValue
-        if (this.conv) {
-          const x = this._value;
-          try {
-            this.convValue = eval(this.conv);
-            if (typeof this.convValue === "function")
-              this.convValue = this.convValue(x);
-          } catch (error) {
-            console.error(`webaudio-slider: Error evaluating conv expression "${this.conv}":`, error);
-            this.convValue = this._value;
-          }
+      });
+      this.resizeObserver.observe(this);
+      // Add to widget manager
+      if (window.webAudioControlsWidgetManager)
+        window.webAudioControlsWidgetManager.addWidget(this);
+    }
+
+    disconnectedCallback() {
+      // Remove event listeners
+      this.elem.removeEventListener('keydown', this.keydown);
+      this.elem.removeEventListener('mousedown', this.pointerdown);
+      this.elem.removeEventListener('touchstart', this.pointerdown);
+      this.elem.removeEventListener('wheel', this.wheel, { passive: false });
+
+      // Unobserve ResizeObserver
+      if (this.resizeObserver) {
+        this.resizeObserver.unobserve(this);
+      }
+
+      // Additional cleanup
+      if (this.linkedParam) {
+        this.linkedParam.removeEventListener("input", this.handleParamChange);
+      }
+
+      // Remove from widget manager
+      if (window.webAudioControlsWidgetManager)
+        window.webAudioControlsWidgetManager.removeWidget(this);
+    }
+
+    // ... (Rest of your existing methods remain unchanged)
+
+    // Implement MIDI methods similar to webaudio-knob
+    setMidiController(channel, cc) {
+      this.midiController.channel = channel;
+      this.midiController.cc = cc;
+      if (window.webAudioControlsMidiManager) {
+        window.webAudioControlsMidiManager.addWidget(this);
+      }
+    }
+
+    onMidiMessage(event) {
+      const data = event.data;
+      const status = data[0];
+      const channel = status & 0x0F;
+      const type = status & 0xF0;
+      const cc = data[1];
+      const value = data[2];
+
+      if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
+        const midiValue = (value / 127) * (this._max - this._min) + this._min;
+        this.setValue(midiValue, true);
+      }
+    }
+
+    setupCanvas() {
+      // Get actual size
+      let rect = this.elem.getBoundingClientRect();
+      const knobSizeMultiplier = 0.4; 
+
+      // Check and set default width and height if they are 0
+      if (rect.width === 0) {
+        console.warn("webaudio-slider: Container width is 0. Setting default width based on direction.");
+        this.elem.style.width = this._direction.toLowerCase() === "vert" ? "50px" : "300px"; // Set default width based on direction
+        rect = this.elem.getBoundingClientRect(); // Update rect after setting width
+      }
+
+      if (rect.height === 0) {
+        console.warn("webaudio-slider: Container height is 0. Setting default height based on direction.");
+        this.elem.style.height = this._direction.toLowerCase() === "vert" ? "200px" : "50px"; // Set default height based on direction
+        rect = this.elem.getBoundingClientRect(); // Update rect after setting height
+      }
+
+      this._width = rect.width;
+      this._height = rect.height;
+
+      // High DPI handling
+      const dpr = window.devicePixelRatio || 1;
+      this.canvas.width = this._width * dpr;
+      this.canvas.height = this._height * dpr;
+      this.ctx.scale(dpr, dpr);
+
+      // Recalculate colors
+      this.coltab = this._colors.split(";").map(color => {
+        color = color.trim();
+        if (color.startsWith("var(") && color.endsWith(")")) {
+          const varName = color.slice(4, -1).trim();
+          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+          return resolvedColor || "#000";
+        }
+        return color;
+      });
+      while (this.coltab.length < 5) this.coltab.push("#000");
+
+      // Recalculate dimensions proportionally based on direction
+      if (this._direction.toLowerCase() === "horz") {
+        this.isHorizontal = true;
+        this.knobSize = this._height * knobSizeMultiplier; // 40% of height for horizontal
+        const padding = this.knobSize;
+        this.trackLength = this._width - 2 * padding;
+        this.trackHeight = this._height * 0.2; // 20% of height
+        this.trackX = padding;
+        this.trackY = (this._height - this.trackHeight) / 2;
+      } else if (this._direction.toLowerCase() === "vert") {
+        this.isHorizontal = false;
+        this.knobSize = this._width * knobSizeMultiplier; // 40% of width for vertical
+        const padding = this.knobSize;
+        this.trackLength = this._height - 2 * padding;
+        this.trackHeight = this._width * knobSizeMultiplier; // 20% of width
+        this.trackX = (this._width - this.trackHeight) / 2;
+        this.trackY = padding;
+      } else {
+        console.warn(`webaudio-slider: Invalid direction "${this._direction}". Defaulting to horizontal.`);
+        this.isHorizontal = true;
+        this.knobSize = this._height * knobSizeMultiplier;
+        const padding = this.knobSize;
+        this.trackLength = this._width - 2 * padding;
+        this.trackHeight = this._height * knobSizeMultiplier;
+        this.trackX = padding;
+        this.trackY = (this._height - this.trackHeight) / 2;
+      }
+    }
+
+    redraw() {
+      // Clamp value within min and max
+      this._value = Math.min(this._max, Math.max(this._min, this._value));
+
+      // Calculate ratio
+      let ratio;
+      if (this.log) {
+        if (this._value <= 0 || this._min <= 0) {
+          ratio = 0;
         } else {
+          ratio = Math.log(this._value / this._min) / Math.log(this._max / this._min);
+        }
+      } else {
+        ratio = (this._value - this._min) / (this._max - this._min);
+      }
+      ratio = Math.max(0, Math.min(1, ratio));
+
+      // Update convValue
+      if (this.conv) {
+        const x = this._value;
+        try {
+          this.convValue = eval(this.conv);
+          if (typeof this.convValue === "function")
+            this.convValue = this.convValue(x);
+        } catch (error) {
+          console.error(`webaudio-slider: Error evaluating conv expression "${this.conv}":`, error);
           this.convValue = this._value;
         }
-  
-        if (typeof this.convValue === "number") {
-          this.convValue = this.convValue.toFixed(this.digits);
-        }
-  
-        // Draw the slider
-        this.drawSlider(ratio);
-  
-        // Update tooltip if necessary
-        if (this.fireflag) {
-          this.showtip(0);
-          this.fireflag = false;
-        }
-  
-        // Update linked param if exists
-        if (this.linkedParam) {
-          if (parseFloat(this.linkedParam.value) !== this._value) {
-            this.updatingFromSlider = true;
-            this.linkedParam.value = this._value;
-            this.updatingFromSlider = false;
-          }
-        }
+      } else {
+        this.convValue = this._value;
       }
-  
-  
-        /**
-         * Draws the slider on the canvas based on the provided ratio.
-         * @param {number} ratio - A value between 0 and 1 representing the current slider position.
-         */
-        drawSlider(ratio) {
-          const ctx = this.ctx;
-          ctx.clearRect(0, 0, this._width, this._height);
-          // Draw track
 
-        // Draw background track
-        ctx.fillStyle = "#00000000"; // Transparent background
-        ctx.fillRect(0, 0, this._width, this._height);
+      if (typeof this.convValue === "number") {
+        this.convValue = this.convValue.toFixed(this.digits);
+      }
 
-        // Draw centered track line
-        ctx.strokeStyle = "white" || '#333'; // Track color
-        ctx.lineWidth = 1; // 1-pixel line
-        ctx.beginPath();
-        if (this.isHorizontal) {
-          // Centered horizontal line
-          const centerY = this.trackY + this.trackHeight / 2; // Vertical center of the track
-          ctx.moveTo(this.trackX, centerY);
-          ctx.lineTo(this.trackX + this.trackLength, centerY);
-        } else {
-          // Centered vertical line
-          const centerX = this.trackX + this.trackHeight / 2; // Horizontal center of the track
-          ctx.moveTo(centerX, this.trackY);
-          ctx.lineTo(centerX, this.trackY + this.trackLength);
-        }
-        ctx.stroke();
+      // Update ARIA attributes for accessibility
+      this.elem.setAttribute('aria-valuenow', this._value);
+      this.elem.setAttribute('aria-orientation', this.isHorizontal ? "horizontal" : "vertical");
 
-        // Draw filled portion
-        ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
-        ctx.lineWidth = 1; // Same thickness
-        ctx.beginPath();
-        if (this.isHorizontal) {
-          const centerY = this.trackY + this.trackHeight / 2; // Vertical center of the track
-          ctx.moveTo(this.trackX, centerY);
-          ctx.lineTo(this.trackX + this.trackLength * ratio, centerY);
-        } else {
-          const centerX = this.trackX + this.trackHeight / 2; // Horizontal center of the track
-          ctx.moveTo(centerX, this.trackY + this.trackLength * (1 - ratio));
-          ctx.lineTo(centerX, this.trackY + this.trackLength);
-        }
-        ctx.stroke();
-      
-         // Draw triangle knob/pointer
-        ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
-        ctx.strokeStyle = this.coltab[3] || '#777'; // Outline color
-        ctx.lineWidth = 1;
-      
-        ctx.beginPath();
-        if (this.isHorizontal) {
-          // Triangle pointing to the right
-          const knobX = this.trackX + this.trackLength * ratio;
-          const knobY = this.trackY + this.trackHeight / 2;
-          const size = this.knobSize;
-      
-          ctx.moveTo(knobX + size, knobY); // Right point
-          ctx.lineTo(knobX - size, knobY - size); // Top-left point
-          ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
-          ctx.closePath();
-        } else {
-          // Triangle pointing upwards
-          const knobX = this.trackX + this.trackHeight / 2;
-          const knobY = this.trackY + this.trackLength * (1 - ratio);
-          const size = this.knobSize;
-      
-          ctx.moveTo(knobX, knobY - size); // Top point
-          ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
-          ctx.lineTo(knobX + size, knobY + size); // Bottom-right point
-          ctx.closePath();
-        }
-      
-        ctx.fill();
-        ctx.stroke(); // Only for the knob/pointer
-      }    
-      _setValue(v) {
-        if (this._step) {
-          v = Math.round((v - this._min) / this._step) * this._step + this._min;
-        }
-        v = Math.min(this._max, Math.max(this._min, v));
-        if (v !== this._value) {
-          this._value = v;
-          this.fireflag = true;
-  
-          this.redraw();
-          return true;
-        }
-        return false;
-      }
-  
-      setValue(v, fire = false) {
-        if (this._setValue(v) && fire) {
-          this.sendEvent("input");
-          this.sendEvent("change");
-          this.updateLinkedParam(); // Update linked param if exists
-        }
-      }
-  
-      keydown(e) {
-        if (!this.enable) return;
-        let delta = this._step || 1;
-        switch (e.key) {
-          case "ArrowUp":
-          case "ArrowRight":
-            this.setValue(this._value + delta, true);
-            break;
-          case "ArrowDown":
-          case "ArrowLeft":
-            this.setValue(this._value - delta, true);
-            break;
-          default:
-            return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
-      }
-  
-      wheel(e) {
-        if (!this.enable) return;
-      
-        // Determine scroll direction
-        let delta = e.deltaY < 0 ? this._step || 1 : -(this._step || 1);
-      
-        // Update the value
-        this.setValue(this._value + delta, true);
-      
-        // Prevent default scrolling behavior
-        e.preventDefault();
-        e.stopPropagation();
-      }
-  
-      pointerdown(ev) {
-        if (!this.enable) return;
-  
-        // Prevent default to avoid unwanted behaviors
-        ev.preventDefault();
-        ev.stopPropagation();
-  
-        this.elem.focus();
-        this.dragging = true;
-  
-        // Determine the initial ratio based on pointer position
-        const rect = this.canvas.getBoundingClientRect();
-        this.updateValueFromPointer(ev, rect);
-  
-        // Add event listeners for move and up
-        window.addEventListener('mousemove', this.pointermove, { passive: false });
-        window.addEventListener('mouseup', this.pointerup);
-        window.addEventListener('touchmove', this.pointermove, { passive: false });
-        window.addEventListener('touchend', this.pointerup);
-        window.addEventListener('touchcancel', this.pointerup);
-      }
-  
-      pointermove(ev) {
-        if (!this.dragging) return;
-  
-        // Prevent default to avoid unwanted behaviors
-        ev.preventDefault();
-        ev.stopPropagation();
-  
-        const rect = this.canvas.getBoundingClientRect();
-        this.updateValueFromPointer(ev, rect);
-      }
-  
-      pointerup(ev) {
-        if (!this.dragging) return;
-        this.dragging = false;
-  
-        // Remove event listeners
-        window.removeEventListener('mousemove', this.pointermove);
-        window.removeEventListener('mouseup', this.pointerup);
-        window.removeEventListener('touchmove', this.pointermove, { passive: false });
-        window.removeEventListener('touchend', this.pointerup);
-        window.removeEventListener('touchcancel', this.pointerup);
-      }
-  
-      updateValueFromPointer(ev, rect) {
-        let clientX, clientY;
-        if (ev.touches && ev.touches.length > 0) {
-          clientX = ev.touches[0].clientX;
-          clientY = ev.touches[0].clientY;
-        } else {
-          clientX = ev.clientX;
-          clientY = ev.clientY;
-        }
-  
-        let ratio;
-        if (this.isHorizontal) {
-          let x = clientX - rect.left;
-          x = Math.max(this.trackX, Math.min(this.trackX + this.trackLength, x));
-          ratio = (x - this.trackX) / this.trackLength;
-        } else {
-          let y = clientY - rect.top;
-          y = Math.max(this.trackY, Math.min(this.trackY + this.trackLength, y));
-          ratio = 1 - (y - this.trackY) / this.trackLength;
-        }
-  
-        let newValue;
-        if (this.log) {
-          if (this._min <= 0) {
-            console.warn("webaudio-slider: Logarithmic scale requires min > 0.");
-            newValue = this._min;
-          } else {
-            newValue = this._min * Math.pow(this._max / this._min, ratio);
-          }
-        } else {
-          newValue = this._min + ratio * (this._max - this._min);
-        }
-  
-        this.setValue(newValue, true);
-      }
-  
-      // Handle changes from the linked param
-      handleParamChange(e) {
-        if (this.updatingFromSlider) return; // Prevent circular update
-        const newValue = parseFloat(e.target.value);
-        if (!isNaN(newValue) && newValue !== this._value) {
-          this.setValue(newValue, false);
-        }
-      }
-  
-      // Update linked param when slider changes
-      updateLinkedParam() {
-        if (this.linkedParam) {
-          if (parseFloat(this.linkedParam.value) !== this._value) {
-            // Prevent param's event listener from triggering slider's update again
-            this.updatingFromSlider = true;
-            this.linkedParam.value = this._value;
-            this.updatingFromSlider = false;
-          }
-        }
-      }
-    });
-  } catch (error) {
-    console.error("webaudio-slider already defined or error in definition:", error);
-  }
+      // Draw the slider
+      this.drawSlider(ratio);
 
+      // Update tooltip if necessary
+      if (this.fireflag) {
+        this.showtip(0);
+        this.fireflag = false;
+      }
+
+      // Update linked param if exists
+      if (this.linkedParam) {
+        if (parseFloat(this.linkedParam.value) !== this._value) {
+          this.updatingFromSlider = true;
+          this.linkedParam.value = this._value;
+          this.updatingFromSlider = false;
+        }
+      }
+    }
+
+    /**
+     * Draws the slider on the canvas based on the provided ratio.
+     * @param {number} ratio - A value between 0 and 1 representing the current slider position.
+     */
+    drawSlider(ratio) {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this._width, this._height);
+
+      // Draw background track (optional, currently transparent)
+      ctx.fillStyle = "rgba(0,0,0,0)"; // Transparent background
+      ctx.fillRect(0, 0, this._width, this._height);
+
+      // Draw centered track line
+      ctx.strokeStyle = this.coltab[1] || '#333'; // Track color
+      ctx.lineWidth = 2; // Increased line width for better visibility
+      ctx.beginPath();
+      if (this.isHorizontal) {
+        // Centered horizontal line
+        const centerY = this.trackY + this.trackHeight / 2;
+        ctx.moveTo(this.trackX, centerY);
+        ctx.lineTo(this.trackX + this.trackLength, centerY);
+      } else {
+        // Centered vertical line
+        const centerX = this.trackX + this.trackHeight / 2;
+        ctx.moveTo(centerX, this.trackY);
+        ctx.lineTo(centerX, this.trackY + this.trackLength);
+      }
+      ctx.stroke();
+
+      // Draw filled portion
+      ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
+      ctx.lineWidth = 4; // Thicker line for filled portion
+      ctx.beginPath();
+      if (this.isHorizontal) {
+        const centerY = this.trackY + this.trackHeight / 2;
+        ctx.moveTo(this.trackX, centerY);
+        ctx.lineTo(this.trackX + this.trackLength * ratio, centerY);
+      } else {
+        const centerX = this.trackX + this.trackHeight / 2;
+        ctx.moveTo(centerX, this.trackY + this.trackLength * (1 - ratio));
+        ctx.lineTo(centerX, this.trackY + this.trackLength);
+      }
+      ctx.stroke();
+
+      // Draw triangular knob/pointer
+      ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
+      ctx.strokeStyle = this.coltab[4] || '#777'; // Knob border color
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      if (this.isHorizontal) {
+        // Triangle pointing to the right
+        const knobX = this.trackX + this.trackLength * ratio;
+        const knobY = this.trackY + this.trackHeight / 2;
+        const size = this.knobSize / 2;
+
+        ctx.moveTo(knobX + size, knobY); // Right point
+        ctx.lineTo(knobX - size, knobY - size); // Top-left point
+        ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
+        ctx.closePath();
+      } else {
+        // Triangle pointing upwards
+        const knobX = this.trackX + this.trackHeight / 2;
+        const knobY = this.trackY + this.trackLength * (1 - ratio);
+        const size = this.knobSize / 2;
+
+        ctx.moveTo(knobX, knobY - size); // Top point
+        ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
+        ctx.lineTo(knobX + size, knobY + size); // Bottom-right point
+        ctx.closePath();
+      }
+
+      ctx.fill();
+      ctx.stroke(); // Only for the knob/pointer
+    }    
+
+    _setValue(v) {
+      if (this._step) {
+        v = Math.round((v - this._min) / this._step) * this._step + this._min;
+      }
+      v = Math.min(this._max, Math.max(this._min, v));
+      if (v !== this._value) {
+        this._value = v;
+        this.fireflag = true;
+
+        this.redraw();
+        return true;
+      }
+      return false;
+    }
+
+    setValue(v, fire = false) {
+      if (this._setValue(v) && fire) {
+        this.sendEvent("input");
+        this.sendEvent("change");
+        this.updateLinkedParam(); // Update linked param if exists
+      }
+    }
+
+    keydown(e) {
+      if (!this.enable) return;
+      let delta = this._step || 1;
+      switch (e.key) {
+        case "ArrowUp":
+        case "ArrowRight":
+          this.setValue(this._value + delta, true);
+          break;
+        case "ArrowDown":
+        case "ArrowLeft":
+          this.setValue(this._value - delta, true);
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    wheel(e) {
+      if (!this.enable) return;
+    
+      // Determine scroll direction
+      let delta = e.deltaY < 0 ? this._step || 1 : -(this._step || 1);
+    
+      // Update the value
+      this.setValue(this._value + delta, true);
+    
+      // Prevent default scrolling behavior
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    pointerdown(ev) {
+      if (!this.enable) return;
+
+      // Prevent default to avoid unwanted behaviors
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      this.elem.focus();
+      this.dragging = true;
+
+      // Determine the initial ratio based on pointer position
+      const rect = this.canvas.getBoundingClientRect();
+      this.updateValueFromPointer(ev, rect);
+
+      // Add event listeners for move and up
+      window.addEventListener('mousemove', this.pointermove, { passive: false });
+      window.addEventListener('mouseup', this.pointerup);
+      window.addEventListener('touchmove', this.pointermove, { passive: false });
+      window.addEventListener('touchend', this.pointerup);
+      window.addEventListener('touchcancel', this.pointerup);
+    }
+
+    pointermove(ev) {
+      if (!this.dragging) return;
+
+      // Prevent default to avoid unwanted behaviors
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      const rect = this.canvas.getBoundingClientRect();
+      this.updateValueFromPointer(ev, rect);
+    }
+
+    pointerup(ev) {
+      if (!this.dragging) return;
+      this.dragging = false;
+
+      // Remove event listeners
+      window.removeEventListener('mousemove', this.pointermove);
+      window.removeEventListener('mouseup', this.pointerup);
+      window.removeEventListener('touchmove', this.pointermove, { passive: false });
+      window.removeEventListener('touchend', this.pointerup);
+      window.removeEventListener('touchcancel', this.pointerup);
+    }
+
+    updateValueFromPointer(ev, rect) {
+      let clientX, clientY;
+      if (ev.touches && ev.touches.length > 0) {
+        clientX = ev.touches[0].clientX;
+        clientY = ev.touches[0].clientY;
+      } else {
+        clientX = ev.clientX;
+        clientY = ev.clientY;
+      }
+
+      let ratio;
+      if (this.isHorizontal) {
+        let x = clientX - rect.left;
+        x = Math.max(this.trackX, Math.min(this.trackX + this.trackLength, x));
+        ratio = (x - this.trackX) / this.trackLength;
+      } else {
+        let y = clientY - rect.top;
+        y = Math.max(this.trackY, Math.min(this.trackY + this.trackLength, y));
+        ratio = 1 - (y - this.trackY) / this.trackLength;
+      }
+
+      let newValue;
+      if (this.log) {
+        if (this._min <= 0) {
+          console.warn("webaudio-slider: Logarithmic scale requires min > 0.");
+          newValue = this._min;
+        } else {
+          newValue = this._min * Math.pow(this._max / this._min, ratio);
+        }
+      } else {
+        newValue = this._min + ratio * (this._max - this._min);
+      }
+
+      this.setValue(newValue, true);
+    }
+
+    // Handle changes from the linked param
+    handleParamChange(e) {
+      if (this.updatingFromSlider) return; // Prevent circular update
+      const newValue = parseFloat(e.target.value);
+      if (!isNaN(newValue) && newValue !== this._value) {
+        this.setValue(newValue, false);
+      }
+    }
+
+    // Update linked param when slider changes
+    updateLinkedParam() {
+      if (this.linkedParam) {
+        if (parseFloat(this.linkedParam.value) !== this._value) {
+          // Prevent param's event listener from triggering slider's update again
+          this.updatingFromSlider = true;
+          this.linkedParam.value = this._value;
+          this.updatingFromSlider = false;
+        }
+      }
+    }
+
+    // Tooltip management
+    showtip(delay) {
+      setTimeout(() => {
+        if (this.tooltip && this.isVisible) {
+          this.ttframe.style.opacity = 1;
+          this.ttframe.textContent = this.convValue;
+        }
+      }, delay);
+    }
+
+    hidetip(delay) {
+      setTimeout(() => {
+        this.ttframe.style.opacity = 0;
+      }, delay);
+    }
+
+    updateTooltip(ratio) {
+      let valueToShow = this.convValue;
+      if (this.valuetip) {
+        valueToShow = this.valuetip.replace("{value}", valueToShow);
+      }
+      this.ttframe.textContent = valueToShow;
+      this.ttframe.style.opacity = 1;
+      setTimeout(() => {
+        this.ttframe.style.opacity = 0;
+      }, 1000);
+    }
+
+    // Setup label (assuming setupLabel is defined elsewhere)
+    setupLabel() {
+      // Implementation depends on existing code
+    }
+  });
+} catch (error) {
+  console.error("webaudio-slider already defined or error in definition:", error);
+}
 
 
 
@@ -2560,276 +2611,13 @@ ${this.basestyle}
 
 
 
-
-
-
-
-
-
-try{
-customElements.define("webaudio-keyboard", class WebAudioKeyboard extends WebAudioControlsWidget {
-  constructor(){
-    super();
-  }
-  connectedCallback(){
-    let root;
-    if(this.attachShadow)
-      root=this.attachShadow({mode: 'open'});
-    else
-      root=this;
-    root.innerHTML=
-`<style>
-${this.basestyle}
-:host{
-  display:inline-block;
-  position:relative;
-  margin:0;
-  padding:0;
-  font-family: SpaceMono;
-  font-size: 11px;
-}
-.webaudio-keyboard-body{
-  display:inline-block;
-  margin:0;
-  padding:0;
-  vertical-align:bottom;
-}
-</style>
-<canvas class='webaudio-keyboard-body' tabindex='-1' touch-action='none'></canvas><div class='webaudioctrl-tooltip'></div>
-`;
-    this.elem=this.cv=root.childNodes[2];
-    this.ttframe=root.childNodes[3];
-    this.ctx=this.cv.getContext("2d");
-    this._values=[];
-    this.enable=this.getAttr("enable",1);
-    this._width=this.getAttr("width",480); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
-    this._height=this.getAttr("height",128); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
-    this._min=this.getAttr("min",0); if (!this.hasOwnProperty("min")) Object.defineProperty(this,"min",{get:()=>{return this._min},set:(v)=>{this._min=+v;this.redraw()}});
-    this._keys=this.getAttr("keys",25); if (!this.hasOwnProperty("keys")) Object.defineProperty(this,"keys",{get:()=>{return this._keys},set:(v)=>{this._keys=+v;this.setupImage()}});
-    this._colors=this.getAttr("colors","#222;#eee;#ccc;#333;#000;#e88;#c44;#c33;#800"); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
-    this.outline=this.getAttr("outline",opt.outline);
-    this.midilearn=this.getAttr("midilearn",0);
-    this.midicc=this.getAttr("midicc",null);
-    this.press=0;
-    this.keycodes1=[90,83,88,68,67,86,71,66,72,78,74,77,188,76,190,187,191,226];
-    this.keycodes2=[81,50,87,51,69,82,53,84,54,89,55,85,73,57,79,48,80,192,222,219];
-    this.addEventListener("keyup",this.keyup);
-    this.midiController={};
-    this.midiMode="normal";
-    if(this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
-    }
-    this.setupImage();
-    this.digits=0;
-    if(this.step && this.step < 1) {
-      for(let n = this.step ; n < 1; n *= 10)
-        ++this.digits;
-    }
-    if(window.webAudioControlsWidgetManager)
-      window.webAudioControlsWidgetManager.addWidget(this);
-  }
-  disconnectedCallback(){}
-  setupImage(){
-    this.cv.style.width=this.width+"px";
-    this.cv.style.height=this.height+"px";
-    this.bheight = this.height * 0.55;
-    this.kp=[0,7/12,1,3*7/12,2,3,6*7/12,4,8*7/12,5,10*7/12,6];
-    this.kf=[0,1,0,1,0,0,1,0,1,0,1,0];
-    this.ko=[0,0,(7*2)/12-1,0,(7*4)/12-2,(7*5)/12-3,0,(7*7)/12-4,0,(7*9)/12-5,0,(7*11)/12-6];
-    this.kn=[0,2,4,5,7,9,11];
-    this.coltab=this.colors.split(";");
-    this.cv.width = this.width;
-    this.cv.height = this.height;
-    this.cv.style.width = this.width+'px';
-    this.cv.style.height = this.height+'px';
-    this.style.height = this.height+'px';
-    this.cv.style.outline=this.outline?"":"none";
-    this.bheight = this.height * 0.55;
-    this.max=this.min+this.keys-1;
-    this.dispvalues=[];
-    this.valuesold=[];
-    if(this.kf[this.min%12])
-      --this.min;
-    if(this.kf[this.max%12])
-      ++this.max;
-    this.redraw();
-  }
-  redraw(){
-    function rrect(ctx, x, y, w, h, r, c1, c2) {
-      if(c2) {
-        let g=ctx.createLinearGradient(x,y,x+w,y);
-        g.addColorStop(0,c1);
-        g.addColorStop(1,c2);
-        ctx.fillStyle=g;
-      }
-      else
-        ctx.fillStyle=c1;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x+w, y);
-      ctx.lineTo(x+w, y+h-r);
-      ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-      ctx.lineTo(x+r, y+h);
-      ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-      ctx.lineTo(x, y);
-      ctx.fill();
-    }
-    this.ctx.fillStyle = this.coltab[0];
-    this.ctx.fillRect(0,0,this.width,this.height);
-    let x0=7*((this.min/12)|0)+this.kp[this.min%12];
-    let x1=7*((this.max/12)|0)+this.kp[this.max%12];
-    let n=x1-x0;
-    this.wwidth=(this.width-1)/(n+1);
-    this.bwidth=this.wwidth*7/12;
-    let h2=this.bheight;
-    let r=Math.min(8,this.wwidth*0.2);
-    for(let i=this.min,j=0;i<=this.max;++i) {
-      if(this.kf[i%12]==0) {
-        let x=this.wwidth*(j++)+1;
-        if(this.dispvalues.indexOf(i)>=0)
-          rrect(this.ctx,x,1,this.wwidth-1,this.height-2,r,this.coltab[5],this.coltab[6]);
-        else
-          rrect(this.ctx,x,1,this.wwidth-1,this.height-2,r,this.coltab[1],this.coltab[2]);
-      }
-    }
-    r=Math.min(8,this.bwidth*0.3);
-    for(let i=this.min;i<this.max;++i) {
-      if(this.kf[i%12]) {
-        let x=this.wwidth*this.ko[this.min%12]+this.bwidth*(i-this.min)+1;
-        if(this.dispvalues.indexOf(i)>=0)
-          rrect(this.ctx,x,1,this.bwidth,h2,r,this.coltab[7],this.coltab[8]);
-        else
-          rrect(this.ctx,x,1,this.bwidth,h2,r,this.coltab[3],this.coltab[4]);
-        this.ctx.strokeStyle=this.coltab[0];
-        this.ctx.stroke();
-      }
-    }
-  }
-  _setValue(v){
-    if(this.step)
-      v=(Math.round((v-this.min)/this.step))*this.step+this.min;
-    this._value=Math.min(this.max,Math.max(this.min,v));
-    if(this._value!=this.oldvalue){
-      this.oldvalue=this._value;
-      this.fireflag=true;
-      if(this.conv){
-        const x=this._value;
-        this.convValue=eval(this.conv);
-        if(typeof(this.convValue)=="function")
-          this.convValue=this.convValue(x);
-      }
-      else
-        this.convValue=this._value;
-      if(typeof(this.convValue)=="number"){
-        this.convValue=this.convValue.toFixed(this.digits);
-      }
-      this.redraw();
-      this.showtip(0);
-      return 1;
-    }
-    return 0;
-  }
-  setValue(v,f){
-    this.value=v;
-    if(this.value!=this.oldvalue){
-      this.redraw();
-      this.showtip(0);
-      if(f){
-        let event=document.createEvent("HTMLEvents");
-        event.initEvent("change",false,true);
-        this.dispatchEvent(event);
-      }
-      this.oldvalue=this.value;
-    }
-  }
-  pointerdown(ev){
-    if(!this.enable)
-      return;
-    let e=ev;
-    if(ev.touches){
-      e = ev.touches[0];
-      this.identifier=e.identifier;
-    }
-    else {
-      if(e.buttons!=1 && e.button!=0)
-        return;
-    }
-    this.elem.focus();
-    this.drag=1;
-    this.showtip(0);
-    let pointermove=(ev)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
-    let pointerup=(e)=>{
-      this.drag=0;
-      this.showtip(0);
-      window.removeEventListener('mousemove', pointermove);
-      window.removeEventListener('touchmove', pointermove, {passive:false});
-      window.removeEventListener('mouseup', pointerup);
-      window.removeEventListener('touchend', pointerup);
-      window.removeEventListener('touchcancel', pointerup);
-      document.body.removeEventListener('touchstart', preventScroll,{passive:false});
-      if(this.type=="kick"){
-        this.setValue(0, true);
-        this.sendEvent("change");
-      }
-      this.sendEvent("click");
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    let preventScroll=(e)=>{
-      e.preventDefault();
-    }
-    switch(this.type){
-    case "kick":
-      this.setValue(1, true);
-      this.sendEvent("change");
-      break;
-    case "toggle":
-      if(e.ctrlKey || e.metaKey)
-        this.value=defvalue;
-      else
-        this.value=1-this.value;
-      this.checked=!!this.value;
-      this.sendEvent("change");
-      break;
-    case "radio":
-      let els=document.querySelectorAll("webaudio-switch[type='radio'][group='"+this.group+"']");
-      for(let i=0;i<els.length;++i){
-        if(els[i]==this)
-          els[i].setValue(1, true);
-        else
-          els[i].setValue(0, true);
-      }
-      this.sendEvent("change");
-      break;
-    }
-
-    window.addEventListener('mouseup', pointerup);
-    window.addEventListener('touchend', pointerup);
-    window.addEventListener('touchcancel', pointerup);
-    document.body.addEventListener('touchstart', preventScroll,{passive:false});
-    this.redraw();
-    ev.preventDefault();
-    ev.stopPropagation();
-    return false;
-  }
-});
-} catch(error){
-  console.log("webaudio-keyboard already defined");
-}
-
 try {
   customElements.define(
     "webaudio-numeric-keyboard",
     class WebAudioNumericKeyboard extends WebAudioControlsWidget {
       constructor() {
         super();
-        this.value = "0"; // Initialize value to 0
+        this.value = "0"; // Initialize keyboard value to 0
         this.hasStartedTyping = false; // Tracks if user started typing
         this.isModalVisible = false; // Track modal visibility
       }
@@ -2837,11 +2625,11 @@ try {
       connectedCallback() {
         let root;
         if (this.attachShadow) {
-            root = this.attachShadow({ mode: "open" });
+          root = this.attachShadow({ mode: "open" });
         } else {
-            root = this;
+          root = this;
         }
-    
+
         root.innerHTML = `
         <style>
             ${this.basestyle}
@@ -2851,11 +2639,30 @@ try {
                 font-family: 'SpaceMono', sans-serif;
                 font-size: 14px;
             }
+            .output {
+                text-align: right;
+                font-size: 16px;
+                padding: 5px 10px;
+                margin-bottom: 10px;
+                background: #222;
+                color: white;
+                border-radius: 5px;
+                font-family: 'SpaceMono', sans-serif;
+            }
+            .keyboard-and-slider-container {
+                display: flex;
+                flex-direction: column; /* Stack keyboard and slider vertically */
+                align-items: center;
+                justify-content: center;
+                gap: 20px; /* Space between keyboard and slider */
+                width: 100%;
+            }
             .numeric-keyboard {
                 display: grid;
                 grid-template-columns: repeat(4, 1fr); /* 4 columns */
                 gap: 10px;
                 justify-items: center;
+                width: 100%; /* Ensure keyboard takes full width */
             }
             .numeric-keyboard .button {
                 display: flex;
@@ -2877,6 +2684,202 @@ try {
             .numeric-keyboard .button.double {
                 grid-column: span 2; /* Span 2 columns for the double-width button */
             }
+            .slider-container-horz {
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 50px;
+            }
+            .slider-container-horz webaudio-slider {
+                width: 100%;
+                height: 100%;
+            }
+            .slider-value-display {
+                text-align: center;
+                font-size: 16px;
+                padding: 5px;
+                margin: 10px 0;
+                background: white;
+                color: black;
+                border-radius: 5px;
+                font-family: 'SpaceMono', sans-serif;
+                width: 100%;
+            }
+        </style>
+        <div class="output">${this.value || "0"}</div>
+        <div class="keyboard-and-slider-container">
+            <div class="numeric-keyboard">
+                ${this.createButtons()}
+            </div>
+            <!-- New Slider Value Display -->
+            <div class="slider-value-display">0</div>
+            <!-- Horizontal Slider Container -->
+            <div class="slider-container-horz">
+                <webaudio-slider 
+                    id="numericKeyboardSliderHorz" 
+                    min="0" 
+                    max="30" 
+                    step="1" 
+                    value="0" 
+                    colors="#00000000;#00000000;#000000;#000000;#000000" 
+                    direction="horz">
+                </webaudio-slider>
+            </div>
+        </div>
+        `;
+
+        // Element references
+        this.outputElement = root.querySelector(".output");
+        this.sliderValueElement = root.querySelector(".slider-value-display"); // Slider value display
+        this.buttons = root.querySelectorAll(".button");
+        this.sliderHorz = root.querySelector("#numericKeyboardSliderHorz"); // Reference to horizontal slider
+
+        // Add click event listeners for buttons
+        this.buttons.forEach((button) =>
+          button.addEventListener("click", (e) => this.handleButtonPress(e))
+        );
+
+        // Event listeners for horizontal slider
+        if (this.sliderHorz) {
+          this.sliderHorz.addEventListener("input", (e) => {
+            const sliderValue = parseFloat(e.target.value);
+            this.sliderValueElement.textContent = `${sliderValue}`;
+            this.dispatchEvent(new CustomEvent("slider-input-horz", { detail: sliderValue }));
+          });
+
+          this.sliderHorz.addEventListener("change", (e) => {
+            const sliderValue = parseFloat(e.target.value);
+            this.sliderValueElement.textContent = `${sliderValue}`;
+            this.dispatchEvent(new CustomEvent("slider-change-horz", { detail: sliderValue }));
+          });
+        }
+
+        this.initializeModal();
+      }
+
+      initializeModal() {
+        this.keyboardModal = document.getElementById("numericKeyboardModal");
+        if (!this.keyboardModal) {
+          console.error("Modal element not found!");
+          return;
+        }
+
+        const showModal = () => {
+          this.isModalVisible = true;
+          this.hasStartedTyping = false;
+          this.outputElement.textContent = this.value || "0";
+          this.keyboardModal.classList.add("active");
+          document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
+        };
+
+        const hideModal = () => {
+          this.isModalVisible = false;
+          this.keyboardModal.classList.remove("active");
+          document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
+        };
+
+        this.keyboardModal.addEventListener("shown.bs.modal", showModal);
+        this.keyboardModal.addEventListener("hidden.bs.modal", hideModal);
+
+        this.keyboardModal.show = showModal;
+        this.keyboardModal.hide = hideModal;
+      }
+
+      createButtons() {
+        const labels = [
+          "7", "8", "9", "⌦",
+          "4", "5", "6", "-",
+          "1", "2", "3", "+",
+          "0", ".", "↵"
+        ];
+        return labels
+          .map((label, index) => {
+            const isDouble = label === "0" && index === labels.lastIndexOf("0");
+            return `
+              <div 
+                class="button ${isDouble ? "double" : ""}" 
+                data-value="${label}"
+              >
+                ${label}
+              </div>`;
+          })
+          .join("");
+      }
+
+      handleButtonPress(event) {
+        const button = event.target;
+        const value = button.getAttribute("data-value");
+        this.processInput(value);
+      }
+
+      handleKeyboardInput(event) {
+        if (!this.isModalVisible) return;
+
+        const key = event.key;
+        if (!isNaN(key) || key === "." || key === "-" || key === "+") {
+          this.processInput(key);
+        } else if (key === "Backspace") {
+          this.processInput("⌦");
+        } else if (key === "Enter") {
+          this.processInput("↵");
+        }
+      }
+
+      processInput(value) {
+        if (value === "⌦") {
+          this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
+        } else if (value === "↵") {
+          this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
+        } else if (value === "-") {
+          this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
+        } else if (value === "+") {
+          this.value = this.value.replace("-", "");
+        } else if (!isNaN(value) || value === ".") {
+          if (!this.hasStartedTyping) {
+            this.value = "";
+            this.hasStartedTyping = true;
+          }
+          this.value += value;
+        }
+        this.outputElement.textContent = this.value;
+        this.dispatchEvent(new Event("input"));
+      }
+    }
+  );
+} catch (error) {
+  console.error("WebAudioNumericKeyboard already defined:", error);
+}
+
+try {
+  customElements.define(
+    "webaudio-numeric-keyboard",
+    class WebAudioNumericKeyboard extends WebAudioControlsWidget {
+      constructor() {
+        super();
+        this.value = "0"; // Initialize value to 0
+        this.hasStartedTyping = false; // Tracks if user started typing
+        this.isModalVisible = false; // Track modal visibility
+      }
+
+      connectedCallback() {
+        let root;
+        if (this.attachShadow) {
+          root = this.attachShadow({ mode: "open" });
+        } else {
+          root = this;
+        }
+
+        root.innerHTML = `
+        <style>
+            ${this.basestyle}
+            :host {
+                display: block;
+                width: 100%;
+                font-family: 'SpaceMono', sans-serif;
+                font-size: 14px;
+            }
             .output {
                 text-align: right;
                 font-size: 16px;
@@ -2885,56 +2888,143 @@ try {
                 background: #222;
                 color: white;
                 border-radius: 5px;
-                grid-column: span 4; /* Stretch across all columns */
                 font-family: 'SpaceMono', sans-serif;
+            }
+            .keyboard-and-slider-container {
+                display: flex;
+                flex-direction: row; /* Arrange keyboard and slider side by side */
+                align-items: center;
+                justify-content: center;
+                gap: 20px; /* Space between keyboard and slider */
+                width: 100%;
+            }
+            .numeric-keyboard {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr); /* 4 columns */
+                gap: 10px;
+                justify-items: center;
+                flex: 1; /* Allow keyboard to take available space */
+            }
+            .numeric-keyboard .button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%; /* Fill grid cell */
+                height: 50px;
+                background-color: #333;
+                color: white;
+                border-radius: 5px;
+                font-family: 'SpaceMono', sans-serif;
+                font-size: 18px;
+                cursor: pointer;
+                user-select: none;
+            }
+            .numeric-keyboard .button:active {
+                background-color: #555;
+            }
+            .numeric-keyboard .button.double {
+                grid-column: span 2; /* Span 2 columns for the double-width button */
+            }
+            /* Slider Container Styling */
+            .slider-container {
+                display: flex;
+                flex-direction: column; /* Vertical alignment */
+                justify-content: center;
+                align-items: center;
+                width: 50px; /* Fixed width for vertical slider */
+                height: 200px; /* Fixed height to make it visible */
+            }
+            .slider-container webaudio-slider {
+                width: 40px; /* Slightly smaller than container */
+                height: 100%; /* Fill the container's height */
             }
         </style>
         <div class="output">${this.value || "0"}</div>
-        <div class="numeric-keyboard">
-            ${this.createButtons()}
+        <div class="keyboard-and-slider-container">
+            <div class="numeric-keyboard">
+                ${this.createButtons()}
+            </div>
+            <!-- Slider Container -->
+            <div class="slider-container">
+                <webaudio-slider 
+                    id="numericKeyboardSlider" 
+                    min="0" 
+                    max="30" 
+                    step="1" 
+                    value="15" 
+                    colors="#4caf50;#cccccc;#4caf50" 
+                    direction="vert">
+                </webaudio-slider>
+            </div>
         </div>
         `;
-    
+      
+
         this.outputElement = root.querySelector(".output");
         this.buttons = root.querySelectorAll(".button");
-    
+        this.slider = root.querySelector("#numericKeyboardSlider"); // Reference to the slider
+
         // Add click event listeners for buttons
         this.buttons.forEach((button) =>
-            button.addEventListener("click", (e) => this.handleButtonPress(e))
+          button.addEventListener("click", (e) => this.handleButtonPress(e))
         );
-    
-        // Modal handling
+
+        // Handle touchend events for mobile devices
+        this.buttons.forEach((button) =>
+          button.addEventListener("touchend", (e) => this.handleButtonPress(e))
+        );
+
+        // Event listener for slider input (real-time updates)
+        if (this.slider) {
+          this.slider.addEventListener("input", (e) => {
+            const sliderValue = parseFloat(e.target.value);
+            console.log("Numeric Keyboard Slider Input:", sliderValue);
+            // Implement functionality based on sliderValue
+            // Example: Emit a custom event or update another component
+            this.dispatchEvent(new CustomEvent("slider-input", { detail: sliderValue }));
+          });
+
+          // Event listener for slider change (final value)
+          this.slider.addEventListener("change", (e) => {
+            const sliderValue = parseFloat(e.target.value);
+            console.log("Numeric Keyboard Slider Change:", sliderValue);
+            // Implement finalization based on sliderValue
+            this.dispatchEvent(new CustomEvent("slider-change", { detail: sliderValue }));
+          });
+        }
+
+        // Modal handling remains unchanged
         this.keyboardModal = document.getElementById("numericKeyboardModal");
         if (this.keyboardModal) {
-            this.initializeModal();
+          this.initializeModal();
         } else {
-            console.error("Modal element not found!");
+          console.error("Modal element not found!");
         }
-    }
-    
-    initializeModal() {
+      }
+
+      initializeModal() {
         const showModal = () => {
-            this.isModalVisible = true;
-            this.hasStartedTyping = false; // Reset typing state
-            this.outputElement.textContent = this.value || "0"; // Show current value
-            this.keyboardModal.classList.add("active");
-            document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
+          this.isModalVisible = true;
+          this.hasStartedTyping = false; // Reset typing state
+          this.outputElement.textContent = this.value || "0"; // Show current value
+          this.keyboardModal.classList.add("active");
+          document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
         };
-    
+
         const hideModal = () => {
-            this.isModalVisible = false;
-            this.keyboardModal.classList.remove("active");
-            document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
+          this.isModalVisible = false;
+          this.keyboardModal.classList.remove("active");
+          document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
         };
-    
+
         // Set up event listeners
         this.keyboardModal.addEventListener("shown.bs.modal", showModal);
         this.keyboardModal.addEventListener("hidden.bs.modal", hideModal);
-    
+
         // Public methods for external toggling
         this.keyboardModal.show = showModal;
         this.keyboardModal.hide = hideModal;
-    }
+      }
 
       createButtons() {
         const labels = [
@@ -2995,13 +3085,27 @@ try {
         this.outputElement.textContent = this.value;
         this.dispatchEvent(new Event("input"));
       }
+
+      // Override setValue to ensure synchronization
+      setValue(v, fire = false) {
+        // Ensure v is within the slider's range
+        const numericValue = parseFloat(v);
+        if (isNaN(numericValue)) return;
+
+        this.value = numericValue.toString();
+        this.outputElement.textContent = this.value;
+
+        // Note: Do NOT update the slider's value here since it's independent
+
+        if (fire) {
+          this.dispatchEvent(new Event("change"));
+        }
+      }
     }
   );
 } catch (error) {
   console.error("WebAudioNumericKeyboard already defined:", error);
 }
-
-
 
 
 

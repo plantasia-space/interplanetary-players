@@ -100,8 +100,40 @@ webaudio-numeric-keyboard {
     width: 100%;
 }
 
+/* Existing Slider Container Styling for Vertical Slider */
+.slider-container-vert {
+    display: flex;
+    flex-direction: column; /* Vertical alignment */
+    justify-content: center;
+    align-items: center;
+    width: 50px; /* Fixed narrow width for vertical slider */
+    height: 200px; /* Fixed taller height to make it visible */
+    /* Optional: Add borders for debugging */
+    /* border: 1px solid red; */
+    /* background-color: rgba(255, 0, 0, 0.1); */
+}
 
+/* New Slider Container Styling for Horizontal Slider */
+.slider-container-horz {
+    display: flex;
+    flex-direction: row; /* Horizontal alignment */
+    justify-content: center;
+    align-items: center;
+    width: 300px; /* Fixed wider width for horizontal slider */
+    height: 50px; /* Fixed height for horizontal slider */
+    /* Optional: Add borders for debugging */
+    /* border: 1px solid green; */
+    /* background-color: rgba(0, 255, 0, 0.1); */
+}
 
+.slider-container-horz webaudio-slider {
+    width: 100%; /* Fill the container's width */
+    height: 100%; /* Fill the container's height */
+    /* Optional: Add borders for debugging */
+    /* border: 1px solid blue; */
+    /* background-color: rgba(0, 0, 255, 0.1); */
+}
+  
 #numericKeyboardModal {
     position: fixed;
     top: 50%;
