@@ -2340,7 +2340,7 @@ ${this.basestyle}
   margin:0;
   padding:0;
   font-family: sans-serif;
-  font-size: 16px;
+  font-size: 8px;
   cursor:pointer;
   position:relative;
   vertical-align:baseline;
@@ -2361,10 +2361,6 @@ ${this.basestyle}
 <input class='webaudio-param-body' value='0' inputmode='none' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
 `;
       this.elem=root.childNodes[2];
-      this.elem.addEventListener("focus", (event) => {
-        event.preventDefault();
-        this.showCustomKeyboard(); // Show your custom modal keyboard
-      });
       this.ttframe=root.childNodes[3];
       this.enable=this.getAttr("enable",1);
       this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
@@ -2473,7 +2469,6 @@ ${this.basestyle}
 
       this.elem.addEventListener("click", () => {
         if (!this.enable) return;
-        console.log("Pointer down on: ", event.target);
 
         // Pass current value to the numeric keyboard
         keyboard.value = this.value || "";
@@ -2523,7 +2518,7 @@ ${this.basestyle}
     }
     pointerdown(ev) {
       ev.preventDefault(); // Stop default behavior
-      console.log("Deeeeeebug: pointerdown triggered", ev);
+      console.log("Debug: pointerdown triggered", ev);
     
       if (!this.enable) return;
     
@@ -2812,105 +2807,112 @@ try {
         super();
         this.value = "0"; // Initialize value to 0
         this.hasStartedTyping = false; // Tracks if user started typing
+        this.isModalVisible = false; // Track modal visibility
       }
 
       connectedCallback() {
         let root;
         if (this.attachShadow) {
-          root = this.attachShadow({ mode: "open" });
+            root = this.attachShadow({ mode: "open" });
         } else {
-          root = this;
+            root = this;
         }
-
+    
         root.innerHTML = `
         <style>
-          ${this.basestyle}
-          :host {
-            display: block;
-            width: 100%;
-            font-family: 'SpaceMono', sans-serif;
-            font-size: 14px;
-          }
-          .numeric-keyboard {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 columns */
-            gap: 10px;
-            justify-items: center;
-          }
-          .numeric-keyboard .button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%; /* Fill grid cell */
-            height: 50px;
-            background-color: #333;
-            color: white;
-            border-radius: 5px;
-            font-family: 'SpaceMono', sans-serif;
-            font-size: 18px;
-            cursor: pointer;
-            user-select: none;
-          }
-          .numeric-keyboard .button:active {
-            background-color: #555;
-          }
-          .numeric-keyboard .button.double {
-            grid-column: span 2; /* Span 2 columns for the double-width button */
-          }
-          .output {
-            text-align: right;
-            font-size: 16px;
-            padding: 5px 10px;
-            margin-bottom: 10px;
-            background: #222;
-            color: white;
-            border-radius: 5px;
-            grid-column: span 4; /* Stretch across all columns */
-            font-family: 'SpaceMono', sans-serif;
-          }
+            ${this.basestyle}
+            :host {
+                display: block;
+                width: 100%;
+                font-family: 'SpaceMono', sans-serif;
+                font-size: 14px;
+            }
+            .numeric-keyboard {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr); /* 4 columns */
+                gap: 10px;
+                justify-items: center;
+            }
+            .numeric-keyboard .button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%; /* Fill grid cell */
+                height: 50px;
+                background-color: #333;
+                color: white;
+                border-radius: 5px;
+                font-family: 'SpaceMono', sans-serif;
+                font-size: 18px;
+                cursor: pointer;
+                user-select: none;
+            }
+            .numeric-keyboard .button:active {
+                background-color: #555;
+            }
+            .numeric-keyboard .button.double {
+                grid-column: span 2; /* Span 2 columns for the double-width button */
+            }
+            .output {
+                text-align: right;
+                font-size: 16px;
+                padding: 5px 10px;
+                margin-bottom: 10px;
+                background: #222;
+                color: white;
+                border-radius: 5px;
+                grid-column: span 4; /* Stretch across all columns */
+                font-family: 'SpaceMono', sans-serif;
+            }
         </style>
         <div class="output">${this.value || "0"}</div>
         <div class="numeric-keyboard">
-          ${this.createButtons()}
+            ${this.createButtons()}
         </div>
-      `;
-
+        `;
+    
         this.outputElement = root.querySelector(".output");
         this.buttons = root.querySelectorAll(".button");
-
+    
         // Add click event listeners for buttons
         this.buttons.forEach((button) =>
-          button.addEventListener("click", (e) => this.handleButtonPress(e))
+            button.addEventListener("click", (e) => this.handleButtonPress(e))
         );
-
-        // Manage modal visibility and focus
-        const keyboardModal = document.getElementById("numericKeyboardModal");
-
-        // When the modal is shown
-        keyboardModal.addEventListener("shown.bs.modal", () => {
-          // Ensure focus is on the custom keyboard and not a default input
-          console.log("Modal shown successfully");
-
-          const activeElement = document.activeElement;
-          if (activeElement.tagName === 'INPUT') {
-              activeElement.blur(); // Remove focus to avoid the native keyboard
-          }
-      });
-        // When the modal is hidden
-        keyboardModal.addEventListener("hidden.bs.modal", () => {
-          // Remove focus from elements inside the modal
-          console.log("Modal hidden successfully");
-
-          const activeElement = document.activeElement;
-          if (keyboardModal.contains(activeElement)) {
-            activeElement.blur();
-          }
-          document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
-        });
-      }
+    
+        // Modal handling
+        this.keyboardModal = document.getElementById("numericKeyboardModal");
+        if (this.keyboardModal) {
+            this.initializeModal();
+        } else {
+            console.error("Modal element not found!");
+        }
+    }
+    
+    initializeModal() {
+        const showModal = () => {
+            this.isModalVisible = true;
+            this.hasStartedTyping = false; // Reset typing state
+            this.outputElement.textContent = this.value || "0"; // Show current value
+            this.keyboardModal.classList.add("active");
+            document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
+        };
+    
+        const hideModal = () => {
+            this.isModalVisible = false;
+            this.keyboardModal.classList.remove("active");
+            document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
+        };
+    
+        // Set up event listeners
+        this.keyboardModal.addEventListener("shown.bs.modal", showModal);
+        this.keyboardModal.addEventListener("hidden.bs.modal", hideModal);
+    
+        // Public methods for external toggling
+        this.keyboardModal.show = showModal;
+        this.keyboardModal.hide = hideModal;
+    }
 
       createButtons() {
-        // Updated button layout
         const labels = [
           "7", "8", "9", "⌦",
           "4", "5", "6", "-",
@@ -2919,7 +2921,6 @@ try {
         ];
         return labels
           .map((label, index) => {
-            // Add 'double' class for the '0' button
             const isDouble = label === "0" && index === labels.lastIndexOf("0");
             return `
               <div 
@@ -2940,8 +2941,8 @@ try {
 
       handleKeyboardInput(event) {
         const key = event.key;
+        if (!this.isModalVisible) return;
 
-        // Map keyboard keys to the numeric keyboard buttons
         if (!isNaN(key) || key === "." || key === "-" || key === "+") {
           this.processInput(key);
         } else if (key === "Backspace") {
@@ -2953,35 +2954,20 @@ try {
 
       processInput(value) {
         if (value === "⌦") {
-          // Delete the last character
-          if (this.value.length > 1) {
-            this.value = this.value.slice(0, -1);
-          } else {
-            this.value = "0"; // Reset to 0 if all characters are deleted
-          }
+          this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
         } else if (value === "↵") {
-          // Trigger submit
           this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
         } else if (value === "-") {
-          // Handle the minus sign
-          if (this.value.startsWith("-")) {
-            this.value = this.value.slice(1); // Remove minus
-          } else {
-            this.value = "-" + this.value; // Add minus
-          }
+          this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
         } else if (value === "+") {
-          // Handle the plus sign (ensure positive value)
-          this.value = this.value.replace("-", ""); // Remove minus
+          this.value = this.value.replace("-", "");
         } else if (!isNaN(value) || value === ".") {
-          // Handle numeric or decimal input
           if (!this.hasStartedTyping) {
-            this.value = ""; // Clear the current value on first input
+            this.value = "";
             this.hasStartedTyping = true;
           }
-          this.value += value; // Append value
+          this.value += value;
         }
-
-        // Update the display
         this.outputElement.textContent = this.value;
         this.dispatchEvent(new Event("input"));
       }
@@ -2990,9 +2976,6 @@ try {
 } catch (error) {
   console.error("WebAudioNumericKeyboard already defined:", error);
 }
-
-
-
 
 
 

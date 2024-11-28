@@ -55,18 +55,48 @@ webaudio-slider {
 
 
 .modal {
-    z-index: 1050; /* Ensure it overlays other elements */
+    --bs-modal-zindex: 1055; /* Ensure it overlays other elements */
+    --bs-modal-width: 400px; /* Set max width for the modal */
+    --bs-modal-padding: 1rem;
+    --bs-modal-margin: 0; /* Remove top margin to center */
+    --bs-modal-color: var(--bs-body-color);
+    --bs-modal-bg: #ffffff; /* Modal background color */
+    --bs-modal-border-color: transparent; /* Transparent border */
+    --bs-modal-border-width: 0;
+    --bs-modal-border-radius: 5px; /* Rounded corners */
+    --bs-modal-box-shadow: none; /* Remove shadow */
+    --bs-modal-inner-border-radius: 12px;
+    --bs-modal-header-padding-x: 1rem;
+    --bs-modal-header-padding-y: 0.5rem;
+    --bs-modal-header-padding: 1.0rem 1rem;
+    --bs-modal-header-border-color: transparent;
+    --bs-modal-header-border-width: 0;
+    --bs-modal-title-line-height: 1.5;
+    --bs-modal-footer-gap: 0.5rem;
+    --bs-modal-footer-bg: transparent;
+    --bs-modal-footer-border-color: transparent;
+    --bs-modal-footer-border-width: 0;
+  
+    /* Modal centering */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--bs-modal-width);
+    height: auto;
+    z-index: var(--bs-modal-zindex);
+    display: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
   }
   
-  .modal-backdrop {
-    z-index: 1040; /* Correct layering for the backdrop */
-  }
   
-  .modal-content {
+.modal-content {
     overflow: visible;
   }
   
-  .modal-dialog {
+.modal-dialog {
     max-width: 400px; /* Adjust width to fit the keyboard */
     margin: auto;
     display: flex;
@@ -75,7 +105,7 @@ webaudio-slider {
     padding: 20px;
     pointer-events: auto;
   }
-  .numeric-keyboard .button {
+.numeric-keyboard .button {
     pointer-events: auto; /* Ensure buttons are clickable */
   }
   webaudio-numeric-keyboard {
@@ -83,14 +113,36 @@ webaudio-slider {
     width: 100%;
   }
 
-  #numericKeyboardModal {
-    position: fixed !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 1050 !important;
+#numericKeyboardModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    border-radius: 8px;
+    display: none; /* Default hidden */
+    visibility: hidden;
+    opacity: 0;
+    z-index: 1050;
 }
 
+#numericKeyboardModal.active {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
+
+.modal-backdrop {
+    z-index: 1040;
+    background-color: transparent; /* Ensure transparent backdrop */
+}
+/* Remove all transition delays */
+#numericKeyboardModal,
+#numericKeyboardModal.active {
+    transition: none;
+}
 
 /* Square Frame: Centered and fixed size */
 /* Responsive Frame: Centered and flexible size */
