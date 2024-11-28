@@ -2363,101 +2363,139 @@ try {
   
 
 
-  
-try{
-  customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
-    constructor(){
-      super();
-      this.addEventListener("keydown",this.keydown);
-      this.addEventListener("mousedown",this.pointerdown,{passive:false});
-      this.addEventListener("touchstart",this.pointerdown,{passive:false});
-      this.addEventListener("wheel",this.wheel, { passive: false });
-      this.addEventListener("mouseover",this.pointerover);
-      this.addEventListener("mouseout",this.pointerout);
-      this.addEventListener("contextmenu",this.contextMenu);
-    }
-    connectedCallback(){
-      let root;
-      if(this.attachShadow)
-        root=this.attachShadow({mode: 'open'});
-      else
-        root=this;
-      root.innerHTML=
-`<style>
-${this.basestyle}
-:host{
-  display:inline-block;
-  user-select:none;
-  margin:0;
-  padding:0;
-  font-family: sans-serif;
-  font-size: 8px;
-  cursor:pointer;
-  position:relative;
-  vertical-align:baseline;
-}
-.webaudio-param-body{
-  display:inline-block;
-  position:relative;
-  text-align:center;
-  background:none;
-  margin:0;
-  padding:0;
-  font-family:sans-serif;
-  font-size:11px;
-  vertical-align:bottom;
-  border:none;
-}
-</style>
-<input class='webaudio-param-body' value='0' inputmode='none' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
-`;
-      this.elem=root.childNodes[2];
-      this.ttframe=root.childNodes[3];
-      this.enable=this.getAttr("enable",1);
-      this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
-      this.defvalue=this.getAttr("defvalue",0);
-      this._fontsize=this.getAttr("fontsize",9); if (!this.hasOwnProperty("fontsize")) Object.defineProperty(this,"fontsize",{get:()=>{return this._fontsize},set:(v)=>{this._fontsize=v;this.setupImage()}});
-      this._src=this.getAttr("src",opt.paramSrc); if (!this.hasOwnProperty("src")) Object.defineProperty(this,"src",{get:()=>{return this._src},set:(v)=>{this._src=v;this.setupImage()}});
-      this.link=this.getAttr("link","");
-      this._width=this.getAttr("width",opt.paramWidth); if (!this.hasOwnProperty("width")) Object.defineProperty(this,"width",{get:()=>{return this._width},set:(v)=>{this._width=v;this.setupImage()}});
-      this._height=this.getAttr("height",opt.paramHeight); if (!this.hasOwnProperty("height")) Object.defineProperty(this,"height",{get:()=>{return this._height},set:(v)=>{this._height=v;this.setupImage()}});
-      this._colors=this.getAttr("colors",opt.paramColors); if (!this.hasOwnProperty("colors")) Object.defineProperty(this,"colors",{get:()=>{return this._colors},set:(v)=>{this._colors=v;this.setupImage()}});
-      this.outline=this.getAttr("outline",opt.outline);
-      this.rconv=this.getAttr("rconv",null);
-      this.midiController={};
-      this.midiMode="normal";
-      this.currentLink=null;
-      if(this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
+  try{
+    customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
+      constructor(){
+        super();
+        this.addEventListener("keydown", this.keydown);
+        this.addEventListener("mousedown", this.pointerdown, {passive: false});
+        this.addEventListener("touchstart", this.pointerdown, {passive: false});
+        this.addEventListener("wheel", this.wheel, { passive: false });
+        this.addEventListener("mouseover", this.pointerover);
+        this.addEventListener("mouseout", this.pointerout);
+        this.addEventListener("contextmenu", this.contextMenu);
       }
-      this.setupImage();
-
-      // Setup event listener for triggering the numeric keyboard
-      this.setupKeyboardInteraction();
-
-
-
-      if(window.webAudioControlsWidgetManager)
-        window.webAudioControlsWidgetManager.updateWidgets();
-      //  window.webAudioControlsWidgetManager.addWidget(this);
-      this.fromLink=((e)=>{
-        this.setValue(e.target.convValue.toFixed(e.target.digits));
-      }).bind(this);
-      this.elem.onchange=()=>{
-        if(!this.currentLink.target.conv || (this.currentLink.target.conv&&this.rconv)){
-          let val = this.value=this.elem.value;
-          if(this.rconv){
-            let x=+this.elem.value;
-            val=eval(this.rconv);
-          }
-          if(this.currentLink){
-            this.currentLink.target.setValue(val, true);
+  
+      connectedCallback(){
+        let root;
+        if(this.attachShadow)
+          root = this.attachShadow({mode: 'open'});
+        else
+          root = this;
+        root.innerHTML = `
+  <style>
+  ${this.basestyle}
+  :host{
+    display:inline-block;
+    user-select:none;
+    margin:0;
+    padding:0;
+    font-family: sans-serif;
+    font-size: 8px;
+    cursor:pointer;
+    position:relative;
+    vertical-align:baseline;
+  }
+  .webaudio-param-body{
+    display:inline-block;
+    position:relative;
+    text-align:center;
+    background:none;
+    margin:0;
+    padding:0;
+    font-family:sans-serif;
+    font-size:11px;
+    vertical-align:bottom;
+    border:none;
+  }
+  </style>
+  <input class='webaudio-param-body' value='0' inputmode='none' tabindex='1' touch-action='none'/>
+  <div class='webaudioctrl-tooltip'></div>
+  `;
+        // Use querySelector to reliably select elements
+        this.elem = root.querySelector('.webaudio-param-body');
+        this.ttframe = root.querySelector('.webaudioctrl-tooltip');
+  
+        this.enable = this.getAttr("enable",1);
+        this._value = this.getAttr("value",0);
+        if (!this.hasOwnProperty("value")) {
+          Object.defineProperty(this,"value",{
+            get: ()=>{ return this._value },
+            set: (v)=>{ this._value = v; this.redraw(); }
+          });
+        }
+        this.defvalue = this.getAttr("defvalue",0);
+        this._fontsize = this.getAttr("fontsize",9);
+        if (!this.hasOwnProperty("fontsize")) {
+          Object.defineProperty(this,"fontsize",{
+            get: ()=>{ return this._fontsize },
+            set: (v)=>{ this._fontsize = v; this.setupImage(); }
+          });
+        }
+        this._src = this.getAttr("src", opt.paramSrc);
+        if (!this.hasOwnProperty("src")) {
+          Object.defineProperty(this,"src",{
+            get: ()=>{ return this._src },
+            set: (v)=>{ this._src = v; this.setupImage(); }
+          });
+        }
+        this.link = this.getAttr("link","");
+        this._width = this.getAttr("width", opt.paramWidth);
+        if (!this.hasOwnProperty("width")) {
+          Object.defineProperty(this,"width",{
+            get: ()=>{ return this._width },
+            set: (v)=>{ this._width = v; this.setupImage(); }
+          });
+        }
+        this._height = this.getAttr("height", opt.paramHeight);
+        if (!this.hasOwnProperty("height")) {
+          Object.defineProperty(this,"height",{
+            get: ()=>{ return this._height },
+            set: (v)=>{ this._height = v; this.setupImage(); }
+          });
+        }
+        this._colors = this.getAttr("colors", opt.paramColors);
+        if (!this.hasOwnProperty("colors")) {
+          Object.defineProperty(this,"colors",{
+            get: ()=>{ return this._colors },
+            set: (v)=>{ this._colors = v; this.setupImage(); }
+          });
+        }
+        this.outline = this.getAttr("outline", opt.outline);
+        this.rconv = this.getAttr("rconv", null);
+        this.midiController = {};
+        this.midiMode = "normal";
+        this.currentLink = null;
+        if(this.midicc) {
+          let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
+          let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
+          this.setMidiController(ch, cc);
+        }
+        this.setupImage();
+  
+        // Setup event listener for triggering the numeric keyboard
+        this.setupKeyboardInteraction();
+  
+        if(window.webAudioControlsWidgetManager)
+          window.webAudioControlsWidgetManager.updateWidgets();
+  
+        this.fromLink = ((e)=>{
+          this.setValue(e.target.convValue.toFixed(e.target.digits));
+        }).bind(this);
+        this.elem.onchange = () => {
+          if(!this.currentLink.target.conv || (this.currentLink.target.conv && this.rconv)){
+            let val = this.value = this.elem.value;
+            if(this.rconv){
+              let x = +this.elem.value;
+              val = eval(this.rconv);
+            }
+            if(this.currentLink){
+              this.currentLink.target.setValue(val, true);
+            }
           }
         }
       }
-    }
+  
     
     disconnectedCallback(){}
     setupImage(){
@@ -2518,17 +2556,10 @@ ${this.basestyle}
       const keyboardModal = document.getElementById("numericKeyboardModal");
       const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
     
-      // Flag to prevent duplicate event handling
-      let touchHandled = false;
+      // ... existing code ...
     
       const showModalHandler = (event) => {
         if (!this.enable) return;
-    
-        // If the event is touchend and already handled, do nothing
-        if (event.type === 'touchend') {
-          if (touchHandled) return;
-          touchHandled = true;
-        }
     
         // Pass current value to the numeric keyboard
         keyboard.value = this.value || "";
@@ -2538,17 +2569,25 @@ ${this.basestyle}
         const bootstrapModal = new bootstrap.Modal(keyboardModal);
         bootstrapModal.show();
     
-        // Handle the confirmation of a value
-        keyboard.addEventListener(
-          "submit",
-          (e) => {
-            const newValue = e.detail || keyboard.value;
-            this.setValue(newValue, true); // Update the param value
-            this.updateLinkedElements(newValue); // Update linked elements
-            bootstrapModal.hide();
-          },
-          { once: true } // Ensure we only listen for one submit event per interaction
-        );
+        // Move focus to the first interactive element in the modal
+        keyboard.outputElement.focus();
+            // Handle the confirmation of a value
+            keyboard.addEventListener(
+              "submit",
+              (e) => {
+                const detail = e.detail;
+                const targetValue = detail.targetValue;
+                const interpolationDuration = detail.interpolationDuration;
+            
+                this.startInterpolation(targetValue, interpolationDuration);
+            
+                bootstrapModal.hide();
+            
+                // Return focus to the original element
+                this.elem.focus();
+              },
+              { once: true } // Ensure we only listen for one submit event per interaction
+            );
     
         // If the event is touchend, prevent the subsequent click event
         if (event.type === 'touchend') {
@@ -2566,18 +2605,37 @@ ${this.basestyle}
       this.elem.addEventListener("click", showModalHandler);
       this.elem.addEventListener("touchend", showModalHandler, { passive: false });
     }
-
-    updateLinkedElements(value) {
-      if (this.currentLink) {
-        this.currentLink.target.setValue(value, true); // Update linked knob or slider
+      updateLinkedElements(value) {
+        if (this.currentLink) {
+          this.currentLink.target.setValue(value, true); // Update linked knob or slider
+        }
+      
+        // Trigger change event for other listeners
+        const event = new Event("change", { bubbles: true, cancelable: true });
+        this.dispatchEvent(event);
       }
 
-      // Trigger change event for other listeners
-      const event = new Event("change", { bubbles: true, cancelable: true });
-      this.dispatchEvent(event);
+    startInterpolation(targetValue, duration) {
+      const startValue = parseFloat(this.value);
+      const startTime = performance.now();
+    
+      const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const newValue = startValue + (targetValue - startValue) * progress;
+    
+        this.setValue(newValue, true); // Update the param value
+    
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          // Interpolation complete
+          this.setValue(targetValue, true);
+        }
+      };
+    
+      requestAnimationFrame(step);
     }
-
-
     setValue(v,f){
       this.value=v;
       if(this.value!=this.oldvalue){
@@ -2611,6 +2669,7 @@ ${this.basestyle}
 
 
 
+
 try {
   customElements.define(
     "webaudio-numeric-keyboard",
@@ -2620,6 +2679,14 @@ try {
         this.value = "0"; // Initialize keyboard value to 0
         this.hasStartedTyping = false; // Tracks if user started typing
         this.isModalVisible = false; // Track modal visibility
+
+        // Interpolation properties
+        this.currentValue = 0; // The current value of the parameter
+        this.targetValue = 0; // The target value after interpolation
+        this.startValue = 0; // The value at the start of interpolation
+        this.interpolationStartTime = null; // Start time of interpolation
+        this.interpolationDuration = 0; // Duration in milliseconds
+        this.animationFrameId = null; // ID of the animation frame
       }
 
       connectedCallback() {
@@ -2743,7 +2810,7 @@ try {
             <div class="slider-value-display">0.00</div>
             <div>s</div>
         </div>
-        <div class="divider-line"></div> <!-- Added Divider Line -->
+        <div class="divider-line"></div>
         <div class="output">${this.value || "0.00"}</div>
         <div class="keyboard-and-slider-container">
             <div class="numeric-keyboard">
@@ -2765,15 +2832,20 @@ try {
 
         // Event listeners for horizontal slider
         if (this.sliderHorz) {
+          // Set initial interpolation duration
+          this.interpolationDuration = parseFloat(this.sliderHorz.value) * 1000; // Convert to milliseconds
+
           this.sliderHorz.addEventListener("input", (e) => {
             const sliderValue = parseFloat(e.target.value);
             this.sliderValueElement.textContent = sliderValue.toFixed(2); // Format to 2 decimals
+            this.interpolationDuration = sliderValue * 1000; // Convert to milliseconds
             this.dispatchEvent(new CustomEvent("slider-input-horz", { detail: sliderValue }));
           });
 
           this.sliderHorz.addEventListener("change", (e) => {
             const sliderValue = parseFloat(e.target.value);
             this.sliderValueElement.textContent = sliderValue.toFixed(2); // Format to 2 decimals
+            this.interpolationDuration = sliderValue * 1000; // Convert to milliseconds
             this.dispatchEvent(new CustomEvent("slider-change-horz", { detail: sliderValue }));
           });
         }
@@ -2784,39 +2856,39 @@ try {
       initializeModal() {
         this.keyboardModal = document.getElementById("numericKeyboardModal");
         if (!this.keyboardModal) {
-            console.error("Modal element not found!");
-            return;
+          console.error("Modal element not found!");
+          return;
         }
-    
+
         const showModal = () => {
-            if (this.isModalVisible) return; // Avoid reattaching listeners
-            this.isModalVisible = true;
-            this.hasStartedTyping = false;
-            this.outputElement.textContent = this.value || "0";
-            this.keyboardModal.classList.add("active");
-    
-            // Add `keydown` listener only if it hasn't been added
-            document.addEventListener("keydown", this.handleKeyboardInputBound);
+          if (this.isModalVisible) return; // Avoid reattaching listeners
+          this.isModalVisible = true;
+          this.hasStartedTyping = false;
+          this.outputElement.textContent = this.value || "0";
+          this.keyboardModal.classList.add("active");
+
+          // Add `keydown` listener only if it hasn't been added
+          document.addEventListener("keydown", this.handleKeyboardInputBound);
         };
-    
+
         const hideModal = () => {
-            if (!this.isModalVisible) return; // Ensure cleanup only when necessary
-            this.isModalVisible = false;
-            this.keyboardModal.classList.remove("active");
-    
-            // Remove the `keydown` listener
-            document.removeEventListener("keydown", this.handleKeyboardInputBound);
+          if (!this.isModalVisible) return; // Ensure cleanup only when necessary
+          this.isModalVisible = false;
+          this.keyboardModal.classList.remove("active");
+
+          // Remove the `keydown` listener
+          document.removeEventListener("keydown", this.handleKeyboardInputBound);
         };
-    
+
         // Bind the `handleKeyboardInput` method to maintain `this` context
         this.handleKeyboardInputBound = this.handleKeyboardInput.bind(this);
-    
+
         this.keyboardModal.addEventListener("shown.bs.modal", showModal);
         this.keyboardModal.addEventListener("hidden.bs.modal", hideModal);
-    
+
         this.keyboardModal.show = showModal;
         this.keyboardModal.hide = hideModal;
-    }
+      }
 
       createButtons() {
         const labels = [
@@ -2860,294 +2932,70 @@ try {
 
       processInput(value) {
         if (value === "⌦") {
-            this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
+          this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
         } else if (value === "↵") {
-            this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
+          // Dispatch an event with target value and interpolation duration
+          const eventData = {
+            targetValue: parseFloat(this.value),
+            interpolationDuration: this.interpolationDuration,
+          };
+          this.dispatchEvent(new CustomEvent("submit", { detail: eventData }));
         } else if (value === "-") {
-            this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
+          this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
         } else if (value === "+") {
-            this.value = this.value.replace("-", "");
+          this.value = this.value.replace("-", "");
         } else if (!isNaN(value) || value === ".") {
-            if (!this.hasStartedTyping) {
-                this.value = ""; // Clear initial "0" when typing starts
-                this.hasStartedTyping = true;
-            }
-            this.value += value; // Append the new input
+          if (!this.hasStartedTyping) {
+            this.value = ""; // Clear initial "0" when typing starts
+            this.hasStartedTyping = true;
+          }
+          this.value += value; // Append the new input
         }
-    
+      
         // Update the displayed value
         this.outputElement.textContent = this.value;
-    
+      
         // Emit a single 'input' event
         this.dispatchEvent(new Event("input"));
-    }
+      }
+
+      animateInterpolation(timestamp) {
+        if (this.interpolationStartTime == null) {
+          this.interpolationStartTime = timestamp;
+        }
+
+        // Calculate elapsed time
+        const elapsed = timestamp - this.interpolationStartTime;
+
+        // Calculate progress (clamp between 0 and 1)
+        const progress = Math.min(elapsed / this.interpolationDuration, 1);
+
+        // Calculate interpolated value
+        this.currentValue = this.startValue + (this.targetValue - this.startValue) * progress;
+
+        // Update the display
+        this.outputElement.textContent = this.currentValue.toFixed(2);
+
+        // Dispatch an 'input' event to notify listeners of the updated value
+        this.dispatchEvent(new CustomEvent('input', { detail: this.currentValue }));
+
+        // Check if animation should continue
+        if (progress < 1) {
+          // Continue animation
+          this.animationFrameId = requestAnimationFrame(this.animateInterpolation.bind(this));
+        } else {
+          // Animation complete
+          this.animationFrameId = null;
+
+          // Dispatch a 'complete' event
+          this.dispatchEvent(new CustomEvent('complete', { detail: this.currentValue }));
+        }
+      }
     }
   );
 } catch (error) {
   console.error("WebAudioNumericKeyboard already defined:", error);
 }
-
-try {
-  if (!customElements.get("webaudio-numeric-keyboard")) {
-    customElements.define(
-      "webaudio-numeric-keyboard",
-      class WebAudioNumericKeyboard extends WebAudioControlsWidget {
-        constructor() {
-          super();
-          this.value = "0"; // Initialize value to 0
-          this.hasStartedTyping = false; // Tracks if user started typing
-          this.isModalVisible = false; // Track modal visibility
-        }
-
-        connectedCallback() {
-          let root;
-          if (this.attachShadow) {
-            root = this.attachShadow({ mode: "open" });
-          } else {
-            root = this;
-          }
-
-          root.innerHTML = `
-          <style>
-              ${this.basestyle}
-              :host {
-                  display: block;
-                  width: 100%;
-                  font-family: 'SpaceMono', sans-serif;
-                  font-size: 14px;
-              }
-              .output {
-                  text-align: right;
-                  font-size: 16px;
-                  padding: 5px 10px;
-                  margin-bottom: 10px;
-                  background: #222;
-                  color: white;
-                  border-radius: 5px;
-                  font-family: 'SpaceMono', sans-serif;
-              }
-              .keyboard-and-slider-container {
-                  display: flex;
-                  flex-direction: row; /* Arrange keyboard and slider side by side */
-                  align-items: center;
-                  justify-content: center;
-                  gap: 20px; /* Space between keyboard and slider */
-                  width: 100%;
-              }
-              .numeric-keyboard {
-                  display: grid;
-                  grid-template-columns: repeat(4, 1fr); /* 4 columns */
-                  gap: 10px;
-                  justify-items: center;
-                  flex: 1; /* Allow keyboard to take available space */
-              }
-              .numeric-keyboard .button {
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  width: 100%; /* Fill grid cell */
-                  height: 50px;
-                  background-color: #333;
-                  color: white;
-                  border-radius: 5px;
-                  font-family: 'SpaceMono', sans-serif;
-                  font-size: 18px;
-                  cursor: pointer;
-                  user-select: none;
-              }
-              .numeric-keyboard .button:active {
-                  background-color: #555;
-              }
-              .numeric-keyboard .button.double {
-                  grid-column: span 2; /* Span 2 columns for the double-width button */
-              }
-              /* Slider Container Styling */
-              .slider-container {
-                  display: flex;
-                  flex-direction: column; /* Vertical alignment */
-                  justify-content: center;
-                  align-items: center;
-                  width: 50px; /* Fixed width for vertical slider */
-                  height: 200px; /* Fixed height to make it visible */
-              }
-              .slider-container webaudio-slider {
-                  width: 40px; /* Slightly smaller than container */
-                  height: 100%; /* Fill the container's height */
-              }
-          </style>
-          <div class="output">${this.value || "0"}</div>
-          <div class="keyboard-and-slider-container">
-              <div class="numeric-keyboard">
-                  ${this.createButtons()}
-              </div>
-              <!-- Slider Container -->
-              <div class="slider-container">
-                  <webaudio-slider 
-                      id="numericKeyboardSlider" 
-                      min="0" 
-                      max="30" 
-                      step="1" 
-                      value="15" 
-                      colors="#4caf50;#cccccc;#4caf50" 
-                      direction="vert">
-                  </webaudio-slider>
-              </div>
-          </div>
-          `;
-        
-
-          this.outputElement = root.querySelector(".output");
-          this.buttons = root.querySelectorAll(".button");
-          this.slider = root.querySelector("#numericKeyboardSlider"); // Reference to the slider
-
-          // Add click event listeners for buttons
-          this.buttons.forEach((button) =>
-            button.addEventListener("click", (e) => this.handleButtonPress(e))
-          );
-
-          // Handle touchend events for mobile devices
-          this.buttons.forEach((button) =>
-            button.addEventListener("touchend", (e) => this.handleButtonPress(e))
-          );
-
-          // Event listener for slider input (real-time updates)
-          if (this.slider) {
-            this.slider.addEventListener("input", (e) => {
-              const sliderValue = parseFloat(e.target.value);
-              console.log("Numeric Keyboard Slider Input:", sliderValue);
-              // Implement functionality based on sliderValue
-              // Example: Emit a custom event or update another component
-              this.dispatchEvent(new CustomEvent("slider-input", { detail: sliderValue }));
-            });
-
-            // Event listener for slider change (final value)
-            this.slider.addEventListener("change", (e) => {
-              const sliderValue = parseFloat(e.target.value);
-              console.log("Numeric Keyboard Slider Change:", sliderValue);
-              // Implement finalization based on sliderValue
-              this.dispatchEvent(new CustomEvent("slider-change", { detail: sliderValue }));
-            });
-          }
-
-          // Modal handling remains unchanged
-          this.keyboardModal = document.getElementById("numericKeyboardModal");
-          if (this.keyboardModal) {
-            this.initializeModal();
-          } else {
-            console.error("Modal element not found!");
-          }
-        }
-
-        initializeModal() {
-          const showModal = () => {
-            this.isModalVisible = true;
-            this.hasStartedTyping = false; // Reset typing state
-            this.outputElement.textContent = this.value || "0"; // Show current value
-            this.keyboardModal.classList.add("active");
-            this.keyboardModal.removeAttribute("inert"); // Allow interaction
-            this.keyboardModal.setAttribute("aria-hidden", "false"); // Accessible
-            document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
-          };
-
-          const hideModal = () => {
-            this.isModalVisible = false;
-            this.keyboardModal.classList.remove("active");
-            this.keyboardModal.setAttribute("inert", ""); // Disable interaction
-            this.keyboardModal.setAttribute("aria-hidden", "true"); // Hide from assistive tech
-            document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
-          };
-
-          // Set up event listeners
-          this.keyboardModal.addEventListener("shown.bs.modal", showModal);
-          this.keyboardModal.addEventListener("hidden.bs.modal", hideModal);
-
-          // Public methods for external toggling
-          this.keyboardModal.show = showModal;
-          this.keyboardModal.hide = hideModal;
-        }
-
-        createButtons() {
-          const labels = [
-            "7", "8", "9", "⌦",
-            "4", "5", "6", "-",
-            "1", "2", "3", "+",
-            "0", ".", "↵"
-          ];
-          return labels
-            .map((label, index) => {
-              const isDouble = label === "0" && index === labels.lastIndexOf("0");
-              return `
-                <div 
-                  class="button ${isDouble ? "double" : ""}" 
-                  data-value="${label}"
-                >
-                  ${label}
-                </div>`;
-            })
-            .join("");
-        }
-
-        handleButtonPress(event) {
-          const button = event.target;
-          const value = button.getAttribute("data-value");
-          this.processInput(value);
-        }
-
-        handleKeyboardInput(event) {
-          const key = event.key;
-          if (!this.isModalVisible) return;
-
-          if (!isNaN(key) || key === "." || key === "-" || key === "+") {
-            this.processInput(key);
-          } else if (key === "Backspace") {
-            this.processInput("⌦");
-          } else if (key === "Enter") {
-            this.processInput("↵");
-          }
-        }
-
-        processInput(value) {
-          if (value === "⌦") {
-            this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
-          } else if (value === "↵") {
-            this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
-          } else if (value === "-") {
-            this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
-          } else if (value === "+") {
-            this.value = this.value.replace("-", "");
-          } else if (!isNaN(value) || value === ".") {
-            if (!this.hasStartedTyping) {
-              this.value = "";
-              this.hasStartedTyping = true;
-            }
-            this.value += value;
-          }
-          this.outputElement.textContent = this.value;
-          this.dispatchEvent(new Event("input"));
-        }
-
-        // Override setValue to ensure synchronization
-        setValue(v, fire = false) {
-          // Ensure v is within the slider's range
-          const numericValue = parseFloat(v);
-          if (isNaN(numericValue)) return;
-
-          this.value = numericValue.toString();
-          this.outputElement.textContent = this.value;
-
-          // Note: Do NOT update the slider's value here since it's independent
-
-          if (fire) {
-            this.dispatchEvent(new Event("change"));
-          }
-        }
-      }
-    );
-  } 
-} catch (error) {
-    console.error("WebAudioNumericKeyboard already defined:", error);
-  }
-
 
 
 class WebAudioControlsWidgetManager {
