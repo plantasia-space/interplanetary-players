@@ -54,6 +54,7 @@ webaudio-slider {
   }
 
 
+
   .modal {
     --bs-modal-zindex: 1055; /* Ensure it overlays other elements */
     --bs-modal-width: 90%; /* Use percentage for responsive width */
@@ -86,7 +87,7 @@ webaudio-slider {
     max-width: 400px; /* Ensure it doesn't exceed the max width */
     height: auto;
     z-index: var(--bs-modal-zindex);
-    display: none;
+    display: none; /* Default hidden */
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -132,9 +133,9 @@ webaudio-numeric-keyboard {
 }
 
 #numericKeyboardModal.active {
-    display: block;
-    visibility: visible;
-    opacity: 1;
+    display: block !important; /* Force display when active */
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .modal-backdrop {
@@ -147,6 +148,10 @@ webaudio-numeric-keyboard {
 #numericKeyboardModal.active {
     transition: none;
 }
+
+
+
+
 
 
 /* Square Frame: Centered and fixed size */
