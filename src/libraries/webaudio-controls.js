@@ -1,24 +1,36 @@
 /* *
  *
- *  WebAudio-Controls is based on
- *    webaudio-knob by Eiji Kitamura http://google.com/+agektmr
- *    webaudio-slider by RYoya Kawai https://plus.google.com/108242669191458983485/posts
- *    webaudio-switch by Keisuke Ai http://d.hatena.ne.jp/aike/
- *  Integrated and enhanced by g200kg http://www.g200kg.com/
+ *  WebAudio-Controls is based on:
+ *    - webaudio-knob by Eiji Kitamura http://google.com/+agektmr
+ *    - webaudio-slider by Ryoya Kawai https://plus.google.com/108242669191458983485/posts
+ *    - webaudio-switch by Keisuke Ai http://d.hatena.ne.jp/aike/
+ *  Integrated and enhanced by g200kg (Tatsuya Shinyagaito) http://www.g200kg.com/
  *
- *	Copyright 2013 Eiji Kitamura / Ryoya KAWAI / Keisuke Ai / g200kg(Tatsuya Shinyagaito)
+ *  Copyright 2013 Eiji Kitamura / Ryoya KAWAI / Keisuke Ai / g200kg (Tatsuya Shinyagaito)
  *
- *	 Licensed under the Apache License, Version 2.0 (the "License");
- *	 you may not use this file except in compliance with the License.
- *	 You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  You may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at:
  *
- *	 http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *	 Unless required by applicable law or agreed to in writing, software
- *	 distributed under the License is distributed on an "AS IS" BASIS,
- *	 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *	 See the License for the specific language governing permissions and
- *	 limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *  Modifications made by Bruna Guarnieri:
+ *	•	Knobs (webaudio-knob): Fully styled rotary controls with customizable colors, sizes, and behavior.
+ *	•	Sliders (webaudio-slider): Linear sliders with horizontal and vertical orientation options.
+ *  • Switches (webaudio-switch): Includes toggle, kick, radio, and sequential types with group handling for radio switches.
+ *	•	Keyboard (webaudio-keyboard): Simulates a MIDI keyboard with configurable keys, colors, and MIDI integration.
+ *	• Parameters (webaudio-param): Provides numeric input fields with customizable visual styles and MIDI compatibility.
+ *  • Draws controls (like sliders and switches) using the <canvas> API for precise visual control.
+ *  • Date of modification: 2024-11
+ *
+ *  NOTICE: This file includes modifications by Bruna Guarnieri and complies with the requirements
+ *  of the Apache License 2.0. The original work and its attributions have been retained as required.
  *
  * */
 
