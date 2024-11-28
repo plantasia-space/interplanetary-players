@@ -153,29 +153,5 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("webAudioControlsWidgetManager is not defined.");
     }
 
-    // Initialize the modal
-        const modalElement = document.getElementById('numericKeyboardModal');
-        const openModalBtn = document.querySelector('.open-modal-btn');
-        
-        // Function to show the modal
-        const showModal = () => {
-          modalElement.classList.add('active');
-        };
-        
-        // Function to hide the modal
-        const hideModal = () => {
-          modalElement.classList.remove('active');
-        };
-        
-        // Show modal when button is clicked
-        openModalBtn.addEventListener('click', showModal);
-  
-        // Close the modal when clicking outside the modal content
-        window.addEventListener('click', (event) => {
-          if (event.target == modalElement) {
-            hideModal();
-          }
-        });
-      
 
 });

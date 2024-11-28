@@ -2644,33 +2644,33 @@ try {
                 font-size: 16px;
                 padding: 5px 10px;
                 margin-bottom: 10px;
-                background: #222;
+                background: #000000;
                 color: white;
                 border-radius: 5px;
                 font-family: 'SpaceMono', sans-serif;
             }
             .keyboard-and-slider-container {
                 display: flex;
-                flex-direction: column; /* Stack keyboard and slider vertically */
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 20px; /* Space between keyboard and slider */
+                gap: 20px;
                 width: 100%;
             }
             .numeric-keyboard {
                 display: grid;
-                grid-template-columns: repeat(4, 1fr); /* 4 columns */
+                grid-template-columns: repeat(4, 1fr);
                 gap: 10px;
                 justify-items: center;
-                width: 100%; /* Ensure keyboard takes full width */
+                width: 100%;
             }
             .numeric-keyboard .button {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 100%; /* Fill grid cell */
+                width: 100%;
                 height: 50px;
-                background-color: #333;
+                background-color: #000000;
                 color: white;
                 border-radius: 5px;
                 font-family: 'SpaceMono', sans-serif;
@@ -2682,50 +2682,71 @@ try {
                 background-color: #555;
             }
             .numeric-keyboard .button.double {
-                grid-column: span 2; /* Span 2 columns for the double-width button */
+                grid-column: span 2;
             }
             .slider-container-horz {
                 display: flex;
                 flex-direction: row;
                 justify-content: center;
                 align-items: center;
+                gap: 0px;
                 width: 100%;
-                height: 50px;
+                height: 32px;
+                margin-bottom: 0px;
             }
             .slider-container-horz webaudio-slider {
-                width: 100%;
+                flex: 1;
                 height: 100%;
             }
-            .slider-value-display {
-                text-align: center;
+            .slider-value-container {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 0px;
                 font-size: 16px;
-                padding: 5px;
-                margin: 10px 0;
+                margin-top: 0px;
+            }
+            .menu-item-icon {
+                width: 16px;
+                height: 16px;
+            }
+            .slider-value-display {
+                font-size: 16px;
                 background: white;
                 color: black;
                 border-radius: 5px;
-                font-family: 'SpaceMono', sans-serif;
+                padding: 2px 6px;
+            }
+            .divider-line {
                 width: 100%;
+                height: 1px;
+                background-color: #ccc;
+                margin: 10px 0;
+                margin-bottom: 20px;
             }
         </style>
+        <div class="slider-container-horz">
+            <webaudio-slider 
+                id="numericKeyboardSliderHorz" 
+                min="0" 
+                max="30" 
+                step="1" 
+                value="0" 
+                colors="#00000000;#00000000;#000000;#000000;#000000" 
+                direction="horz">
+            </webaudio-slider>
+        </div>
+        <div class="slider-value-container">
+            <img src="/assets/icons/time.svg" alt="Time Icon" class="menu-item-icon">
+            <div class="slider-value-display">0</div>
+            <div>s</div>
+        </div>
+        <div class="divider-line"></div> <!-- Added Divider Line -->
         <div class="output">${this.value || "0"}</div>
         <div class="keyboard-and-slider-container">
             <div class="numeric-keyboard">
                 ${this.createButtons()}
-            </div>
-            <!-- New Slider Value Display -->
-            <div class="slider-value-display">0</div>
-            <!-- Horizontal Slider Container -->
-            <div class="slider-container-horz">
-                <webaudio-slider 
-                    id="numericKeyboardSliderHorz" 
-                    min="0" 
-                    max="30" 
-                    step="1" 
-                    value="0" 
-                    colors="#00000000;#00000000;#000000;#000000;#000000" 
-                    direction="horz">
-                </webaudio-slider>
             </div>
         </div>
         `;
@@ -2762,30 +2783,39 @@ try {
       initializeModal() {
         this.keyboardModal = document.getElementById("numericKeyboardModal");
         if (!this.keyboardModal) {
-          console.error("Modal element not found!");
-          return;
+            console.error("Modal element not found!");
+            return;
         }
-
+    
         const showModal = () => {
-          this.isModalVisible = true;
-          this.hasStartedTyping = false;
-          this.outputElement.textContent = this.value || "0";
-          this.keyboardModal.classList.add("active");
-          document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
+            if (this.isModalVisible) return; // Avoid reattaching listeners
+            this.isModalVisible = true;
+            this.hasStartedTyping = false;
+            this.outputElement.textContent = this.value || "0";
+            this.keyboardModal.classList.add("active");
+    
+            // Add `keydown` listener only if it hasn't been added
+            document.addEventListener("keydown", this.handleKeyboardInputBound);
         };
-
+    
         const hideModal = () => {
-          this.isModalVisible = false;
-          this.keyboardModal.classList.remove("active");
-          document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
+            if (!this.isModalVisible) return; // Ensure cleanup only when necessary
+            this.isModalVisible = false;
+            this.keyboardModal.classList.remove("active");
+    
+            // Remove the `keydown` listener
+            document.removeEventListener("keydown", this.handleKeyboardInputBound);
         };
-
+    
+        // Bind the `handleKeyboardInput` method to maintain `this` context
+        this.handleKeyboardInputBound = this.handleKeyboardInput.bind(this);
+    
         this.keyboardModal.addEventListener("shown.bs.modal", showModal);
         this.keyboardModal.addEventListener("hidden.bs.modal", hideModal);
-
+    
         this.keyboardModal.show = showModal;
         this.keyboardModal.hide = hideModal;
-      }
+    }
 
       createButtons() {
         const labels = [
@@ -2829,23 +2859,27 @@ try {
 
       processInput(value) {
         if (value === "⌦") {
-          this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
+            this.value = this.value.length > 1 ? this.value.slice(0, -1) : "0";
         } else if (value === "↵") {
-          this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
+            this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
         } else if (value === "-") {
-          this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
+            this.value = this.value.startsWith("-") ? this.value.slice(1) : `-${this.value}`;
         } else if (value === "+") {
-          this.value = this.value.replace("-", "");
+            this.value = this.value.replace("-", "");
         } else if (!isNaN(value) || value === ".") {
-          if (!this.hasStartedTyping) {
-            this.value = "";
-            this.hasStartedTyping = true;
-          }
-          this.value += value;
+            if (!this.hasStartedTyping) {
+                this.value = ""; // Clear initial "0" when typing starts
+                this.hasStartedTyping = true;
+            }
+            this.value += value; // Append the new input
         }
+    
+        // Update the displayed value
         this.outputElement.textContent = this.value;
+    
+        // Emit a single 'input' event
         this.dispatchEvent(new Event("input"));
-      }
+    }
     }
   );
 } catch (error) {
