@@ -2466,18 +2466,27 @@ ${this.basestyle}
     setupKeyboardInteraction() {
       const keyboardModal = document.getElementById("numericKeyboardModal");
       const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
-
-      this.elem.addEventListener("click", () => {
+    
+      // Flag to prevent duplicate event handling
+      let touchHandled = false;
+    
+      const showModalHandler = (event) => {
         if (!this.enable) return;
-
+    
+        // If the event is touchend and already handled, do nothing
+        if (event.type === 'touchend') {
+          if (touchHandled) return;
+          touchHandled = true;
+        }
+    
         // Pass current value to the numeric keyboard
         keyboard.value = this.value || "";
         keyboard.outputElement.textContent = keyboard.value;
-
-        // Show the keyboard modal
+    
+        // Show the keyboard modal using Bootstrap's Modal API
         const bootstrapModal = new bootstrap.Modal(keyboardModal);
         bootstrapModal.show();
-
+    
         // Handle the confirmation of a value
         keyboard.addEventListener(
           "submit",
@@ -2489,7 +2498,22 @@ ${this.basestyle}
           },
           { once: true } // Ensure we only listen for one submit event per interaction
         );
-      });
+    
+        // If the event is touchend, prevent the subsequent click event
+        if (event.type === 'touchend') {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+    
+        // Reset the flag after a short delay to allow the next interaction
+        setTimeout(() => {
+          touchHandled = false;
+        }, 500); // Adjust the timeout as needed
+      };
+    
+      // Add both click and touchend event listeners
+      this.elem.addEventListener("click", showModalHandler);
+      this.elem.addEventListener("touchend", showModalHandler, { passive: false });
     }
 
     updateLinkedElements(value) {
