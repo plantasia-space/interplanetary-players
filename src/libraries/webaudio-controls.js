@@ -2571,7 +2571,7 @@ ${this.basestyle}
   vertical-align:bottom;
 }
 </style>
-<canvas class='webaudio-keyboard-body' tabindex='1' touch-action='none'></canvas><div class='webaudioctrl-tooltip'></div>
+<canvas class='webaudio-keyboard-body' tabindex='-1' touch-action='none'></canvas><div class='webaudioctrl-tooltip'></div>
 `;
     this.elem=this.cv=root.childNodes[2];
     this.ttframe=root.childNodes[3];
