@@ -170,22 +170,26 @@
   border-top: 6px solid #eee;
 }
 `;
-      this.onblur=()=>{
-        this.elem.style.outline="none";
-      }
-      this.onfocus=()=>{
-        switch(+this.outline){
-        case null:
-        case 0:
-          this.elem.style.outline="none";
-          break;
-        case 1:
-          this.elem.style.outline="1px solid #444";
-          break;
-        default:
-          this.elem.style.outline=this.outline;
-        }
-      }
+this.onBlur = () => {
+  if (this.elem) {
+    this.elem.style.outline = "none";
+  }
+};
+this.onFocus = () => {
+  if (this.elem) {
+    switch (+this.outline) {
+      case null:
+      case 0:
+        this.elem.style.outline = "none";
+        break;
+      case 1:
+        this.elem.style.outline = "1px solid #444";
+        break;
+      default:
+        this.elem.style.outline = this.outline;
+    }
+  }
+};
     }
     sendEvent(ev){
       let event;
@@ -845,17 +849,20 @@ try {
     }
 
     pointerdown(ev) {
-      if (!this.enable)
-        return;
+      if (!this.enable) return;
       let e = ev;
-
+    
       // Only handle primary buttons (usually left mouse button) and touch
-      if (e.pointerType === 'mouse' && e.button !== 0)
-        return;
-
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+    
       // Prevent multiple pointers
       if (this.drag) return;
-
+    
+      if (typeof e.pointerId === 'undefined') {
+        console.warn('pointerId is undefined.');
+        return;
+      }
+    
       this.elem.setPointerCapture(e.pointerId);
       this.drag = true;
       this.startVal = this.value;
@@ -1233,13 +1240,13 @@ try {
 
       // Check and set default width and height if they are 0
       if (rect.width === 0) {
-        console.warn("webaudio-slider: Container width is 0. Setting default width based on direction.");
+        //console.warn("webaudio-slider: Container width is 0. Setting default width based on direction.");
         this.elem.style.width = this._direction.toLowerCase() === "vert" ? "50px" : "300px"; // Set default width based on direction
         rect = this.elem.getBoundingClientRect(); // Update rect after setting width
       }
 
       if (rect.height === 0) {
-        console.warn("webaudio-slider: Container height is 0. Setting default height based on direction.");
+        //console.warn("webaudio-slider: Container height is 0. Setting default height based on direction.");
         this.elem.style.height = this._direction.toLowerCase() === "vert" ? "200px" : "50px"; // Set default height based on direction
         rect = this.elem.getBoundingClientRect(); // Update rect after setting height
       }
@@ -2358,14 +2365,9 @@ try {
 
 
 
-
-
-  
-
-
-  try{
+  try {
     customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
-      constructor(){
+      constructor() {
         super();
         this.addEventListener("keydown", this.keydown);
         this.addEventListener("mousedown", this.pointerdown, {passive: false});
@@ -2374,9 +2376,11 @@ try {
         this.addEventListener("mouseover", this.pointerover);
         this.addEventListener("mouseout", this.pointerout);
         this.addEventListener("contextmenu", this.contextMenu);
+  
+        this.updating = false; // Initialize the updating flag
       }
   
-      connectedCallback(){
+      connectedCallback() {
         let root;
         if(this.attachShadow)
           root = this.attachShadow({mode: 'open'});
@@ -2480,8 +2484,12 @@ try {
           window.webAudioControlsWidgetManager.updateWidgets();
   
         this.fromLink = ((e)=>{
+          if (this.updating) return;
+          this.updating = true;
           this.setValue(e.target.convValue.toFixed(e.target.digits));
+          this.updating = false;
         }).bind(this);
+  
         this.elem.onchange = () => {
           if(!this.currentLink.target.conv || (this.currentLink.target.conv && this.rconv)){
             let val = this.value = this.elem.value;
@@ -2490,183 +2498,195 @@ try {
               val = eval(this.rconv);
             }
             if(this.currentLink){
-              this.currentLink.target.setValue(val, true);
+              if (!this.currentLink.updating) {
+                this.currentLink.updating = true;
+                this.currentLink.target.setValue(val, true);
+                this.currentLink.updating = false;
+              }
             }
           }
         }
       }
   
-    
-    disconnectedCallback(){}
-    setupImage(){
-      this.imgloaded=()=>{
-        if(this.src!=""&&this.src!=null){
-          this.elem.style.backgroundImage = "url("+this.src+")";
-          this.elem.style.backgroundSize = "100% 100%";
-          if(this._width==null) this._width=this.img.width;
-          if(this._height==null) this._height=this.img.height;
-        }
-        else{
-          if(this._width==null) this._width=32;
-          if(this._height==null) this._height=20;
-        }
-        this.elem.style.width=this._width+"px";
-        this.elem.style.height=this._height+"px";
-        this.elem.style.fontSize=this.fontsize+"px";
-        let l=document.getElementById(this.link);
-        if(l&&typeof(l.value)!="undefined"){
-          if(typeof(l.convValue)=="number")
-            this.setValue(l.convValue.toFixed(l.digits));
-          else
-            this.setValue(l.convValue);
-          if(this.currentLink)
-            this.currentLink.removeEventListener("input",this.currentLink.func);
-          this.currentLink={target:l, func:(e)=>{
+      disconnectedCallback(){}
+  
+      setupImage(){
+        this.imgloaded=()=>{
+          if(this.src!=""&&this.src!=null){
+            this.elem.style.backgroundImage = "url("+this.src+")";
+            this.elem.style.backgroundSize = "100% 100%";
+            if(this._width==null) this._width=this.img.width;
+            if(this._height==null) this._height=this.img.height;
+          }
+          else{
+            if(this._width==null) this._width=32;
+            if(this._height==null) this._height=20;
+          }
+          this.elem.style.width=this._width+"px";
+          this.elem.style.height=this._height+"px";
+          this.elem.style.fontSize=this.fontsize+"px";
+          let l=document.getElementById(this.link);
+          if(l&&typeof(l.value)!="undefined"){
             if(typeof(l.convValue)=="number")
               this.setValue(l.convValue.toFixed(l.digits));
             else
               this.setValue(l.convValue);
-          }};
-          this.currentLink.target.addEventListener("input",this.currentLink.func);
-  //        l.addEventListener("input",(e)=>{this.setValue(l.convValue.toFixed(l.digits))});
+            if(this.currentLink)
+              this.currentLink.target.removeEventListener("input",this.currentLink.func);
+            this.currentLink={target:l, func:(e)=>{
+              if (this.updating) return;
+              this.updating = true;
+              if(typeof(l.convValue)=="number")
+                this.setValue(l.convValue.toFixed(l.digits));
+              else
+                this.setValue(l.convValue);
+              this.updating = false;
+            }};
+            this.currentLink.target.addEventListener("input",this.currentLink.func);
+          }
+          this.redraw();
+        };
+        this.coltab = this.colors.split(";");
+        this.elem.style.color=this.coltab[0];
+        this.img=new Image();
+        this.img.onload=this.imgloaded.bind();
+        if(this.src==null){
+          this.elem.style.backgroundColor=this.coltab[1];
+          this.imgloaded();
         }
-        this.redraw();
-      };
-      this.coltab = this.colors.split(";");
-      this.elem.style.color=this.coltab[0];
-      this.img=new Image();
-      this.img.onload=this.imgloaded.bind();
-      if(this.src==null){
-        this.elem.style.backgroundColor=this.coltab[1];
-        this.imgloaded();
-      }
-      else if(this.src==""){
-        this.elem.style.background="none";
-        this.imgloaded();
-      }
-      else{
-        this.img.src=this.src;
-      }
-    }
-    redraw() {
-      this.elem.value=this.value;
-    }
-
-    setupKeyboardInteraction() {
-      const keyboardModal = document.getElementById("numericKeyboardModal");
-      const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
-    
-      // ... existing code ...
-    
-      const showModalHandler = (event) => {
-        if (!this.enable) return;
-    
-        // Pass current value to the numeric keyboard
-        keyboard.value = this.value || "";
-        keyboard.outputElement.textContent = keyboard.value;
-    
-        // Show the keyboard modal using Bootstrap's Modal API
-        const bootstrapModal = new bootstrap.Modal(keyboardModal);
-        bootstrapModal.show();
-    
-        // Move focus to the first interactive element in the modal
-        keyboard.outputElement.focus();
-            // Handle the confirmation of a value
-            keyboard.addEventListener(
-              "submit",
-              (e) => {
-                const detail = e.detail;
-                const targetValue = detail.targetValue;
-                const interpolationDuration = detail.interpolationDuration;
-            
-                this.startInterpolation(targetValue, interpolationDuration);
-            
-                bootstrapModal.hide();
-            
-                // Return focus to the original element
-                this.elem.focus();
-              },
-              { once: true } // Ensure we only listen for one submit event per interaction
-            );
-    
-        // If the event is touchend, prevent the subsequent click event
-        if (event.type === 'touchend') {
-          event.preventDefault();
-          event.stopPropagation();
+        else if(this.src==""){
+          this.elem.style.background="none";
+          this.imgloaded();
         }
-    
-        // Reset the flag after a short delay to allow the next interaction
-        setTimeout(() => {
-          touchHandled = false;
-        }, 500); // Adjust the timeout as needed
-      };
-    
-      // Add both click and touchend event listeners
-      this.elem.addEventListener("click", showModalHandler);
-      this.elem.addEventListener("touchend", showModalHandler, { passive: false });
-    }
+        else{
+          this.img.src=this.src;
+        }
+      }
+  
+      redraw() {
+        this.elem.value=this.value;
+      }
+  
+      setupKeyboardInteraction() {
+        const keyboardModal = document.getElementById("numericKeyboardModal");
+        const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
+  
+        const showModalHandler = (event) => {
+          if (!this.enable) return;
+  
+          // Pass current value to the numeric keyboard
+          keyboard.value = this.value || "";
+          keyboard.outputElement.textContent = keyboard.value;
+  
+          // Show the keyboard modal using Bootstrap's Modal API
+          const bootstrapModal = new bootstrap.Modal(keyboardModal);
+          bootstrapModal.show();
+  
+          // Move focus to the first interactive element in the modal
+          keyboard.outputElement.focus();
+  
+          // Handle the confirmation of a value
+          keyboard.addEventListener(
+            "submit",
+            (e) => {
+              const detail = e.detail;
+              const targetValue = detail.targetValue;
+              const interpolationDuration = detail.interpolationDuration;
+  
+              this.startInterpolation(targetValue, interpolationDuration);
+  
+              bootstrapModal.hide();
+  
+              // Return focus to the original element
+              this.elem.focus();
+            },
+            { once: true } // Ensure we only listen for one submit event per interaction
+          );
+  
+          // If the event is touchend, prevent the subsequent click event
+          if (event.type === 'touchend') {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        };
+  
+        // Add both click and touchend event listeners
+        this.elem.addEventListener("click", showModalHandler);
+        this.elem.addEventListener("touchend", showModalHandler, { passive: false });
+      }
+  
       updateLinkedElements(value) {
-        if (this.currentLink) {
-          this.currentLink.target.setValue(value, true); // Update linked knob or slider
+        if (this.currentLink && !this.currentLink.updating) {
+          this.currentLink.updating = true;
+          this.currentLink.target.setValue(value, true);
+          this.currentLink.updating = false;
         }
-      
+  
         // Trigger change event for other listeners
         const event = new Event("change", { bubbles: true, cancelable: true });
         this.dispatchEvent(event);
       }
-
-    startInterpolation(targetValue, duration) {
-      const startValue = parseFloat(this.value);
-      const startTime = performance.now();
-    
-      const step = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const newValue = startValue + (targetValue - startValue) * progress;
-    
-        this.setValue(newValue, true); // Update the param value
-    
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        } else {
-          // Interpolation complete
-          this.setValue(targetValue, true);
-        }
-      };
-    
-      requestAnimationFrame(step);
-    }
-    setValue(v,f){
-      this.value=v;
-      if(this.value!=this.oldvalue){
-        this.redraw();
-        this.showtip(0);
-        if(f){
-          let event=document.createEvent("HTMLEvents");
-          event.initEvent("change",false,true);
-          this.dispatchEvent(event);
-        }
-        this.oldvalue=this.value;
+  
+      startInterpolation(targetValue, duration) {
+        const startValue = parseFloat(this.value);
+        const startTime = performance.now();
+  
+        const step = (currentTime) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const newValue = startValue + (targetValue - startValue) * progress;
+  
+          this.setValue(newValue, true); // Update the param value
+  
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            // Interpolation complete
+            this.setValue(targetValue, true);
+          }
+        };
+  
+        requestAnimationFrame(step);
       }
-    }
-    pointerdown(ev) {
-      ev.preventDefault(); // Stop default behavior
-      console.log("Debug: pointerdown triggered", ev);
-    
-      if (!this.enable) return;
-    
-      const e = ev.touches ? ev.touches[0] : ev;
-      if (!ev.touches && (e.buttons !== 1 && e.button !== 0)) return;
-    
-      this.elem.focus();
-      console.log("Debug: Focus set on element", this.elem);
-      this.redraw();
-    }
-  });
-} catch(error){
-  console.log("webaudio-param already defined");
-}
-
+  
+      setValue(v,f){
+        if (this.updating) return;
+        this.updating = true;
+  
+        this.value=v;
+        if(this.value!=this.oldvalue){
+          this.redraw();
+          this.showtip(0);
+          if(f){
+            let event=document.createEvent("HTMLEvents");
+            event.initEvent("change",false,true);
+            this.dispatchEvent(event);
+          }
+          this.oldvalue=this.value;
+  
+          this.updateLinkedElements(this.value);
+        }
+  
+        this.updating = false;
+      }
+  
+      pointerdown(ev) {
+        ev.preventDefault(); // Stop default behavior
+        console.log("Debug: pointerdown triggered", ev);
+  
+        if (!this.enable) return;
+  
+        const e = ev.touches ? ev.touches[0] : ev;
+        if (!ev.touches && (e.buttons !== 1 && e.button !== 0)) return;
+  
+        this.elem.focus();
+        console.log("Debug: Focus set on element", this.elem);
+        this.redraw();
+      }
+    });
+  } catch(error){
+    console.log("webaudio-param already defined");
+  }
 
 
 
