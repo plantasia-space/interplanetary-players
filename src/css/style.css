@@ -46,6 +46,13 @@ webaudioctrl-context-menu {
     
 }
   
+webaudio-slider {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
 
 .modal {
     z-index: 1050; /* Ensure it overlays other elements */
@@ -75,6 +82,16 @@ webaudioctrl-context-menu {
     display: block;
     width: 100%;
   }
+
+  #numericKeyboardModal {
+    position: fixed !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1050 !important;
+}
+
+
 /* Square Frame: Centered and fixed size */
 /* Responsive Frame: Centered and flexible size */
 .ratio-frame {
@@ -199,12 +216,6 @@ canvas {
     z-index: 10;
   }
   
-  webaudio-slider {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
 
 
 button, .btn {

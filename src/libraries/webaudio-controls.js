@@ -2473,6 +2473,7 @@ ${this.basestyle}
 
       this.elem.addEventListener("click", () => {
         if (!this.enable) return;
+        console.log("Pointer down on: ", event.target);
 
         // Pass current value to the numeric keyboard
         keyboard.value = this.value || "";
@@ -2522,7 +2523,7 @@ ${this.basestyle}
     }
     pointerdown(ev) {
       ev.preventDefault(); // Stop default behavior
-      console.log("Debug: pointerdown triggered", ev);
+      console.log("Deeeeeebug: pointerdown triggered", ev);
     
       if (!this.enable) return;
     
@@ -2887,14 +2888,19 @@ try {
 
         // When the modal is shown
         keyboardModal.addEventListener("shown.bs.modal", () => {
-          this.hasStartedTyping = false; // Reset typing state
-          this.outputElement.textContent = this.value || "0"; // Show current value
-          document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
-        });
+          // Ensure focus is on the custom keyboard and not a default input
+          console.log("Modal shown successfully");
 
+          const activeElement = document.activeElement;
+          if (activeElement.tagName === 'INPUT') {
+              activeElement.blur(); // Remove focus to avoid the native keyboard
+          }
+      });
         // When the modal is hidden
         keyboardModal.addEventListener("hidden.bs.modal", () => {
           // Remove focus from elements inside the modal
+          console.log("Modal hidden successfully");
+
           const activeElement = document.activeElement;
           if (keyboardModal.contains(activeElement)) {
             activeElement.blur();
