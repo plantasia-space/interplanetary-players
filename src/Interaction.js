@@ -34,7 +34,7 @@ export function setupInteractions(dataManager, audioPlayer) {
         );
     });
 
-    // Handle other action buttons (if any)
+/*     // Handle other action buttons (if any)
     document.querySelectorAll('.action-button').forEach(button => {
         const action = button.getAttribute('aria-label'); // Use aria-label for action
 
@@ -59,20 +59,8 @@ export function setupInteractions(dataManager, audioPlayer) {
         }
     });
 
-
+ */
 
     
 }
 
-function handleMoreDropdown(action) {
-    switch (action) {
-        case 'Share':
-            console.log('Share action triggered');
-            break;
-        case 'Fullscreen':
-            console.log('Fullscreen action triggered');
-            break;
-        default:
-            console.log('Unknown action');
-    }
-}

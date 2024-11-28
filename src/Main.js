@@ -98,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
     // Initialize the application and start the animation loop
     initializeApp().then(animate);
 
@@ -134,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Attach event listeners to all switches
-        const switchIds = ['xBalance', 'yBalance', 'sequentialSwitch', 'radioSwitch1', 'radioSwitch2', 'radioSwitch3'];
+        const switchIds = ['xBalance', 'yBalance', "zBalance"];
         switchIds.forEach(id => handleSwitchChange(id));
 
         // Add event listeners to knobs
@@ -153,4 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error("webAudioControlsWidgetManager is not defined.");
     }
+
+
+
 });

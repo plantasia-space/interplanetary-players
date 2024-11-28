@@ -32,7 +32,7 @@ html, body {
     font-family: 'SpaceMono', sans-serif;
 }
 
-webaudio-knob, webaudio-param, webaudio-slider, webaudio-switch {
+webaudio-knob, webaudio-param, webaudio-slider, webaudio-switch, webaudio-numeric-keyboard {
     pointer-events: auto;
   }
 
@@ -43,8 +43,38 @@ webaudioctrl-context-menu {
     background-color: black !important;
     height: 100%;
     font-family: 'SpaceMono', sans-serif;
+    
 }
+  
 
+.modal {
+    z-index: 1050; /* Ensure it overlays other elements */
+  }
+  
+  .modal-backdrop {
+    z-index: 1040; /* Correct layering for the backdrop */
+  }
+  
+  .modal-content {
+    overflow: visible;
+  }
+  
+  .modal-dialog {
+    max-width: 400px; /* Adjust width to fit the keyboard */
+    margin: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    pointer-events: auto;
+  }
+  .numeric-keyboard .button {
+    pointer-events: auto; /* Ensure buttons are clickable */
+  }
+  webaudio-numeric-keyboard {
+    display: block;
+    width: 100%;
+  }
 /* Square Frame: Centered and fixed size */
 /* Responsive Frame: Centered and flexible size */
 .ratio-frame {

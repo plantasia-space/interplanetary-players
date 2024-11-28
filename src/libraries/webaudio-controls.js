@@ -205,68 +205,91 @@
       }
       return v;
     }
-    showtip(d){
-      function valstr(x,c,type){
-        switch(type){
-        case "x": return (x|0).toString(16);
-        case "X": return (x|0).toString(16).toUpperCase();
-        case "d": return (x|0).toString();
-        case "f": return parseFloat(x).toFixed(c);
-        case "s": return x.toString();
+    showtip(d) {
+      function valstr(x, c, type) {
+        switch (type) {
+          case "x":
+            return (x | 0).toString(16);
+          case "X":
+            return (x | 0).toString(16).toUpperCase();
+          case "d":
+            return (x | 0).toString();
+          case "f":
+            return parseFloat(x).toFixed(c);
+          case "s":
+            return x.toString();
+          default:
+            return "";
         }
-        return "";
       }
-      function numformat(s,x){
-        let i=s.indexOf("%");
-        let j=i+1;
-        if(i<0)
-          j=s.length;
-        let c=[0,0],type=0,m=0,r="";
-        if(s.indexOf("%s")>=0){
-          return s.replace("%s",x);
+    
+      function numformat(s, x) {
+        let i = s.indexOf("%");
+        let j = i + 1;
+        if (i < 0) j = s.length;
+        let c = [0, 0],
+          type = 0,
+          m = 0,
+          r = "";
+        if (s.indexOf("%s") >= 0) {
+          return s.replace("%s", x);
         }
-        for(;j<s.length;++j){
-          if("dfxXs".indexOf(s[j])>=0){
-            type=s[j];
+        for (; j < s.length; ++j) {
+          if ("dfxXs".indexOf(s[j]) >= 0) {
+            type = s[j];
             break;
           }
-          if(s[j]==".")
-            m=1;
-          else
-            c[m]=c[m]*10+parseInt(s[j]);
+          if (s[j] == ".") m = 1;
+          else c[m] = c[m] * 10 + parseInt(s[j]);
         }
-        r=valstr(x,c[1],type);
-        if(c[0]>0)
-          r=("               "+r).slice(-c[0]);
-        r=s.replace(/%.*[xXdfs]/,r);
+        r = valstr(x, c[1], type);
+        if (c[0] > 0) r = ("               " + r).slice(-c[0]);
+        r = s.replace(/%.*[xXdfs]/, r);
         return r;
       }
-      let s=this.tooltip;
-      if(this.drag||this.hover){
-        if(this.valuetip){
-          if(s==null)
-            s=`%s`;
-          else if(s.indexOf("%")<0)
-            s+=` : %s`;
+    
+      // Ensure tooltip and tooltip container exist
+      if (!this.tooltip && !this.ttframe) return;
+    
+      let s = this.tooltip;
+      if (this.drag || this.hover) {
+        if (this.valuetip) {
+          if (s == null) s = `%s`;
+          else if (s.indexOf("%") < 0) s += ` : %s`;
         }
-        if(s){
-          this.ttframe.innerHTML=numformat(s,this.convValue);
-          this.ttframe.style.display="inline-block";
-          this.ttframe.style.width="auto";
-          this.ttframe.style.height="auto";
-          this.ttframe.style.transition="opacity 0.5s "+d+"s,visibility 0.5s "+d+"s";
-          this.ttframe.style.opacity=0.9;
-          this.ttframe.style.visibility="visible";
-          let rc=this.getBoundingClientRect(),rc2=this.ttframe.getBoundingClientRect(),rc3=document.documentElement.getBoundingClientRect();
-          this.ttframe.style.left=((rc.width-rc2.width)*0.5+1000)+"px";
-          this.ttframe.style.top=(-rc2.height-8)+"px";
+        if (s && this.ttframe) {
+          this.ttframe.innerHTML = numformat(s, this.convValue);
+          this.ttframe.style.display = "inline-block";
+          this.ttframe.style.width = "auto";
+          this.ttframe.style.height = "auto";
+          this.ttframe.style.transition =
+            "opacity 0.5s " + d + "s,visibility 0.5s " + d + "s";
+          this.ttframe.style.opacity = 0.9;
+          this.ttframe.style.visibility = "visible";
+    
+          let rc = this.getBoundingClientRect() || { width: 0 };
+          let rc2 =
+            (this.ttframe.getBoundingClientRect &&
+              this.ttframe.getBoundingClientRect()) ||
+            { width: 0, height: 0 };
+          let rc3 =
+            document.documentElement.getBoundingClientRect() || { width: 0 };
+    
+          this.ttframe.style.left =
+            (rc.width - rc2.width) * 0.5 + 1000 + "px";
+          this.ttframe.style.top = -rc2.height - 8 + "px";
           return;
         }
       }
-      this.ttframe.style.transition="opacity 0.1s "+d+"s,visibility 0.1s "+d+"s";
-      this.ttframe.style.opacity=0;
-      this.ttframe.style.visibility="hidden";
-    }
+    
+      // Fallback if tooltip cannot be displayed
+      if (this.ttframe) {
+        this.ttframe.style.transition =
+          "opacity 0.1s " + d + "s,visibility 0.1s " + d + "s";
+        this.ttframe.style.opacity = 0;
+        this.ttframe.style.visibility = "hidden";
+      }
+    }    
     setupLabel(){
       this.labelpos=this.getAttr("labelpos", "bottom 0px");
       const lpos=this.labelpos.split(" ");
@@ -2359,6 +2382,12 @@ ${this.basestyle}
         this.setMidiController(ch, cc);
       }
       this.setupImage();
+
+      // Setup event listener for triggering the numeric keyboard
+      this.setupKeyboardInteraction();
+
+
+
       if(window.webAudioControlsWidgetManager)
         window.webAudioControlsWidgetManager.updateWidgets();
       //  window.webAudioControlsWidgetManager.addWidget(this);
@@ -2433,6 +2462,47 @@ ${this.basestyle}
     redraw() {
       this.elem.value=this.value;
     }
+
+    setupKeyboardInteraction() {
+      const keyboardModal = document.getElementById("numericKeyboardModal");
+      const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
+
+      this.elem.addEventListener("click", () => {
+        if (!this.enable) return;
+
+        // Pass current value to the numeric keyboard
+        keyboard.value = this.value || "";
+        keyboard.outputElement.textContent = keyboard.value;
+
+        // Show the keyboard modal
+        const bootstrapModal = new bootstrap.Modal(keyboardModal);
+        bootstrapModal.show();
+
+        // Handle the confirmation of a value
+        keyboard.addEventListener(
+          "submit",
+          (e) => {
+            const newValue = e.detail || keyboard.value;
+            this.setValue(newValue, true); // Update the param value
+            this.updateLinkedElements(newValue); // Update linked elements
+            bootstrapModal.hide();
+          },
+          { once: true } // Ensure we only listen for one submit event per interaction
+        );
+      });
+    }
+
+    updateLinkedElements(value) {
+      if (this.currentLink) {
+        this.currentLink.target.setValue(value, true); // Update linked knob or slider
+      }
+
+      // Trigger change event for other listeners
+      const event = new Event("change", { bubbles: true, cancelable: true });
+      this.dispatchEvent(event);
+    }
+
+
     setValue(v,f){
       this.value=v;
       if(this.value!=this.oldvalue){
@@ -2463,6 +2533,15 @@ ${this.basestyle}
 } catch(error){
   console.log("webaudio-param already defined");
 }
+
+
+
+
+
+
+
+
+
 try{
 customElements.define("webaudio-keyboard", class WebAudioKeyboard extends WebAudioControlsWidget {
   constructor(){
@@ -2482,7 +2561,7 @@ ${this.basestyle}
   position:relative;
   margin:0;
   padding:0;
-  font-family: sans-serif;
+  font-family: SpaceMono;
   font-size: 11px;
 }
 .webaudio-keyboard-body{
@@ -2719,6 +2798,172 @@ ${this.basestyle}
 } catch(error){
   console.log("webaudio-keyboard already defined");
 }
+
+try {
+  customElements.define(
+    "webaudio-numeric-keyboard",
+    class WebAudioNumericKeyboard extends WebAudioControlsWidget {
+      constructor() {
+        super();
+        this.value = "0"; // Initialize value to 0
+        this.hasStartedTyping = false; // Tracks if user started typing
+      }
+
+      connectedCallback() {
+        let root;
+        if (this.attachShadow) {
+          root = this.attachShadow({ mode: "open" });
+        } else {
+          root = this;
+        }
+
+        root.innerHTML = `
+        <style>
+          ${this.basestyle}
+          :host {
+            display: block;
+            width: 100%;
+            font-family: 'SpaceMono', sans-serif;
+            font-size: 14px;
+          }
+          .numeric-keyboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 columns */
+            gap: 10px;
+            justify-items: center;
+          }
+          .numeric-keyboard .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%; /* Fill grid cell */
+            height: 50px;
+            background-color: #333;
+            color: white;
+            border-radius: 5px;
+            font-family: 'SpaceMono', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            user-select: none;
+          }
+          .numeric-keyboard .button:active {
+            background-color: #555;
+          }
+          .numeric-keyboard .button.double {
+            grid-column: span 2; /* Span 2 columns for the double-width button */
+          }
+          .output {
+            text-align: right;
+            font-size: 16px;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            background: #222;
+            color: white;
+            border-radius: 5px;
+            grid-column: span 4; /* Stretch across all columns */
+            font-family: 'SpaceMono', sans-serif;
+          }
+        </style>
+        <div class="output">${this.value || "0"}</div>
+        <div class="numeric-keyboard">
+          ${this.createButtons()}
+        </div>
+      `;
+
+        this.outputElement = root.querySelector(".output");
+        this.buttons = root.querySelectorAll(".button");
+
+        // Add click event listeners for buttons
+        this.buttons.forEach((button) =>
+          button.addEventListener("click", (e) => this.handleButtonPress(e))
+        );
+
+        // Manage modal visibility and focus
+        const keyboardModal = document.getElementById("numericKeyboardModal");
+        
+        // When the modal is shown
+        keyboardModal.addEventListener("shown.bs.modal", () => {
+          this.hasStartedTyping = false; // Reset typing state
+          this.outputElement.textContent = this.value || "0"; // Show current value
+        });
+
+        // When the modal is hidden
+        keyboardModal.addEventListener("hidden.bs.modal", () => {
+          // Remove focus from elements inside the modal
+          const activeElement = document.activeElement;
+          if (keyboardModal.contains(activeElement)) {
+            activeElement.blur();
+          }
+        });
+      }
+
+      createButtons() {
+        // Updated button layout
+        const labels = [
+          "7", "8", "9", "⌦",
+          "4", "5", "6", "-",
+          "1", "2", "3", "+",
+          "0", ".", "↵"
+        ];
+        return labels
+          .map((label, index) => {
+            // Add 'double' class for the '0' button
+            const isDouble = label === "0" && index === labels.lastIndexOf("0");
+            return `
+              <div 
+                class="button ${isDouble ? "double" : ""}" 
+                data-value="${label}"
+              >
+                ${label}
+              </div>`;
+          })
+          .join("");
+      }
+
+      handleButtonPress(event) {
+        const button = event.target;
+        const value = button.getAttribute("data-value");
+
+        if (value === "⌦") {
+          // Delete the last character
+          if (this.value.length > 1) {
+            this.value = this.value.slice(0, -1);
+          } else {
+            this.value = "0"; // Reset to 0 if all characters are deleted
+          }
+        } else if (value === "↵") {
+          // Trigger submit
+          this.dispatchEvent(new CustomEvent("submit", { detail: this.value }));
+        } else if (value === "-") {
+          // Handle the minus sign
+          if (this.value.startsWith("-")) {
+            this.value = this.value.slice(1); // Remove minus
+          } else {
+            this.value = "-" + this.value; // Add minus
+          }
+        } else if (value === "+") {
+          // Handle the plus sign (ensure positive value)
+          this.value = this.value.replace("-", ""); // Remove minus
+        } else if (!isNaN(value) || value === ".") {
+          // Handle numeric or decimal input
+          if (!this.hasStartedTyping) {
+            this.value = ""; // Clear the current value on first input
+            this.hasStartedTyping = true;
+          }
+          this.value += value; // Append value
+        }
+
+        // Update the display
+        this.outputElement.textContent = this.value;
+        this.dispatchEvent(new Event("input"));
+      }
+    }
+  );
+} catch (error) {
+  console.error("WebAudioNumericKeyboard already defined:", error);
+}
+
+
 
 
 
@@ -3000,7 +3245,6 @@ if (window.UseWebAudioControlsMidi || opt.useMidi) {
   console.log("WebAudioControlsWidgetManager instantiated.");
 }
 
-// Example usage:
-// Assuming you have a trackId to set
-// window.webAudioControlsWidgetManager.setTrackId('track_123');
  }
+
+
