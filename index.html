@@ -23,7 +23,6 @@
     <!-- Canvas for Three.js -->
     <canvas id="canvas3D" class="webgl"></canvas>
 
-    <!-- UI Overlay -->
 <!-- UI Overlay -->
 <div class="ui-overlay">
   <div class="sub-frame d-flex flex-column">
@@ -146,8 +145,8 @@
         <div class="mid-container">
           <div class="col-1">
             <!-- Vertical Slider -->
-            <webaudio-slider id="gSlider" tracking="rel" colors="#00000000;#00000000;var(--col2);var(--col1)" value="50"
-              min="0" max="100" step="1" midilearn="1" direction="vert">
+            <webaudio-slider id="gSlider" tracking="abs" colors="#00000000;#00000000;var(--col2);var(--col1)" value="50"
+              min="0" max="100" step="0.01" midilearn="1" direction="vert">
             </webaudio-slider>
 
             <webaudio-param link="gSlider" colors="var(--col1);var(--col2)">
@@ -218,7 +217,7 @@
                   <!-- Sub-Column 1 -->
                   <div class="col-4 d-flex flex-column align-items-center">
                     <!-- Knob -->
-                    <webaudio-knob id="xKnob" class="medium-knob" min="-100" max="100"
+                    <webaudio-knob id="xKnob" class="medium-knob" step="0.01" min="-100" max="100"
                       colors="var(--col1);var(--col2);var(--col3)" midilearn="1">
                     </webaudio-knob>
                     <!-- Balance Button -->
@@ -233,7 +232,7 @@
                   <!-- Sub-Column 2 -->
                   <div class="col-4 d-flex flex-column align-items-center">
                     <!-- Knob -->
-                    <webaudio-knob id="yKnob" class="medium-knob" min="-100" max="100"
+                    <webaudio-knob id="yKnob" class="medium-knob" step="0.01" min="-100" max="100"
                       colors="var(--col1);var(--col2);var(--col3)" midilearn="1">
                     </webaudio-knob>
                     <!-- Balance Button -->
@@ -249,7 +248,7 @@
                   <!-- Sub-Column 3 -->
                   <div class="col-4 d-flex flex-column align-items-center">
                     <!-- Knob -->
-                    <webaudio-knob id="zKnob" class="medium-knob" min="-100" max="100"
+                    <webaudio-knob id="zKnob" class="medium-knob" step="0.01" min="-100" max="100"
                       colors="var(--col1);var(--col2);var(--col3)" midilearn="1">
                     </webaudio-knob>
                     <!-- Balance Button -->
