@@ -2340,7 +2340,7 @@ ${this.basestyle}
   margin:0;
   padding:0;
   font-family: sans-serif;
-  font-size: 8px;
+  font-size: 16px;
   cursor:pointer;
   position:relative;
   vertical-align:baseline;
@@ -2358,9 +2358,13 @@ ${this.basestyle}
   border:none;
 }
 </style>
-<input class='webaudio-param-body' value='0' inputmode='numeric' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
+<input class='webaudio-param-body' value='0' inputmode='none' tabindex='1' touch-action='none'/><div class='webaudioctrl-tooltip'></div>
 `;
       this.elem=root.childNodes[2];
+      this.elem.addEventListener("focus", (event) => {
+        event.preventDefault();
+        this.showCustomKeyboard(); // Show your custom modal keyboard
+      });
       this.ttframe=root.childNodes[3];
       this.enable=this.getAttr("enable",1);
       this._value=this.getAttr("value",0); if (!this.hasOwnProperty("value")) Object.defineProperty(this,"value",{get:()=>{return this._value},set:(v)=>{this._value=v;this.redraw()}});
@@ -2880,11 +2884,12 @@ try {
 
         // Manage modal visibility and focus
         const keyboardModal = document.getElementById("numericKeyboardModal");
-        
+
         // When the modal is shown
         keyboardModal.addEventListener("shown.bs.modal", () => {
           this.hasStartedTyping = false; // Reset typing state
           this.outputElement.textContent = this.value || "0"; // Show current value
+          document.addEventListener("keydown", this.handleKeyboardInput.bind(this));
         });
 
         // When the modal is hidden
@@ -2894,6 +2899,7 @@ try {
           if (keyboardModal.contains(activeElement)) {
             activeElement.blur();
           }
+          document.removeEventListener("keydown", this.handleKeyboardInput.bind(this));
         });
       }
 
@@ -2923,7 +2929,23 @@ try {
       handleButtonPress(event) {
         const button = event.target;
         const value = button.getAttribute("data-value");
+        this.processInput(value);
+      }
 
+      handleKeyboardInput(event) {
+        const key = event.key;
+
+        // Map keyboard keys to the numeric keyboard buttons
+        if (!isNaN(key) || key === "." || key === "-" || key === "+") {
+          this.processInput(key);
+        } else if (key === "Backspace") {
+          this.processInput("⌦");
+        } else if (key === "Enter") {
+          this.processInput("↵");
+        }
+      }
+
+      processInput(value) {
         if (value === "⌦") {
           // Delete the last character
           if (this.value.length > 1) {
@@ -2962,8 +2984,6 @@ try {
 } catch (error) {
   console.error("WebAudioNumericKeyboard already defined:", error);
 }
-
-
 
 
 
