@@ -1405,7 +1405,7 @@ try {
       ctx.clearRect(0, 0, this._width, this._height);
 
       // Draw centered track line
-      ctx.strokeStyle = this.coltab[1] || '#333'; // Track color
+      ctx.strokeStyle = "#ffffff" || '#333'; // Track color
       ctx.lineWidth = 2; // Increased line width for better visibility
       ctx.beginPath();
       if (this.isHorizontal) {
