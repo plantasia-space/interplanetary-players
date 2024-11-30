@@ -5,11 +5,11 @@
     --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, cosmic-lfo) */
 }
 
+/* Collapse Info Menu */
 #collapseInfoMenu {
-    position: absolute; /* Keep it positioned absolutely */
-    /*top: 3rem;  THIS IS THE DISTANCE TO THE TOP OF THE FRAME  */
-    left: 0; /* Align to the left of the parent container */
-    z-index: 10; /* Place above other elements */
+    position: absolute; /* Positioned relative to the header-row */
+    left: 0; /* Align to the left edge of the container */
+    z-index: 10; /* Ensure it's above other elements */
     max-height: 80vh; /* Prevent overflow */
     overflow-y: auto; /* Enable scrolling if content exceeds height */
     transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth expand/collapse */
@@ -18,133 +18,81 @@
     transform-origin: top; /* Expand from the top down */
 }
 
-/* Expanded state for the menu */
 #collapseInfoMenu.show {
     opacity: 1;
     transform: scaleY(1); /* Fully expanded */
 }
 
+/* Header Row */
+.header-row {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 94%; /* Keep aligned within container */
+    max-width: 94vw; /* Responsive */
+    height: 10vh; /* Fixed height */
+    box-sizing: border-box;
+}
 
-/* Match button group width to heading */   
+/* Title in Header */
 h1.responsive-title {
     font-family: 'Orbit', sans-serif;
     font-weight: 200;
-    font-size: 4vmin; /* Dynamic scaling */
+    font-size: 3vmin; /* Responsive scaling */
     color: var(--col2);
     margin: 0;
     text-align: center;
 }
 
-/* Default (Extra-large screens: xl ≥1200px) */
-
-
-.info-button,
-.more-button {
-    width: 10vmin;
-    height: 10vmin;
-}
-
-/* Large screens (lg: ≥992px and <1200px) */
-@media (max-width: 1199.98px) {
-
-    .info-button,
-    .more-button {
-        width: 12vmin;
-        height: 12vmin;
-    }
-}
-
-/* Small screens (sm: ≥576px and <992px) */
-@media (max-width: 991.98px) {
-
-    .info-button,
-    .more-button {
-        width: 14vmin;
-        height: 14vmin;
-    }
-}
-
-/* Extra small screens (xs: <576px) */
-@media (max-width: 575.98px) {
-
-    .info-button,
-    .more-button {
-        width: 16vmin;
-        height: 16vmin;
-    }
-}
-
-
-/* info Button */
-.info-button {
+/* Buttons */
+.info-button, .more-button {
+    width: 100%;
+    height: 100%;
     background-color: transparent;
     color: var(--col1); /* Dynamic color */
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.2s ease; /* Smooth hover effect */
 }
 
-/* Hover and Focus State (Pressed but not hovered) */
-.info-button:hover,
-.info-button:focus {
+.info-button:hover, .info-button:focus,
+.more-button:hover, .more-button:focus {
     transform: scale(1.05);
-    /*border-color: var(--col2);  Highlighted stroke */
-    color: var(--col2); /* Highlighted color */
-    outline: none; /* Remove default outline on focus */
+    color: var(--col2); /* Highlight color */
+    outline: none; /* Remove default outline */
 }
 
-
-/* info Button */
-.more-button {
-    /*border: 2px solid var(--col1);  Add stroke */
-    background-color: transparent;
-    color: var(--col1); /* Dynamic color */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-}
-
-/* Hover and Focus State (Pressed but not hovered) */
-.more-button:hover,
-.more-button:focus {
-    transform: scale(1.05);
-    /*border-color: var(--col2);  Highlighted stroke */
-    color: var(--col2); /* Highlighted color */
-    outline: none; /* Remove default outline on focus */
-}
-
-
+/* Grid Row */
 .grid-row {
     display: flex;
     flex-direction: column;
-    margin-top: 0; /* Space between header and grid */
-  }
-  
-
-  
-.header-row {
-    margin: 0;
-    padding: 0;
-    justify-content: space-between;
-    align-items: center;
-    width: 94%;
-    max-width: 94vw;
-    box-sizing: border-box;
-    display: flex;
 }
 
-/* Main Grid Layout */
-.grid-content {
-    display: grid;
-    grid-template-columns: max-content 1fr; /* First column adjusts to the content, second column fills remaining space */
-    gap: clamp(0.5em, 1vmin, 3vw); /* Adjustable spacing between columns and rows */
-    align-items: start; /* Align content to the top */
-    width: 100%; /* Ensure grid spans full width */
+/* Grid Wrapper */
+.grid-wrapper {
+    position: relative; /* For close button alignment */
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0% 4vw; /* Left/right margin for grid */
+    background-color: transparent;
     box-sizing: border-box; /* Include padding in size */
 }
 
-/* Individual Cell Styling */
+/* Grid Content */
+.grid-content {
+    display: grid;
+    grid-template-columns: max-content 1fr; /* First column adjusts to content */
+    gap: clamp(0.5em, 1vmin, 3vw); /* Adjustable spacing */
+    align-items: start;
+    width: 100%;
+    box-sizing: border-box; /* Include padding in size */
+}
+
+/* Grid Cells */
 .grid-content div {
     display: flex;
     flex-direction: column;
@@ -153,48 +101,20 @@ h1.responsive-title {
     background-color: none;
     font-family: 'SpaceMono', sans-serif;
     font-weight: 250; /* Default for larger screens */
-    font-size: clamp(10px, 2.5vmin, 36px); /* Responsive font size */
-    padding: clamp(2px, 0.5vmin, 10px);
+    font-size: clamp(10px, 2.0vmin, 36px); /* Responsive */
+    padding: clamp(2px, 0.5vmin, 10px); /* Padding */
     color: var(--col1);
-    border-radius: 0.5vmin; /* Smooth corners */
-    white-space: normal; /* Allow wrapping for better fit */
-    overflow-wrap: break-word; /* Ensure text wraps correctly */
+    border-radius: 0.5vmin;
+    white-space: normal; /* Allow wrapping */
+    overflow-wrap: break-word; /* Ensure text wraps */
     transition: transform 0.3s ease, color 0.3s ease;
     box-sizing: border-box;
 }
 
-/* Adjust font weight for mobile devices */
-@media (max-width: 768px) {
-    .grid-content div {
-        font-weight: 350; /* Increase font weight for mobile screens */
-    }
-}
-
-/* Main Grid Wrapper */
-.grid-wrapper {
-    position: relative; /* Position for floating the close button */
-    display: flex;
-    flex-direction: column;
-    width: 100%; /* Ensure it spans the full container */
-    padding: clamp(10px, 2vmin, 20px); /* Padding around the grid */
-    background-color: transparent; /* Keep transparent background as requested */
-    box-sizing: border-box; /* Include padding in dimensions */
-}
-
-/* Main Grid Layout (inherits styles from your current grid-content) */
-.grid-content {
-    display: grid;
-    grid-template-columns: max-content 1fr; /* Match existing layout */
-    gap: clamp(0.5em, 1vmin, 3vw); /* Maintain existing spacing */
-    align-items: start;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Close Button */
+/* Close Button for Grid */
 .close-grid-btn {
     pointer-events: auto;
-    position: absolute; /* Position relative to the grid-wrapper */
+    position: absolute; /* Positioned relative to the grid-wrapper */
     top: 10px; /* Fine-tune positioning */
     right: 10px; /* Align to the top-right */
     border: none; /* No border */
@@ -202,11 +122,11 @@ h1.responsive-title {
     cursor: pointer; /* Pointer cursor */
 }
 
-/* Close Icon Styling */
+/* Close Button Icon */
 .close-grid-icon {
     pointer-events: auto;
     color: var(--col1);
-    width: 20px; /* Fixed size for simplicity */
+    width: 20px; /* Fixed size */
     height: 20px;
     display: block;
     margin: 0 auto; /* Center icon */

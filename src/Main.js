@@ -8,6 +8,7 @@ import lscache from 'lscache';
 import { setupInteractions } from './Interaction.js';
 import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
 import { ButtonGroup } from './ButtonGroup.js';
+import { ParameterManager } from './ParameterManager.js';
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -18,6 +19,7 @@ addLights(scene);
 
 const dataManager = new DataManager();
 const audioPlayer = new AudioPlayer(); // Instantiate AudioPlayer
+const user1Manager = new ParameterManager();
 
 let animationRunning = false;
 
@@ -154,4 +156,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    const infoButton = document.getElementById("informationMenuButton");
+    const collapseMenu = document.getElementById("collapseInfoMenu");
+    
+    // Adjust these offsets as needed
+    const verticalOffsetVH = 2; // Vertical offset in `vh` (percentage of viewport height)
+    const horizontalOffsetVW = -1; // Horizontal offset in `vw` (percentage of viewport width)
+    
+    function alignCollapseMenu() {
+      const buttonRect = infoButton.getBoundingClientRect();
+      const headerRect = document.querySelector(".header-row").getBoundingClientRect();
+    
+      // Calculate the `top` position based on button's bottom relative to the parent container
+      const calculatedTop = buttonRect.bottom - headerRect.top + (verticalOffsetVH * window.innerHeight) / 100;
+    
+      // Calculate the `left` position relative to the button
+      const calculatedLeft = buttonRect.left - headerRect.left + (horizontalOffsetVW * window.innerWidth) / 100;
+    
+      // Apply styles to the collapse menu
+      collapseMenu.style.top = `${calculatedTop}px`;
+      collapseMenu.style.left = `${calculatedLeft}px`;
+    }
+    
+    // Align initially
+    alignCollapseMenu();
+    
+    // Adjust on window resize
+    window.addEventListener("resize", alignCollapseMenu);
+    
+    // Optionally, adjust when the menu is shown
+    infoButton.addEventListener("click", alignCollapseMenu);
+
 });
+export { user1Manager };
+
+

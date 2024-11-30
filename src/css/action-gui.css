@@ -98,8 +98,8 @@ canvas.webaudio-knob-canvas {
 
     .transport-button,
     .interaction-button {
-        width: 14vmin;
-        height: 14vmin;
+        width: 12vmin;
+        height: 12vmin;
     }
 }
 
@@ -123,8 +123,8 @@ canvas.webaudio-knob-canvas {
 
     .transport-button,
     .interaction-button {
-        width: 16vmin;
-        height: 16vmin;
+        width: 12vmin;
+        height: 12vmin;
     }
 }
 
