@@ -422,8 +422,9 @@ try {
               `var(--knob-width, ${this.getAttr("width", 64)}px)` : 
               '100%'};
             box-sizing: border-box; /* Ensure padding and border are included in width and height */
-            width: var(--knob-size);
-            height: var(--knob-size); /* Force height to match width for square aspect ratio */
+            width: 100%;
+            height: 100%; /* Allow the height to adjust dynamically */
+            aspect-ratio: 1 / 1; /* Maintain square ratio */
             position: relative; /* Ensure positioned elements are relative to the host */
           }
           .webaudio-knob-body {
@@ -622,92 +623,89 @@ try {
 
     setupImage() {
       // *** Resolve CSS Variables in 'colors' ***
-      // Parse colors from the 'colors' attribute or use default
-      this.coltab = this.colors ? this.colors.split(";").map(color => {
-        color = color.trim();
-        if (color.startsWith('var(') && color.endsWith(')')) {
-          const varName = color.slice(4, -1).trim();
-          // Resolve CSS variable from the root (:root)
-          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-          return resolvedColor || '#000'; // Fallback to black if variable is not defined
-        }
-        return color;
-      }) : ["#e00", "#000", "#000"];
-      // *** End of Resolving CSS Variables ***
-
+      this.coltab = this.colors
+        ? this.colors.split(";").map(color => {
+            color = color.trim();
+            if (color.startsWith('var(') && color.endsWith(')')) {
+              const varName = color.slice(4, -1).trim();
+              const resolvedColor = getComputedStyle(document.documentElement)
+                .getPropertyValue(varName)
+                .trim();
+              return resolvedColor || '#000'; // Fallback to black if variable is not defined
+            }
+            return color;
+          })
+        : ["#e00", "#000", "#000"];
+    
       // Determine actual size
       let width, height;
+      const style = getComputedStyle(this.elem);
+    
       if (this._width && this._height) {
         width = parseInt(this._width);
         height = parseInt(this._height);
       } else {
-        // Get computed size from CSS
-        const style = getComputedStyle(this.elem);
+        // Fallback to computed size from the element's parent
         width = parseInt(style.width) || 64;
         height = parseInt(style.height) || 64;
-        // Enforce square aspect ratio
-        const size = Math.min(width, height);
-        width = height = size;
       }
-
-      // Handle high DPI displays for better resolution
+    
+      // Handle high DPI displays
       const dpr = window.devicePixelRatio || 1;
       this.canvas.width = width * dpr;
       this.canvas.height = height * dpr;
       this.canvas.style.width = `${width}px`;
       this.canvas.style.height = `${height}px`;
+    
       const ctx = this.canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-
+    
       // Apply outline if specified
       this.canvas.style.outline = this.outline;
-
-      // Recalculate radius based on diameter if specified
+    
+      // Calculate radius based on width and height
       if (this._diameter) {
         this.radius = parseInt(this._diameter) / 2 - 5; // Padding of 5px
       } else {
-        this.radius = Math.min(width, height) / 2 - 5; // Padding of 5px
+        this.radius = Math.min(width, height) / 2 - 5; // Dynamic padding adjustment
       }
-
+    
       this.centerX = width / 2;
       this.centerY = height / 2;
-
+    
+      // Redraw the knob with updated dimensions
       this.redraw();
-
-      // Setup ResizeObserver to handle parent size changes if width or height is not set
-      if (!this._width || !this._height) {
-        if (this.resizeObserver) {
-          this.resizeObserver.disconnect();
-        }
+    
+      // Setup ResizeObserver for dynamic responsiveness
+      if (!this.resizeObserver) {
         this.resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
-            const newWidth = entry.contentRect.width;
-            const newHeight = entry.contentRect.height;
-            const size = Math.min(newWidth, newHeight);
-            const adjustedWidth = size;
-            const adjustedHeight = size;
-
-            // Update canvas dimensions
-            this.canvas.width = adjustedWidth * dpr;
-            this.canvas.height = adjustedHeight * dpr;
-            this.canvas.style.width = `${adjustedWidth}px`;
-            this.canvas.style.height = `${adjustedHeight}px`;
+            const newWidth = entry.contentRect.width || parseInt(style.width) || 64;
+            const newHeight = entry.contentRect.height || parseInt(style.height) || 64;
+    
+            const dpr = window.devicePixelRatio || 1;
+            this.canvas.width = newWidth * dpr;
+            this.canvas.height = newHeight * dpr;
+            this.canvas.style.width = `${newWidth}px`;
+            this.canvas.style.height = `${newHeight}px`;
+    
             const ctx = this.canvas.getContext('2d');
             ctx.scale(dpr, dpr);
-
-            // Update radius and center
-            this.radius = Math.min(adjustedWidth, adjustedHeight) / 2 - 5;
-            this.centerX = adjustedWidth / 2;
-            this.centerY = adjustedHeight / 2;
-
-            // Redraw the knob with new dimensions
+    
+            // Recalculate radius and center dynamically
+            this.radius = Math.min(newWidth, newHeight) / 2 - 5; // Adjust radius for padding
+            this.centerX = newWidth / 2;
+            this.centerY = newHeight / 2;
+    
+            // Redraw the knob with updated dimensions
             this.redraw();
           }
         });
-        this.resizeObserver.observe(this.elem);
       }
+    
+      // Observe the parent element for size changes
+      this.resizeObserver.observe(this.elem.parentElement || this.elem);
     }
-
     redraw() {
       let ratio;
       this.digits = 0;
@@ -2358,13 +2356,6 @@ try {
 
 
 
-
-
-
-
-
-
-
   try {
     customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
       constructor() {
@@ -2413,7 +2404,7 @@ try {
     border:none;
   }
   </style>
-  <input class='webaudio-param-body' value='0' inputmode='none' tabindex='1' touch-action='none'/>
+  <input class='webaudio-param-body'  type='button' value='0' inputmode='none' tabindex='1' touch-action='none'/>
   <div class='webaudioctrl-tooltip'></div>
   `;
         // Use querySelector to reliably select elements
@@ -2429,7 +2420,7 @@ try {
           });
         }
         this.defvalue = this.getAttr("defvalue",0);
-        this._fontsize = this.getAttr("fontsize",9);
+        this._fontsize = this.getAttr("fontsize", "9px"); // Default with unit
         if (!this.hasOwnProperty("fontsize")) {
           Object.defineProperty(this,"fontsize",{
             get: ()=>{ return this._fontsize },
@@ -2444,14 +2435,14 @@ try {
           });
         }
         this.link = this.getAttr("link","");
-        this._width = this.getAttr("width", opt.paramWidth);
+        this._width = this.getAttr("width", "32px"); // Default with unit
         if (!this.hasOwnProperty("width")) {
           Object.defineProperty(this,"width",{
             get: ()=>{ return this._width },
             set: (v)=>{ this._width = v; this.setupImage(); }
           });
         }
-        this._height = this.getAttr("height", opt.paramHeight);
+        this._height = this.getAttr("height", "20px"); // Default with unit
         if (!this.hasOwnProperty("height")) {
           Object.defineProperty(this,"height",{
             get: ()=>{ return this._height },
@@ -2515,16 +2506,16 @@ try {
           if(this.src!=""&&this.src!=null){
             this.elem.style.backgroundImage = "url("+this.src+")";
             this.elem.style.backgroundSize = "100% 100%";
-            if(this._width==null) this._width=this.img.width;
-            if(this._height==null) this._height=this.img.height;
+            if(!this._width || this._width === "auto") this._width = this.img.width + "px";
+            if(!this._height || this._height === "auto") this._height = this.img.height + "px";
           }
           else{
-            if(this._width==null) this._width=32;
-            if(this._height==null) this._height=20;
+            if(!this._width) this._width = "32px";
+            if(!this._height) this._height = "20px";
           }
-          this.elem.style.width=this._width+"px";
-          this.elem.style.height=this._height+"px";
-          this.elem.style.fontSize=this.fontsize+"px";
+          this.elem.style.width = this._width;
+          this.elem.style.height = this._height;
+          this.elem.style.fontSize = this.fontsize;
           let l=document.getElementById(this.link);
           if(l&&typeof(l.value)!="undefined"){
             if(typeof(l.convValue)=="number")
@@ -2687,7 +2678,6 @@ try {
   } catch(error){
     console.log("webaudio-param already defined");
   }
-
 
 
 try {

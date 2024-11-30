@@ -12,6 +12,7 @@
 @import "fonts.css";
 @import "menu-info.css";
 @import "action-gui.css";
+@import "numeric-keyboard-modal.css";
 
 /* Color Variables */
 :root {
@@ -21,7 +22,10 @@
     --col4: #ffffff00; 
 
 }
-
+*{
+margin:0; 
+padding:0;
+}
 /* Reset general */
 html, body {
     margin: 0;
@@ -53,112 +57,6 @@ webaudio-slider {
     padding: 0;
   }
 
-  .modal {
-    --bs-modal-zindex: 1055; /* Ensure it overlays other elements */
-    --bs-modal-width: 90%; /* Responsive width */
-    --bs-modal-padding: 1rem;
-    --bs-modal-margin: 0; /* Remove top margin to center */
-    --bs-modal-bg: #ffffff; /* Modal background color */
-    --bs-modal-border-radius: 8px; /* Rounded corners */
-    --bs-modal-box-shadow: none; /* No shadow */
-    --bs-modal-inner-border-radius: calc(var(--bs-modal-border-radius) - 2px);
-    
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: var(--bs-modal-width);
-    max-width: 400px;
-    height: auto;
-    z-index: var(--bs-modal-zindex);
-    display: none; /* Default hidden */
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.modal-content {
-    overflow: visible;
-}
-
-.modal-dialog {
-    max-width: 400px; /* Adjust width to fit the keyboard */
-    margin: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    pointer-events: auto;
-  }
-
-.numeric-keyboard .button {
-    pointer-events: auto; /* Ensure buttons are clickable */
-}
-
-webaudio-numeric-keyboard {
-    display: block;
-    width: 100%;
-}
-
-
-
-/* New Slider Container Styling for Horizontal Slider */
-.slider-container-horz {
-    display: flex;
-    flex-direction: row; /* Horizontal alignment */
-    justify-content: center;
-    align-items: center;
-    width: 300px; /* Fixed wider width for horizontal slider */
-    height: 50px; /* Fixed height for horizontal slider */
-    /* Optional: Add borders for debugging */
-    /* border: 1px solid green; */
-    /* background-color: rgba(0, 255, 0, 0.1); */
-}
-
-.slider-container-horz webaudio-slider {
-    width: 100%; /* Fill the container's width */
-    height: 100%; /* Fill the container's height */
-    /* Optional: Add borders for debugging */
-    /* border: 1px solid blue; */
-    /* background-color: rgba(0, 0, 255, 0.1); */
-}
-  
-#numericKeyboardModal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%; /* Full width on small screens */
-    max-width: 400px; /* Restrict to 400px for larger screens */
-    padding: 20px;
-    border-radius: 8px;
-    display: none; /* Default hidden */
-    visibility: hidden;
-    opacity: 0;
-    z-index: 1050; /* Ensure above other elements */
-}
-
-#numericKeyboardModal.active {
-    position: fixed !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 1050 !important;
-
-}
-
-.modal-backdrop {
-    z-index: 1040;
-    background-color: transparent; /* Transparent backdrop */
-}
-
-/* Ensure responsive behavior */
-@media (max-width: 768px) {
-    .modal {
-        --bs-modal-width: 100%; /* Use full width for small screens */
-        --bs-modal-margin: 0;
-    }
-}
 
 /* Square Frame: Centered and fixed size */
 /* Responsive Frame: Centered and flexible size */
@@ -222,43 +120,7 @@ canvas {
     z-index: 1; /* Keep it above the canvas */
 
 }
-.action-gui-container {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    margin-top: auto; /* Keeps the container at the bottom of the sub-frame */
-    /* Additional styling as needed */
-}
 
-.action-gui-container .container {
-    width: 100%;
-    /* Optional: Add padding or margin if needed */
-}
-
-.action-gui-container .row {
-    width: 100%;
-    /* Optional: Add spacing between rows if needed */
-}
-
-.action-gui-container .col-2, 
-.action-gui-container .col-4 {
-    /* Center content vertically and horizontally */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.action-gui-container .btn {
-    margin: 5px 0; /* Adjust spacing between buttons */
-    /* Optional: Customize button sizes, colors, etc. */
-}
-
-.action-gui-container webaudio-knob,
-.action-gui-container webaudio-param {
-    margin: 5px 0; /* Adjust spacing between controls */
-    /* Optional: Set sizes or other properties */
-}
 
 
 .mid-container {
