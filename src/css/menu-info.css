@@ -24,17 +24,6 @@
     transform: scaleY(1); /* Fully expanded */
 }
 
-/* Row Styling FOR UP MENU BAR */
-.info-row {
-    display: flex;
-    justify-content: space-between; /* Even spacing between items */
-    align-items: center;
-    width: 100%; /* Full width */
-    max-width: 100%; /* Prevent overflow */
-    gap: 1vmin; /* Space between buttons */
-    padding: 0; /* Add padding to the edges */
-    box-sizing: content-box;
-}
 
 /* Match button group width to heading */   
 h1.responsive-title {
@@ -46,19 +35,53 @@ h1.responsive-title {
     text-align: center;
 }
 
+/* Default (Extra-large screens: xl ≥1200px) */
+
+
+.info-button,
+.more-button {
+    width: 10vmin;
+    height: 10vmin;
+}
+
+/* Large screens (lg: ≥992px and <1200px) */
+@media (max-width: 1199.98px) {
+
+    .info-button,
+    .more-button {
+        width: 12vmin;
+        height: 12vmin;
+    }
+}
+
+/* Small screens (sm: ≥576px and <992px) */
+@media (max-width: 991.98px) {
+
+    .info-button,
+    .more-button {
+        width: 14vmin;
+        height: 14vmin;
+    }
+}
+
+/* Extra small screens (xs: <576px) */
+@media (max-width: 575.98px) {
+
+    .info-button,
+    .more-button {
+        width: 16vmin;
+        height: 16vmin;
+    }
+}
+
 
 /* info Button */
 .info-button {
-    width: clamp(8vmin, 50px, 100px);
-    height: clamp(8vmin, 50px, 100px);
-    /*border: 2px solid var(--col1);  Add stroke */
-    border-radius: 8px; /* Slightly rounded corners */
     background-color: transparent;
     color: var(--col1); /* Dynamic color */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 /* Hover and Focus State (Pressed but not hovered) */
@@ -70,26 +93,16 @@ h1.responsive-title {
     outline: none; /* Remove default outline on focus */
 }
 
-/* Icon in Button */
-#infoMenuIcon {
-    display: inline-block;
-    width: 100%; /* Adjust size relative to the button */
-    height: 100%;
-    color: inherit; /* Inherit currentColor */
-}
 
 /* info Button */
 .more-button {
-    width: clamp(8vmin, 50px, 100px);
-    height: clamp(8vmin, 50px, 100px);
     /*border: 2px solid var(--col1);  Add stroke */
-    border-radius: 8px; /* Slightly rounded corners */
     background-color: transparent;
     color: var(--col1); /* Dynamic color */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+
 }
 
 /* Hover and Focus State (Pressed but not hovered) */
@@ -105,16 +118,22 @@ h1.responsive-title {
 .grid-row {
     display: flex;
     flex-direction: column;
-    margin-top: 1rem; /* Space between header and grid */
+    margin-top: 0; /* Space between header and grid */
   }
   
-  .header-row,
-  .grid-row {
-      width: 100%;
-      max-width: 100%;
-  }
 
   
+.header-row {
+    margin: 0;
+    padding: 0;
+    justify-content: space-between;
+    align-items: center;
+    width: 94%;
+    max-width: 94vw;
+    box-sizing: border-box;
+    display: flex;
+}
+
 /* Main Grid Layout */
 .grid-content {
     display: grid;

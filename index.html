@@ -27,86 +27,74 @@
 <div class="ui-overlay">
   <div class="sub-frame d-flex flex-column">
 
-    <!-- Header Row -->
-    <div class="header-row d-flex justify-content-between align-items-center">
-      <!-- Information Dropdown -->
-      <div class="info-row">
-        <div class="button-group-container" data-group="information-dropdown">
-          <div class="dropdown">
-            <button class="btn info-button dropdown-toggle" type="button" id="informationMenuButton"
-              data-bs-toggle="dropdown" aria-expanded="false" aria-label="Information"
-              data-src="/assets/icons/control_monitor.svg">
-              <span class="button-icon" data-src="/assets/icons/control_monitor.svg"
-                aria-label="Information"></span>
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="informationMenuButton">
-              <li>
-                <a class="dropdown-item" href="#" data-value="Control Monitor"
-                  data-icon="/assets/icons/control_monitor.svg">
-                  <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon"
-                    style="width: 16px; height: 16px; margin-right: 8px;">
-                  Control Monitor
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#" data-value="Track" data-icon="/assets/icons/track.svg">
-                  <img src="/assets/icons/track.svg" alt="Track" class="menu-item-icon"
-                    style="width: 16px; height: 16px; margin-right: 8px;">
-                  Track
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#" data-value="Interplanetary Player"
-                  data-icon="/assets/icons/interplanetary-player.svg">
-                  <img src="/assets/icons/interplanetary-player.svg" alt="Interplanetary Player"
-                    class="menu-item-icon" style="width: 16px; height: 16px; margin-right: 8px;">
-                  Interplanetary Player
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#" data-value="Sound Engine"
-                  data-icon="/assets/icons/sound_engine.svg">
-                  <img src="/assets/icons/sound_engine.svg" alt="Sound Engine" class="menu-item-icon"
-                    style="width: 16px; height: 16px; margin-right: 8px;">
-                  Sound Engine
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
+<!-- Header Row -->
+<div class="header-row row align-items-center mx-auto">
+  <!-- Information Dropdown -->
+    <div class="col-1 d-flex button-group-container justify-content-start" data-group="information-dropdown">
+      <div class="dropdown">
+        <button class="btn info-button dropdown-toggle" type="button" id="informationMenuButton"
+          data-bs-toggle="dropdown" aria-expanded="false" aria-label="Information">
+          <span class="button-icon" data-src="/assets/icons/control_monitor.svg" aria-label="Information"></span>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="informationMenuButton">
+          <li>
+            <a class="dropdown-item" href="#" data-value="Control Monitor">
+              <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon">
+              Control Monitor
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#" data-value="Track">
+              <img src="/assets/icons/track.svg" alt="Track" class="menu-item-icon">
+              Track
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#" data-value="Interplanetary Player">
+              <img src="/assets/icons/interplanetary-player.svg" alt="Interplanetary Player" class="menu-item-icon">
+              Interplanetary Player
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#" data-value="Sound Engine">
+              <img src="/assets/icons/sound_engine.svg" alt="Sound Engine" class="menu-item-icon">
+              Sound Engine
+            </a>
+          </li>
+        </ul>
       </div>
+  </div>
 
-      <!-- Title -->
-      <div class="col-10 text-center">
-        <h1 class="responsive-title">jamming</h1>
-      </div>
-        <!-- More Button with Dropdown Menu -->
-        <div class="col-1 d-flex justify-content-end align-items-center">
-          <div class="dropdown">
-            <button class="btn more-button dropdown-toggle" type="button" id="moreMenuButton"
-              data-bs-toggle="dropdown" aria-expanded="false" aria-label="more">
-              . . . 
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="moreMenuButton">
-              <li>
-                  <a class="dropdown-item" href="#" data-value="Share">
-                      <img src="/assets/icons/share.svg" alt="Share" class="menu-item-icon"
-                          style="width: 16px; height: 16px; margin-right: 8px;">
-                      Share
-                  </a>
-              </li>
-              <li>
-                  <a class="dropdown-item" href="#" data-value="Fullscreen">
-                      <img src="/assets/icons/fullscreen.svg" alt="Fullscreen"
-                          class="menu-item-icon" style="width: 16px; height: 16px; margin-right: 8px;">
-                      Open in Fullscreen
-                  </a>
-              </li>
-          </ul>          
-        </div>
-        </div>
+  <!-- Title -->
+  <div class="col-10 text-center">
+    <h1 class="responsive-title">jamming</h1>
+  </div>
 
+  <!-- More Button with Dropdown Menu -->
+  <div class="col-1 d-flex justify-content-end button-group-container"  data-group="more-dropdown">
+    <div class="dropdown">
+
+      <button class="btn more-button dropdown-toggle" type="button" id="moreMenuButton"
+      data-bs-toggle="dropdown" aria-expanded="false" aria-label="more">
+      <span class="button-icon" data-src="/assets/icons/more.svg" aria-label="More options"></span>
+    </button>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreMenuButton" style="right: 0;">
+        <li>
+          <a class="dropdown-item" href="#" data-value="Share">
+            <img src="/assets/icons/share.svg" alt="Share" class="menu-item-icon">
+            Share
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="#" data-value="Fullscreen">
+            <img src="/assets/icons/fullscreen.svg" alt="Fullscreen" class="menu-item-icon">
+            Fullscreen
+          </a>
+        </li>
+      </ul>
     </div>
+  </div>
+</div>
 
     <!-- Grid Row -->
     <div class="grid-row mt-3">
@@ -337,8 +325,7 @@
       useMidi: 1,
       preserveMidiLearn: 1,
       knobDiameter: 140,
-      switchWidth: 40,
-      switchHeight: 20
+
     };    
   </script>
 

@@ -105,10 +105,10 @@ canvas {
 }
 .sub-frame {
     position: relative; /* Necessary for absolute positioning of child elements */
-    top: 4%;
-    left: 4%;
-    width: 92%;
-    height: 92%;
+    top: 4vh;
+    left: 4vw;
+    width: 92vw;
+    height: 92vh;
     border: 1.5px solid var(--col1);
     border-radius: 5px;
     display: flex;
