@@ -136,8 +136,8 @@ canvas {
   .mid-container .col-1 {
     position: absolute;
     top: 50%;
-    height: 40%;
-    width: 6rem;
+    height: 40vh;
+    width: 12vw;
 
     transform: translateY(-50%);
     display: flex;
