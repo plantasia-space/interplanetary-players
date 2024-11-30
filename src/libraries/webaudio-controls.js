@@ -967,14 +967,12 @@ try {
 
 
 
-
-
 try {
   customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
     constructor() {
       super();
 
-      // Bind methods
+      // Bind methods to ensure correct 'this' context
       this.pointerdown = this.pointerdown.bind(this);
       this.pointermove = this.pointermove.bind(this);
       this.pointerup = this.pointerup.bind(this);
@@ -1065,35 +1063,10 @@ try {
       this.label = root.querySelector('.webaudioctrl-label');
 
       // Initialize properties
-      this.enable = this.getAttr("enable", 1);
-      this.tracking = this.getAttr("tracking", "rel");
-      this._value = parseFloat(this.getAttribute("value")) || 0;
-      this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
-      this._min = parseFloat(this.getAttribute("min")) || 0;
-      this._max = parseFloat(this.getAttribute("max")) || 100;
-      this._step = parseFloat(this.getAttribute("step")) || 1;
-      this._direction = this.getAttribute("direction") || "horz";
-      this.log = this.getAttr("log", 0);
-      this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
-      this.outline = this.getAttribute("outline") || "none";        
-      this.setupLabel();
-      this.sensitivity = parseFloat(this.getAttribute("sensitivity")) || 1;
-      this.valuetip = this.getAttr("valuetip", opt.valuetip);
-      this.tooltip = this.getAttribute("tooltip") || null;
-      this.conv = this.getAttribute("conv") || null;
-      this.link = this.getAttribute("link") || "";
+      this.initializeAttributes();
 
       // Process colors
-      this.coltab = this._colors.split(";").map(color => {
-        color = color.trim();
-        if (color.startsWith("var(") && color.endsWith(")")) {
-          const varName = color.slice(4, -1).trim();
-          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-          return resolvedColor || "#000";
-        }
-        return color;
-      });
-      while (this.coltab.length < 5) this.coltab.push("#000");
+      this.processColors();
 
       // Define 'value' property
       Object.defineProperty(this, 'value', {
@@ -1114,6 +1087,95 @@ try {
       this.fireflag = true;
 
       // MIDI Initialization
+      this.initializeMIDI();
+
+      // Register the slider globally
+      window.webaudioSliders = window.webaudioSliders || {};
+      if (this.id) window.webaudioSliders[this.id] = this;
+
+      // Initial setup
+      this.setupCanvas();
+      this.redraw();
+
+      // Event listeners
+      this.addEventListeners();
+
+      // ResizeObserver for responsive behavior
+      this.setupResizeObserver();
+
+      // Add to widget manager
+      if (window.webAudioControlsWidgetManager)
+        window.webAudioControlsWidgetManager.addWidget(this);
+    }
+
+    disconnectedCallback() {
+      // Remove event listeners
+      this.removeEventListeners();
+
+      // Unobserve ResizeObserver
+      if (this.resizeObserver) this.resizeObserver.unobserve(this);
+
+      // Additional cleanup
+      if (this.linkedParam) {
+        this.linkedParam.removeEventListener("input", this.handleParamChange);
+      }
+
+      // Remove from widget manager
+      if (window.webAudioControlsWidgetManager)
+        window.webAudioControlsWidgetManager.removeWidget(this);
+    }
+
+    /**
+     * Initializes attributes with proper parsing and defaults.
+     */
+    initializeAttributes() {
+      this.enable = this.getAttr("enable", 1);
+      this.tracking = (this.getAttr("tracking", "rel") || "rel").toLowerCase();
+      this._value = parseFloat(this.getAttribute("value")) || 0;
+      this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
+      this._min = parseFloat(this.getAttribute("min")) || 0;
+      this._max = parseFloat(this.getAttribute("max")) || 100;
+      this._step = parseFloat(this.getAttribute("step")) || 1;
+      this._direction = this.getAttribute("direction") || "horz";
+      this.log = parseInt(this.getAttr("log", 0)) === 1; // Parse as boolean
+      this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
+      this.outline = this.getAttribute("outline") || "none";        
+      this.setupLabel();
+      // Clamp sensitivity between 1 and 128
+      this.sensitivity = Math.min(Math.max(parseFloat(this.getAttribute("sensitivity")) || 1, 1), 128);
+      this.valuetip = this.getAttr("valuetip", opt.valuetip);
+      this.tooltip = this.getAttribute("tooltip") || null;
+      this.conv = this.getAttribute("conv") || null;
+      this.link = this.getAttribute("link") || "";
+
+      // Ensure 'min' is valid for logarithmic scaling
+      if (this.log && this._min <= 0) {
+        console.warn("webaudio-slider: Logarithmic scale requires min > 0. Setting min to 1.");
+        this._min = 1;
+        this.setAttribute("min", this._min);
+      }
+    }
+
+    /**
+     * Processes color attributes, allowing external customization.
+     */
+    processColors() {
+      this.coltab = this._colors.split(";").map(color => {
+        color = color.trim();
+        if (color.startsWith("var(") && color.endsWith(")")) {
+          const varName = color.slice(4, -1).trim();
+          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+          return resolvedColor || "#000";
+        }
+        return color;
+      });
+      while (this.coltab.length < 5) this.coltab.push("#000");
+    }
+
+    /**
+     * Initializes MIDI settings and mappings.
+     */
+    initializeMIDI() {
       this.midilearn = this.getAttr("midilearn", opt.midilearn);
       this.midicc = this.getAttr("midicc", null);
       this.midiController = {};
@@ -1144,34 +1206,32 @@ try {
         }
       };
       attemptToLoadMidiLearn();
+    }
 
-      // Global registration
-      window.webaudioSliders = window.webaudioSliders || {};
-      if (this.id) {
-        window.webaudioSliders[this.id] = this;
-      }
-
-      // Initial setup
-      this.setupCanvas();
-      this.redraw();
-
-      if (!this.hasOwnProperty("min")) Object.defineProperty(this, "min", {
-        get: () => { return this._min },
-        set: (v) => { this._min = +v; this.redraw() }
-      });
-      
-      if (!this.hasOwnProperty("max")) Object.defineProperty(this, "max", {
-        get: () => { return this._max },
-        set: (v) => { this._max = +v; this.redraw() }
-      });
-
-      // Event listeners
+    /**
+     * Adds necessary event listeners to the slider element.
+     */
+    addEventListeners() {
       this.elem.addEventListener('keydown', this.keydown);
       this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
       this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
       this.elem.addEventListener('wheel', this.wheel, { passive: false });
+    }
 
-      // ResizeObserver for responsive behavior
+    /**
+     * Removes event listeners from the slider element.
+     */
+    removeEventListeners() {
+      this.elem.removeEventListener('keydown', this.keydown);
+      this.elem.removeEventListener('mousedown', this.pointerdown);
+      this.elem.removeEventListener('touchstart', this.pointerdown);
+      this.elem.removeEventListener('wheel', this.wheel);
+    }
+
+    /**
+     * Sets up ResizeObserver to handle responsiveness.
+     */
+    setupResizeObserver() {
       this.resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
           this.setupCanvas();
@@ -1179,36 +1239,13 @@ try {
         }
       });
       this.resizeObserver.observe(this);
-      // Add to widget manager
-      if (window.webAudioControlsWidgetManager)
-        window.webAudioControlsWidgetManager.addWidget(this);
     }
 
-    disconnectedCallback() {
-      // Remove event listeners
-      this.elem.removeEventListener('keydown', this.keydown);
-      this.elem.removeEventListener('mousedown', this.pointerdown);
-      this.elem.removeEventListener('touchstart', this.pointerdown);
-      this.elem.removeEventListener('wheel', this.wheel, { passive: false });
-
-      // Unobserve ResizeObserver
-      if (this.resizeObserver) {
-        this.resizeObserver.unobserve(this);
-      }
-
-      // Additional cleanup
-      if (this.linkedParam) {
-        this.linkedParam.removeEventListener("input", this.handleParamChange);
-      }
-
-      // Remove from widget manager
-      if (window.webAudioControlsWidgetManager)
-        window.webAudioControlsWidgetManager.removeWidget(this);
-    }
-
-    // ... (Rest of your existing methods remain unchanged)
-
-    // Implement MIDI methods similar to webaudio-knob
+    /**
+     * Sets the MIDI controller for the slider.
+     * @param {number} channel - MIDI channel.
+     * @param {number} cc - MIDI continuous controller number.
+     */
     setMidiController(channel, cc) {
       this.midiController.channel = channel;
       this.midiController.cc = cc;
@@ -1217,6 +1254,10 @@ try {
       }
     }
 
+    /**
+     * Handles incoming MIDI messages.
+     * @param {MIDIMessageEvent} event - The MIDI message event.
+     */
     onMidiMessage(event) {
       const data = event.data;
       const status = data[0];
@@ -1231,6 +1272,9 @@ try {
       }
     }
 
+    /**
+     * Sets up the canvas dimensions and scaling.
+     */
     setupCanvas() {
       // Get actual size
       let rect = this.elem.getBoundingClientRect();
@@ -1238,13 +1282,13 @@ try {
 
       // Check and set default width and height if they are 0
       if (rect.width === 0) {
-        //console.warn("webaudio-slider: Container width is 0. Setting default width based on direction.");
+        console.warn("webaudio-slider: Container width is 0. Setting default width based on direction.");
         this.elem.style.width = this._direction.toLowerCase() === "vert" ? "50px" : "300px"; // Set default width based on direction
         rect = this.elem.getBoundingClientRect(); // Update rect after setting width
       }
 
       if (rect.height === 0) {
-        //console.warn("webaudio-slider: Container height is 0. Setting default height based on direction.");
+        console.warn("webaudio-slider: Container height is 0. Setting default height based on direction.");
         this.elem.style.height = this._direction.toLowerCase() === "vert" ? "200px" : "50px"; // Set default height based on direction
         rect = this.elem.getBoundingClientRect(); // Update rect after setting height
       }
@@ -1259,16 +1303,7 @@ try {
       this.ctx.scale(dpr, dpr);
 
       // Recalculate colors
-      this.coltab = this._colors.split(";").map(color => {
-        color = color.trim();
-        if (color.startsWith("var(") && color.endsWith(")")) {
-          const varName = color.slice(4, -1).trim();
-          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-          return resolvedColor || "#000";
-        }
-        return color;
-      });
-      while (this.coltab.length < 5) this.coltab.push("#000");
+      this.processColors();
 
       // Recalculate dimensions proportionally based on direction
       if (this._direction.toLowerCase() === "horz") {
@@ -1299,6 +1334,9 @@ try {
       }
     }
 
+    /**
+     * Redraws the slider based on the current value and settings.
+     */
     redraw() {
       // Clamp value within min and max
       this._value = Math.min(this._max, Math.max(this._min, this._value));
@@ -1366,12 +1404,8 @@ try {
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this._width, this._height);
 
-      // Draw background track (optional, currently transparent)
-      ctx.fillStyle = "rgba(0,0,0,0)"; // Transparent background
-      ctx.fillRect(0, 0, this._width, this._height);
-
       // Draw centered track line
-      ctx.strokeStyle = "#ffffff" || '#333'; // Track color
+      ctx.strokeStyle = this.coltab[1] || '#333'; // Track color
       ctx.lineWidth = 2; // Increased line width for better visibility
       ctx.beginPath();
       if (this.isHorizontal) {
@@ -1408,11 +1442,11 @@ try {
       ctx.lineWidth = 2;
 
       ctx.beginPath();
+      const size = this.knobSize / 2;
       if (this.isHorizontal) {
         // Triangle pointing to the right
         const knobX = this.trackX + this.trackLength * ratio;
         const knobY = this.trackY + this.trackHeight / 2;
-        const size = this.knobSize / 2;
 
         ctx.moveTo(knobX + size, knobY); // Right point
         ctx.lineTo(knobX - size, knobY - size); // Top-left point
@@ -1422,7 +1456,6 @@ try {
         // Triangle pointing upwards
         const knobX = this.trackX + this.trackHeight / 2;
         const knobY = this.trackY + this.trackLength * (1 - ratio);
-        const size = this.knobSize / 2;
 
         ctx.moveTo(knobX, knobY - size); // Top point
         ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
@@ -1434,6 +1467,11 @@ try {
       ctx.stroke(); // Only for the knob/pointer
     }    
 
+    /**
+     * Sets the internal value without triggering events.
+     * @param {number} v - The value to set.
+     * @returns {boolean} - Returns true if the value changed, else false.
+     */
     _setValue(v) {
       if (this._step) {
         v = Math.round((v - this._min) / this._step) * this._step + this._min;
@@ -1449,6 +1487,11 @@ try {
       return false;
     }
 
+    /**
+     * Sets the value and optionally fires events.
+     * @param {number} v - The value to set.
+     * @param {boolean} fire - Whether to fire 'input' and 'change' events.
+     */
     setValue(v, fire = false) {
       if (this._setValue(v) && fire) {
         this.sendEvent("input");
@@ -1457,6 +1500,10 @@ try {
       }
     }
 
+    /**
+     * Handles keydown events for accessibility.
+     * @param {KeyboardEvent} e - The keyboard event.
+     */
     keydown(e) {
       if (!this.enable) return;
       let delta = this._step || 1;
@@ -1476,6 +1523,10 @@ try {
       e.stopPropagation();
     }
 
+    /**
+     * Handles wheel events for adjusting the slider value.
+     * @param {WheelEvent} e - The wheel event.
+     */
     wheel(e) {
       if (!this.enable) return;
     
@@ -1490,6 +1541,10 @@ try {
       e.stopPropagation();
     }
 
+    /**
+     * Handles pointer down events to initiate dragging.
+     * @param {PointerEvent | TouchEvent | MouseEvent} ev - The pointer event.
+     */
     pointerdown(ev) {
       if (!this.enable) return;
 
@@ -1500,9 +1555,18 @@ try {
       this.elem.focus();
       this.dragging = true;
 
-      // Determine the initial ratio based on pointer position
-      const rect = this.canvas.getBoundingClientRect();
-      this.updateValueFromPointer(ev, rect);
+      if (this.tracking === "rel") {
+        // Store initial pointer position and value for REL mode
+        const touch = ev.touches && ev.touches.length > 0 ? ev.touches[0] : ev;
+        this.startPos = { x: touch.clientX, y: touch.clientY };
+        this.startValue = this._value;
+        if (this.log && this._min > 0) {
+          this.startLog = Math.log(this.startValue / this._min) / Math.log(this._max / this._min);
+        }
+      } else {
+        // ABS mode: update value based on pointer position
+        this.updateValueFromPointer(ev);
+      }
 
       // Add event listeners for move and up
       window.addEventListener('mousemove', this.pointermove, { passive: false });
@@ -1512,6 +1576,10 @@ try {
       window.addEventListener('touchcancel', this.pointerup);
     }
 
+    /**
+     * Handles pointer move events to update the slider value.
+     * @param {PointerEvent | TouchEvent | MouseEvent} ev - The pointer event.
+     */
     pointermove(ev) {
       if (!this.dragging) return;
 
@@ -1519,10 +1587,17 @@ try {
       ev.preventDefault();
       ev.stopPropagation();
 
-      const rect = this.canvas.getBoundingClientRect();
-      this.updateValueFromPointer(ev, rect);
+      if (this.tracking === "abs") {
+        this.updateValueFromPointer(ev);
+      } else if (this.tracking === "rel") {
+        this.updateValueFromPointerRel(ev);
+      }
     }
 
+    /**
+     * Handles pointer up events to end dragging.
+     * @param {PointerEvent | TouchEvent | MouseEvent} ev - The pointer event.
+     */
     pointerup(ev) {
       if (!this.dragging) return;
       this.dragging = false;
@@ -1535,15 +1610,15 @@ try {
       window.removeEventListener('touchcancel', this.pointerup);
     }
 
-    updateValueFromPointer(ev, rect) {
-      let clientX, clientY;
-      if (ev.touches && ev.touches.length > 0) {
-        clientX = ev.touches[0].clientX;
-        clientY = ev.touches[0].clientY;
-      } else {
-        clientX = ev.clientX;
-        clientY = ev.clientY;
-      }
+    /**
+     * Updates the slider value based on absolute pointer position.
+     * @param {PointerEvent | TouchEvent | MouseEvent} ev - The pointer event.
+     */
+    updateValueFromPointer(ev) {
+      const touch = ev.touches && ev.touches.length > 0 ? ev.touches[0] : ev;
+      const rect = this.canvas.getBoundingClientRect();
+      const clientX = touch.clientX;
+      const clientY = touch.clientY;
 
       let ratio;
       if (this.isHorizontal) {
@@ -1571,7 +1646,52 @@ try {
       this.setValue(newValue, true);
     }
 
-    // Handle changes from the linked param
+    /**
+     * Updates the slider value based on relative pointer movement.
+     * @param {PointerEvent | TouchEvent | MouseEvent} ev - The pointer event.
+     */
+    updateValueFromPointerRel(ev) {
+      const touch = ev.touches && ev.touches.length > 0 ? ev.touches[0] : ev;
+      const currentPos = { x: touch.clientX, y: touch.clientY };
+
+      // Calculate movement delta
+      const deltaX = currentPos.x - this.startPos.x;
+      const deltaY = currentPos.y - this.startPos.y;
+
+      // Determine value change based on orientation
+      let deltaRatio;
+      if (this.isHorizontal) {
+        // Sensitivity: 1 to 128, higher means less change per pixel
+        deltaRatio = (deltaX / 128) * (this.sensitivity / 128);
+      } else {
+        // Vertical slider: moving up increases, moving down decreases
+        deltaRatio = (-deltaY / 128) * (this.sensitivity / 128);
+      }
+
+      if (this.log && this._min > 0) {
+        // Update log ratio
+        let newLog = this.startLog + deltaRatio;
+        newLog = Math.max(0, Math.min(1, newLog));
+        let newValue = this._min * Math.pow(this._max / this._min, newLog);
+        this.setValue(newValue, true);
+      } else {
+        // Linear mode
+        let deltaValue;
+        if (this.isHorizontal) {
+          deltaValue = (deltaX / 128) * this.sensitivity;
+        } else {
+          deltaValue = (-deltaY / 128) * this.sensitivity;
+        }
+        let newValue = this.startValue + deltaValue;
+        newValue = Math.min(this._max, Math.max(this._min, newValue));
+        this.setValue(newValue, true);
+      }
+    }
+
+    /**
+     * Handles changes from the linked parameter.
+     * @param {Event} e - The input event.
+     */
     handleParamChange(e) {
       if (this.updatingFromSlider) return; // Prevent circular update
       const newValue = parseFloat(e.target.value);
@@ -1580,7 +1700,9 @@ try {
       }
     }
 
-    // Update linked param when slider changes
+    /**
+     * Updates the linked parameter when the slider value changes.
+     */
     updateLinkedParam() {
       if (this.linkedParam) {
         if (parseFloat(this.linkedParam.value) !== this._value) {
@@ -1592,22 +1714,33 @@ try {
       }
     }
 
-    // Tooltip management
+    /**
+     * Shows the tooltip after a specified delay.
+     * @param {number} delay - Delay in milliseconds before showing the tooltip.
+     */
     showtip(delay) {
       setTimeout(() => {
-        if (this.tooltip && this.isVisible) {
+        if (this.tooltip) {
           this.ttframe.style.opacity = 1;
           this.ttframe.textContent = this.convValue;
         }
       }, delay);
     }
 
+    /**
+     * Hides the tooltip after a specified delay.
+     * @param {number} delay - Delay in milliseconds before hiding the tooltip.
+     */
     hidetip(delay) {
       setTimeout(() => {
         this.ttframe.style.opacity = 0;
       }, delay);
     }
 
+    /**
+     * Updates the tooltip with the current value.
+     * @param {number} ratio - Not used in this implementation but kept for consistency.
+     */
     updateTooltip(ratio) {
       let valueToShow = this.convValue;
       if (this.valuetip) {
@@ -1620,14 +1753,23 @@ try {
       }, 1000);
     }
 
-    // Setup label (assuming setupLabel is defined elsewhere)
+    /**
+     * Sets up the label. Customize this method based on your labeling needs.
+     */
     setupLabel() {
-      // Implementation depends on existing code
+      // Example Implementation:
+      // Update the label to show the current value
+      this.label.textContent = this.convValue;
     }
   });
 } catch (error) {
   console.error("webaudio-slider already defined or error in definition:", error);
 }
+
+
+
+
+
 
 
 
@@ -1655,7 +1797,7 @@ try {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-  
+
     customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
       constructor() {
         super();
