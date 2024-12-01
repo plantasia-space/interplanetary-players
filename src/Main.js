@@ -5,7 +5,7 @@ import { loadAndDisplayModel } from './Loaders.js';
 import { DataManager } from './DataManager.js';
 import { Constants, DEFAULT_TRACK_ID } from './Constants.js';
 import lscache from 'lscache';
-import { setupInteractions } from './Interaction.js';
+import { setupInteractions, updateKnobsFromTrackData, applyColorsFromTrackData  } from './Interaction.js';
 import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
 import { ButtonGroup } from './ButtonGroup.js';
 import { ParameterManager } from './ParameterManager.js';
@@ -21,7 +21,7 @@ const dataManager = new DataManager();
 const audioPlayer = new AudioPlayer(); // Instantiate AudioPlayer
 
 const user1Manager = new ParameterManager();
-const rootParams = ['x', 'y', 'z', 'rotation-x', 'body-level', 'body-envelope'];
+const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
 
 
 let animationRunning = false;
@@ -43,31 +43,31 @@ async function initializeApp() {
         // Use DataManager to handle fetch and configuration
         await dataManager.fetchAndUpdateConfig(trackId);
 
-        // Verify required data fields
-        if (!Constants.TRACK_DATA?.track || 
-            !Constants.TRACK_DATA?.soundEngine || 
-            !Constants.TRACK_DATA?.interplanetaryPlayer) {
-            throw new Error('Missing required data fields in TRACK_DATA.');
+        // Retrieve the updated TRACK_DATA
+        const trackData = Constants.getTrackData(trackId);
+        if (!trackData) {
+            throw new Error('Failed to fetch track data.');
         }
 
-        console.log('[APP] TRACK_DATA confirmed:', Constants.TRACK_DATA);
+        console.log('[APP] TRACK_DATA confirmed:', trackData);
 
-        // Apply colors based on TRACK_DATA
-        Constants.applyColorsFromTrackData();
-        Constants.updateKnobsFromTrackData(trackId)
+        // Apply colors and update knobs
+        applyColorsFromTrackData(trackData);
+        updateKnobsFromTrackData(trackData);
         window.webAudioControlsWidgetManager.setTrackId(trackId);
 
-        // Populate placeholders using the default type 'monitorInfo'
-        setupInteractions(dataManager, audioPlayer); // Pass audioPlayer here
+        // Populate placeholders
+        setupInteractions(dataManager, audioPlayer);
         dataManager.populatePlaceholders('monitorInfo');
 
         // Load the model and display it in the scene
-        await loadAndDisplayModel(scene, Constants.TRACK_DATA);
+        await loadAndDisplayModel(scene, trackData);
         console.log('[APP] Model loaded successfully.');
     } catch (error) {
         console.error('[APP] Error during application initialization:', error);
     }
 }
+
 window.addEventListener('resize', () => {
     const MIN_SIZE = 340; // Minimum frame size
 
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add root parameters to the ParameterManager
     rootParams.forEach((paramName) => {
-        user1Manager.addParameter(paramName, 0, false); // Initial value = 0, isBidirectional = false
+        user1Manager.addParameter(paramName, 0, true); // Initial value = 0, isBidirectional = false
     });
   
 

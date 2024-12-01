@@ -559,7 +559,7 @@ try {
       // Register with ParameterManager if rootParam is specified
       if (this.rootParam) {
         // Ensure the parameter exists in ParameterManager
-        user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
+        //user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
 
         // Subscribe to ParameterManager updates for this parameter with the retrieved priority
         user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
@@ -823,7 +823,7 @@ try {
           const priority = getPriority("webaudio-knob");
           if (this.rootParam) {
             // Update ParameterManager with the new value
-            user1Manager.setValue(
+            user1Manager.setRawValue(
               this.rootParam,
               this._value,
               this, // Source controller
@@ -2729,7 +2729,7 @@ try {
             // Register with ParameterManager if rootParam is specified
             if (this.rootParam) {
                 // Ensure the parameter exists in ParameterManager
-                user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
+                //user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
 
                 // Determine controller type for priority mapping
                 const controllerType = "webaudio-param"; // Since this is WebAudioParam
@@ -2921,7 +2921,7 @@ try {
 
                     if (this.rootParam) {
                         // Update ParameterManager with the new value
-                        user1Manager.setValue(
+                        user1Manager.setRawValue(
                             this.rootParam,
                             this.value,
                             this, // Source controller
@@ -2947,7 +2947,7 @@ try {
          * @param {number} newValue - The new value of the parameter.
          */
         onParameterChanged(parameterName, newValue) {
-            console.log(`[WebAudioParam] onParameterChanged called for ${parameterName} with value ${newValue}`);
+          //  console.log(`[WebAudioParam] onParameterChanged called for ${parameterName} with value ${newValue}`);
             if (this.rootParam === parameterName) {
                 if (this.isBidirectional && this._value !== newValue) {
                     this.updating = true; // Prevent feedback loops
