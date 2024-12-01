@@ -21,8 +21,6 @@ const dataManager = new DataManager();
 const audioPlayer = new AudioPlayer(); // Instantiate AudioPlayer
 
 const user1Manager = new ParameterManager();
-const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
-
 
 let animationRunning = false;
 let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
@@ -51,10 +49,12 @@ async function initializeApp() {
 
         console.log('[APP] TRACK_DATA confirmed:', trackData);
 
+        initializeRootParams(user1Manager, trackData);
+
         // Apply colors and update knobs
         applyColorsFromTrackData(trackData);
         updateKnobsFromTrackData(trackData);
-        window.webAudioControlsWidgetManager.setTrackId(trackId);
+        //window.webAudioControlsWidgetManager.setTrackId(trackId);
 
         // Populate placeholders
         setupInteractions(dataManager, audioPlayer);
@@ -67,6 +67,42 @@ async function initializeApp() {
         console.error('[APP] Error during application initialization:', error);
     }
 }
+
+
+function initializeRootParams(parameterManager, trackData) {
+    const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
+  
+    // Extract x, y, z from trackData dynamically
+    const { x, y, z } = trackData.soundEngine.soundEngineParams;
+  
+    // Map for parameter initialization
+    const paramConfigs = {
+      x: { ...x },
+      y: { ...y },
+      z: { ...z },
+      'body-level': { initValue: 0.5, min: 0.0001, max: 1, label: 'Volume (Logarithmic)' }, // Log scale
+      'body-envelope': { initValue: 0, min: -1, max: 1, label: 'Envelope' },
+    };
+  
+    // Iterate through rootParams and add them to ParameterManager
+    rootParams.forEach((paramName) => {
+      const config = paramConfigs[paramName];
+      if (config) {
+        const { initValue, min, max, label } = config;
+  
+        // Validate the configuration
+        if (typeof initValue === 'number' && typeof min === 'number' && typeof max === 'number') {
+          parameterManager.addParameter(paramName, initValue, min, max, true); // Bidirectional = true
+          console.debug(`[initializeRootParams] Added: ${label || paramName}`, config);
+        } else {
+          console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
+        }
+      } else {
+        console.warn(`[initializeRootParams] Parameter '${paramName}' not found in configs.`);
+      }
+    });
+  }
+
 
 window.addEventListener('resize', () => {
     const MIN_SIZE = 340; // Minimum frame size
@@ -98,67 +134,7 @@ function animate() {
 
 
 
-/**
- * Sets up the WebAudioControlsWidgetManager, including MIDI listeners
- * and event listeners for switches and knobs.
- */
-function setupWebAudioControlsWidgetManager() {
-    if (!window.webAudioControlsWidgetManager) {
-        console.error("webAudioControlsWidgetManager is not defined.");
-        return;
-    }
 
-    console.log("webAudioControlsWidgetManager is defined.");
-
-    // Add external MIDI listeners if needed
-    window.webAudioControlsWidgetManager.addMidiListener((event) => {
-        if (midiDumpEnabled) {
-            console.log("MIDI DUMP:", event.data);
-
-            // Log registered widgets after a delay
-            setTimeout(() => {
-                console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
-            }, 100);
-        }
-    });
-
-    setupSwitchListeners(['xBalance', 'yBalance', 'zBalance']);
-    setupKnobListeners(['xKnob', 'yKnob', 'zKnob']);
-}
-
-/**
- * Sets up event listeners for switches by their IDs.
- * @param {Array<string>} switchIds - Array of switch element IDs.
- */
-function setupSwitchListeners(switchIds) {
-    switchIds.forEach(switchId => {
-        const switchElement = document.getElementById(switchId);
-        if (switchElement) {
-            switchElement.addEventListener('change', () => {
-                console.log(`${switchId} state changed to:`, switchElement.state);
-            });
-        } else {
-            console.warn(`Element with id '${switchId}' not found.`);
-        }
-    });
-}
-
-/**
- * Sets up event listeners for knobs by their IDs.
- * @param {Array<string>} knobIds - Array of knob element IDs.
- */
-function setupKnobListeners(knobIds) {
-    knobIds.forEach(knobId => {
-        const knob = document.getElementById(knobId);
-        if (knob) {
-            knob.addEventListener('change', () => {
-           //     console.log(`${knobId} value changed to:`, knob.value);
-            });
-        } else {
-            console.warn(`Element with id '${knobId}' not found.`);
-        }
-    });
-}
 
 /**
  * Sets up alignment for the collapse menu and attaches relevant event listeners.
@@ -203,16 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize application and animation loop
     initializeApp().then(animate);
 
-    // Handle WebAudioControlsWidgetManager setup
-    setupWebAudioControlsWidgetManager();
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
 
-    // Add root parameters to the ParameterManager
-    rootParams.forEach((paramName) => {
-        user1Manager.addParameter(paramName, 0, true); // Initial value = 0, isBidirectional = false
-    });
   
 
 });

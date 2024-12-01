@@ -1,6 +1,24 @@
+// ParameterManager.js
+
 export class ParameterManager {
   constructor() {
+    if (ParameterManager.instance) {
+      return ParameterManager.instance;
+    }
+
     this.parameters = new Map(); // Map of parameterName -> { rawValue, normalizedValue, min, max, subscribers, isBidirectional, lastPriority }
+    ParameterManager.instance = this;
+  }
+
+  /**
+   * Provides access to the Singleton instance.
+   * @returns {ParameterManager} - The Singleton instance.
+   */
+  static getInstance() {
+    if (!ParameterManager.instance) {
+      ParameterManager.instance = new ParameterManager();
+    }
+    return ParameterManager.instance;
   }
 
   /**
@@ -12,9 +30,14 @@ export class ParameterManager {
    * @param {boolean} isBidirectional - Indicates if the parameter supports bidirectional updates.
    */
   addParameter(name, rawValue = 0, min = 0, max = 1, isBidirectional = false) {
+    if (typeof min !== 'number' || typeof max !== 'number') {
+      console.error(`[addParameter] Invalid min (${min}) or max (${max}) value for parameter: ${name}`);
+      return;
+    }
+    
     if (!this.parameters.has(name)) {
       const normalizedValue = this.normalize(rawValue, min, max);
-
+  
       this.parameters.set(name, {
         rawValue,
         normalizedValue,
@@ -24,6 +47,8 @@ export class ParameterManager {
         isBidirectional: isBidirectional,
         lastPriority: Infinity, // Higher number means lower priority initially
       });
+  
+      //console.debug(`[addParameter] Parameter '${name}' added with min: ${min}, max: ${max}, rawValue: ${rawValue}`);
     }
   }
 
@@ -34,6 +59,11 @@ export class ParameterManager {
    * @param {number} priority - The priority of the controller (1 is highest).
    */
   subscribe(controller, parameterName, priority = Infinity) {
+    if (typeof controller.onParameterChanged !== 'function') {
+      console.error(`Controller must implement 'onParameterChanged' method.`);
+      return;
+    }
+  
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
       param.subscribers.add({ controller, priority });
@@ -69,23 +99,57 @@ export class ParameterManager {
   setRawValue(parameterName, rawValue, sourceController = null, priority = Infinity) {
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
-
-      if (priority <= param.lastPriority) {
+  
+      //console.debug(`[setRawValue] Parameter: ${parameterName}, Raw Value: ${rawValue}, Source Controller:`, sourceController);
+      //console.debug(`[setRawValue] Current Parameter State:`, param);
+  
+      const now = Date.now();
+      const simultaneousThreshold = 50; // 50 ms for "simultaneous" updates
+  
+      // Determine if this update is "simultaneous"
+      const isSimultaneous = now - (param.lastUpdateTimestamp || 0) < simultaneousThreshold;
+  
+      // Allow updates if:
+      // 1. They have a higher priority during simultaneous updates
+      // 2. They occur after the last update timestamp (sequential updates)
+      if (
+        (!isSimultaneous || priority <= param.lastPriority) &&
+        (!isSimultaneous || sourceController !== param.lastController)
+      ) {
         const normalizedValue = this.normalize(rawValue, param.min, param.max);
-
+  
+        //console.debug(`[setRawValue] Normalized Value: ${normalizedValue}, Priority: ${priority}, Last Priority: ${param.lastPriority}`);
+  
         if (param.rawValue !== rawValue) {
+          //console.debug(`[setRawValue] Updating Parameter: ${parameterName}, Previous Value: ${param.rawValue}`);
+  
           param.rawValue = rawValue;
           param.normalizedValue = normalizedValue;
           param.lastPriority = priority;
-
+          param.lastUpdateTimestamp = now;
+          param.lastController = sourceController;
+  
+          //console.debug(`[setRawValue] New Parameter State:`, param);
+  
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
             if (controller !== sourceController || param.isBidirectional) {
-              controller.onParameterChanged(parameterName, rawValue);
+              if (typeof controller.onParameterChanged === 'function') {
+                //console.debug(`[setRawValue] Notifying Controller:`, controller);
+                controller.onParameterChanged(parameterName, rawValue);
+              } else {
+                console.warn(`[setRawValue] Controller does not implement 'onParameterChanged':`, controller);
+              }
             }
           });
+        } else {
+          //console.debug(`[setRawValue] No Change in Raw Value for Parameter: ${parameterName}`);
         }
+      } else {
+        //console.debug(`[setRawValue] Update Skipped for Parameter: ${parameterName}, Priority: ${priority}, Last Priority: ${param.lastPriority}`);
       }
+    } else {
+      console.warn(`[setRawValue] Parameter '${parameterName}' not found.`);
     }
   }
 
@@ -178,3 +242,5 @@ export class ParameterManager {
     }));
   }
 }
+// Export the Singleton instance
+export const ParameterManagerInstance = ParameterManager.getInstance();

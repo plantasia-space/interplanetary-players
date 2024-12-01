@@ -33,7 +33,7 @@
  *  of the Apache License 2.0. The original work and its attributions have been retained as required.
  *
  * */
-
+ import { MIDIControllerInstance } from './../MIDIController.js';
  import { Constants, TRACK_ID, getPriority } from './../Constants.js';
  import { user1Manager } from './../Main.js';
 
@@ -81,14 +81,7 @@
 }
 `;
   document.head.appendChild(styles);
-  let midimenu=document.createElement("ul");
-  midimenu.id="webaudioctrl-context-menu";
-  midimenu.innerHTML=
-`<li class="webaudioctrl-context-menu__title">MIDI Learn</li>
-<li class="webaudioctrl-context-menu__item" id="webaudioctrl-context-menu-learn" onclick="webAudioControlsWidgetManager.contextMenuLearn()">Learn</li>
-<li class="webaudioctrl-context-menu__item" onclick="webAudioControlsWidgetManager.contextMenuClear()">Clear</li>
-<li class="webaudioctrl-context-menu__item" onclick="webAudioControlsWidgetManager.contextMenuClose()">Close</li>
-`;
+
   let opt={
     useMidi:0,
     preserveMidiLearn:0,
@@ -134,7 +127,6 @@
       this.addEventListener("mouseout",this.pointerout);
       this.addEventListener("contextmenu",this.contextMenu);
       this.hover=this.drag=0;
-      document.body.appendChild(midimenu);
       this.basestyle=`
 .webaudioctrl-tooltip{
   display:inline-block;
@@ -338,65 +330,22 @@ this.onFocus = () => {
       this.hover=0;
       this.showtip(0);
     }
-    contextMenu(e){
-      if(window.webAudioControlsWidgetManager && this.midilearn)
-        webAudioControlsWidgetManager.contextMenuOpen(e,this);
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    setMidiController(channel, cc) {
-      if (this.listeningToThisMidiController(channel, cc)) return;
-      this.midiController={ 'channel': channel, 'cc': cc};
-     // console.log(`MIDI LOG: Added mapping for widget ${this.id || this.tagName} - channel=${channel}, cc=${cc}, tooltip=${this.tooltip}`);
-    }
-    listeningToThisMidiController(channel, cc) {
-      const c = this.midiController;
-      if((c.channel === channel || c.channel < 0) && c.cc === cc)
-        return true;
-      return false;
-    }
-    
-    processMidiEvent(event) {
-      const status = event.data[0];
-      const channel = status & 0xf;
-      const controlNumber = event.data[1];
-      const controlValue = event.data[2];
-    
-      if (this.midiMode === "learn") {
-        this.setMidiController(channel, controlNumber);
-        window.webAudioControlsWidgetManager.contextMenuClose();
-        this.midiMode = "normal";
-        window.webAudioControlsWidgetManager.preserveMidiLearn();
-        return;
-      }
-      if (this.listeningToThisMidiController(channel, controlNumber)) {
 
-        if (this.tagName === "WEBAUDIO-SWITCH") {
-
-          this.handleSwitchMidiMessage(event); // Call switch-specific handler
-        } else {
-          const val = this.min + (this.max - this.min) * (controlValue / 127);
-          this.setValue(val, true);
-        }
-      }
-    }
+    
 
 }
-
 
 try {
   customElements.define("webaudio-knob", class WebAudioKnob extends WebAudioControlsWidget {
     constructor() {
       super();
       this.resizeObserver = null; // Reference to ResizeObserver
-
       // Bind event handlers to ensure correct 'this' context
       this.onFocus = this.onFocus.bind(this);
       this.onBlur = this.onBlur.bind(this);
       this.onPointerDown = this.pointerdown.bind(this);
       this.onPointerMove = this.pointermove.bind(this);
       this.onPointerUp = this.pointerup.bind(this);
-      this.onParameterChanged = this.onParameterChanged.bind(this); // Handler for parameter updates
     }
 
     connectedCallback() {
@@ -418,8 +367,8 @@ try {
             font-family: sans-serif;
             font-size: 11px;
             /* Utilize CSS variables for styling */
-            --knob-col1: var(--color1, #e00); /* Fill color */
-            --knob-col2: var(--color2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
+            --knob-col1: var(--col1, #e00); /* Fill color */
+            --knob-col2: var(--col2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
             --knob-outline: var(--knob-outline, none); /* Outline color */
             /* Set width and height to either specified values or maintain square */
             --knob-size: ${this.hasAttribute("width") && this.hasAttribute("height") ? 
@@ -481,7 +430,6 @@ try {
       this._height = this.hasAttribute("height") ? this.getAttr("height", 64) : null;
       this._diameter = this.getAttr("diameter", null); // For future use if needed
       this._colors = this.getAttr("colors", opt.knobColors); // Expected format: "col1;col2;col3"
-      this.midilearn = this.getAttr("midilearn", "0"); // Default to "0" if not specified
 
       // Define getters and setters for properties
       if (!this.hasOwnProperty("value")) Object.defineProperty(this, "value", {
@@ -546,9 +494,6 @@ try {
       // Setup label positioning
       this.setupLabel();
 
-
-
-          
       // Parameter Manager Integration
       this.rootParam = this.getAttr("root-param", null); // New attribute
       this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
@@ -564,8 +509,7 @@ try {
         // Subscribe to ParameterManager updates for this parameter with the retrieved priority
         user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
       }
-
-      // MIDI related setup - Removed MIDI event handling since ParameterManager manages it
+      
 
       // Additional properties
       this.digits = 0;
@@ -574,16 +518,9 @@ try {
           ++this.digits;
       }
 
-      // Check if the manager is ready
-      if (window.webAudioControlsWidgetManager) {
-        this.registerWithManager();
-      } else {
-        // Listen for the readiness event
-        document.addEventListener("WebAudioControlsWidgetManagerReady", () => {
-          this.registerWithManager();
-        }, { once: true }); // Ensure this listener is only triggered once
-      }
-
+      // Add to widget manager
+      if (window.webAudioControlsWidgetManager)
+        window.webAudioControlsWidgetManager.addWidget(this);
 
       // Bind focus, blur, and pointerdown events after this.elem is assigned
       if (this.elem) {
@@ -594,8 +531,6 @@ try {
         console.error('webaudio-knob: this.elem is not assigned correctly.');
       }
     }
-
-        
 
     disconnectedCallback() {
       // Remove event listeners to prevent memory leaks
@@ -610,27 +545,15 @@ try {
         this.resizeObserver.disconnect();
         this.resizeObserver = null;
       }
-
-    // Unregister from widget manager if midilearn is enabled
-    if (this.midilearn === "1" && window.webAudioControlsWidgetManager) {
-      window.webAudioControlsWidgetManager.removeWidget(this);
-      console.log(`Unregistered ${this.id} from WebAudioControlsWidgetManager.`);
-    }
-      // Remove any global event listeners if necessary
-      window.removeEventListener('pointermove', this.onPointerMove);
-      window.removeEventListener('pointerup', this.onPointerUp);
-
       // Unsubscribe from ParameterManager
       if (this.rootParam) {
         user1Manager.unsubscribe(this, this.rootParam);
       }
+      // Remove any global event listeners if necessary
+      window.removeEventListener('pointermove', this.onPointerMove);
+      window.removeEventListener('pointerup', this.onPointerUp);
     }
-    registerWithManager() {
-      if (this.midilearn === "1" && window.webAudioControlsWidgetManager) {
-        window.webAudioControlsWidgetManager.addWidget(this);
-        console.log(`Registered ${this.id} with WebAudioControlsWidgetManager.`);
-      }
-    }
+
     setupImage() {
       // *** Resolve CSS Variables in 'colors' ***
       this.coltab = this.colors
@@ -646,11 +569,11 @@ try {
             return color;
           })
         : ["#e00", "#000", "#000"];
-
+    
       // Determine actual size
       let width, height;
       const style = getComputedStyle(this.elem);
-
+    
       if (this._width && this._height) {
         width = parseInt(this._width);
         height = parseInt(this._height);
@@ -659,64 +582,63 @@ try {
         width = parseInt(style.width) || 64;
         height = parseInt(style.height) || 64;
       }
-
+    
       // Handle high DPI displays
       const dpr = window.devicePixelRatio || 1;
       this.canvas.width = width * dpr;
       this.canvas.height = height * dpr;
       this.canvas.style.width = `${width}px`;
       this.canvas.style.height = `${height}px`;
-
+    
       const ctx = this.canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-
+    
       // Apply outline if specified
       this.canvas.style.outline = this.outline;
-
+    
       // Calculate radius based on width and height
       if (this._diameter) {
         this.radius = parseInt(this._diameter) / 2 - 5; // Padding of 5px
       } else {
         this.radius = Math.min(width, height) / 2 - 5; // Dynamic padding adjustment
       }
-
+    
       this.centerX = width / 2;
       this.centerY = height / 2;
-
+    
       // Redraw the knob with updated dimensions
       this.redraw();
-
+    
       // Setup ResizeObserver for dynamic responsiveness
       if (!this.resizeObserver) {
         this.resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
             const newWidth = entry.contentRect.width || parseInt(style.width) || 64;
             const newHeight = entry.contentRect.height || parseInt(style.height) || 64;
-
+    
             const dpr = window.devicePixelRatio || 1;
             this.canvas.width = newWidth * dpr;
             this.canvas.height = newHeight * dpr;
             this.canvas.style.width = `${newWidth}px`;
             this.canvas.style.height = `${newHeight}px`;
-
+    
             const ctx = this.canvas.getContext('2d');
             ctx.scale(dpr, dpr);
-
+    
             // Recalculate radius and center dynamically
             this.radius = Math.min(newWidth, newHeight) / 2 - 5; // Adjust radius for padding
             this.centerX = newWidth / 2;
             this.centerY = newHeight / 2;
-
+    
             // Redraw the knob with updated dimensions
             this.redraw();
           }
         });
       }
-
+    
       // Observe the parent element for size changes
       this.resizeObserver.observe(this.elem.parentElement || this.elem);
     }
-
     redraw() {
       let ratio;
       this.digits = 0;
@@ -781,11 +703,6 @@ try {
       */
     }
 
-    /**
-     * Sets the internal value without triggering events.
-     * @param {number} v - The value to set.
-     * @returns {boolean} - Returns true if the value changed, else false.
-     */
     _setValue(v) {
       if (this.step)
         v = (Math.round((v - this.min) / this.step)) * this.step + this.min;
@@ -806,9 +723,9 @@ try {
         }
         this.redraw();
         this.showtip(0);
-        return true;
+        return 1;
       }
-      return false;
+      return 0;
     }
 
     /**
@@ -837,7 +754,6 @@ try {
         }
       }
     }
-
     /**
      * Handles parameter updates from ParameterManager.
      * @param {string} parameterName - The name of the parameter that changed.
@@ -846,18 +762,12 @@ try {
     onParameterChanged(parameterName, newValue) {
       if (this.rootParam === parameterName) {
         if (this.isBidirectional && this._value !== newValue) {
-          this._setValue(newValue); // Update knob's internal value
-          this.redraw(); // Redraw to reflect the new value
+          console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
+          this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
         }
       }
     }
-
-    /**
-     * Handles keydown events for accessibility.
-     * @param {KeyboardEvent} e - The keyboard event.
-     */
     keydown(e) {
-      if (!this.enable) return;
       let delta = this.step;
       if (delta === 0)
         delta = 1;
@@ -875,17 +785,13 @@ try {
       e.stopPropagation();
     }
 
-    /**
-     * Handles wheel events for adjusting the knob value.
-     * @param {WheelEvent} e - The wheel event.
-     */
     wheel(e) {
       if (!this.enable) return;
-
+    
       // Determine scroll direction
       let direction = e.deltaY || (e.wheelDelta ? -e.wheelDelta : 0); // Use wheelDelta for fallback
       direction = Math.sign(direction); // Normalize to -1 or 1
-
+    
       if (this.log) {
         // Logarithmic mode
         let r = Math.log(this.value / this.min) / Math.log(this.max / this.min);
@@ -901,31 +807,28 @@ try {
         const newValue = +this.value + delta;
         this.setValue(newValue, true);
       }
-
+    
       // Prevent default scrolling behavior
       e.preventDefault();
       e.stopPropagation();
     }
 
-    /**
-     * Handles pointer down events to initiate dragging.
-     * @param {PointerEvent} ev - The pointer event.
-     */
     pointerdown(ev) {
       if (!this.enable) return;
       let e = ev;
-
+    
       // Only handle primary buttons (usually left mouse button) and touch
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-
+    
       // Prevent multiple pointers
       if (this.drag) return;
+      this.isBidirectional = false; // Pause bidirectional updates during interaction
 
       if (typeof e.pointerId === 'undefined') {
         console.warn('pointerId is undefined.');
         return;
       }
-
+    
       this.elem.setPointerCapture(e.pointerId);
       this.drag = true;
       this.startVal = this.value;
@@ -942,10 +845,6 @@ try {
       e.stopPropagation();
     }
 
-    /**
-     * Handles pointer move events to update the knob's value.
-     * @param {PointerEvent} ev - The pointer event.
-     */
     pointermove(ev) {
       if (!this.drag)
         return;
@@ -968,15 +867,13 @@ try {
       this.setValue(newValue, true);
     }
 
-    /**
-     * Handles pointer up events to end dragging.
-     * @param {PointerEvent} ev - The pointer event.
-     */
     pointerup(ev) {
       if (!this.drag)
         return;
 
       this.drag = false;
+      this.isBidirectional = true; // Resume bidirectional updates
+
       this.elem.releasePointerCapture(ev.pointerId);
       this.elem.removeEventListener('pointermove', this.onPointerMove);
       this.elem.removeEventListener('pointerup', this.onPointerUp);
@@ -995,10 +892,11 @@ try {
       // Handle blur event
     }
 
-    /**
-     * Sets up the label positioning and styling.
-     */
+    // Implement other necessary methods like setupLabel, sendEvent, showtip, setMidiController, etc.
+    // These implementations depend on your existing codebase and are assumed to be present.
+
     setupLabel() {
+      // Example implementation, adjust as necessary
       if (this.label) {
         this.label.style.position = 'absolute';
         this.label.style.bottom = '0';
@@ -1008,19 +906,11 @@ try {
       }
     }
 
-    /**
-     * Dispatches a custom event from the knob.
-     * @param {string} eventName - The name of the event to dispatch.
-     */
     sendEvent(eventName) {
       const event = new Event(eventName, { bubbles: true, composed: true });
       this.dispatchEvent(event);
     }
 
-    /**
-     * Displays the tooltip with a specified delay.
-     * @param {number} delay - The delay in milliseconds before hiding the tooltip.
-     */
     showtip(delay) {
       // Implement tooltip display logic here
       // This is a placeholder implementation
@@ -1035,7 +925,7 @@ try {
 
   });
 } catch (error) {
-  console.log("webaudio-knob already defined or error in definition:", error);
+  console.log("webaudio-knob already defined");
 }
 
 
@@ -1053,7 +943,6 @@ try {
       this.wheel = this.wheel.bind(this);
       this.redraw = this.redraw.bind(this);
       this.handleParamChange = this.handleParamChange.bind(this);
-      this.onMidiMessage = this.onMidiMessage.bind(this);
 
       // Initialize properties for ResizeObserver
       this.resizeObserver = null;
@@ -1159,8 +1048,6 @@ try {
       }
       this.fireflag = true;
 
-      // MIDI Initialization
-      this.initializeMIDI();
 
       // Register the slider globally
       window.webaudioSliders = window.webaudioSliders || {};
@@ -1245,41 +1132,6 @@ try {
       while (this.coltab.length < 5) this.coltab.push("#000");
     }
 
-    /**
-     * Initializes MIDI settings and mappings.
-     */
-    initializeMIDI() {
-      this.midilearn = this.getAttr("midilearn", opt.midilearn);
-      this.midicc = this.getAttr("midicc", null);
-      this.midiController = {};
-      this.midiMode = "normal";
-      if (this.midicc) {
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        this.setMidiController(ch, cc);
-      }
-      let retries = 0;
-      const maxRetries = 5; // Retry up to 5 times (500ms total if 100ms delay)
-      const attemptToLoadMidiLearn = () => {
-        if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-          const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-          for (let i = 0; i < ml.length; ++i) {
-            if (ml[i].id === this.id) {
-              console.log(`Loaded MIDI mapping for widget ${this.id}`);
-              this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-              return; // Stop retrying on success
-            }
-          }
-          console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
-        } else if (retries < maxRetries) {
-          console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
-          setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
-        } else {
-          console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
-        }
-      };
-      attemptToLoadMidiLearn();
-    }
 
     /**
      * Adds necessary event listeners to the slider element.
@@ -1314,36 +1166,7 @@ try {
       this.resizeObserver.observe(this);
     }
 
-    /**
-     * Sets the MIDI controller for the slider.
-     * @param {number} channel - MIDI channel.
-     * @param {number} cc - MIDI continuous controller number.
-     */
-    setMidiController(channel, cc) {
-      this.midiController.channel = channel;
-      this.midiController.cc = cc;
-      if (window.webAudioControlsMidiManager) {
-        window.webAudioControlsMidiManager.addWidget(this);
-      }
-    }
 
-    /**
-     * Handles incoming MIDI messages.
-     * @param {MIDIMessageEvent} event - The MIDI message event.
-     */
-    onMidiMessage(event) {
-      const data = event.data;
-      const status = data[0];
-      const channel = status & 0x0F;
-      const type = status & 0xF0;
-      const cc = data[1];
-      const value = data[2];
-
-      if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
-        const midiValue = (value / 127) * (this._max - this._min) + this._min;
-        this.setValue(midiValue, true);
-      }
-    }
 
     /**
      * Sets up the canvas dimensions and scaling.
@@ -1871,6 +1694,9 @@ try {
       ctx.stroke();
     }
 
+
+
+
     customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
       constructor() {
         super();
@@ -1881,7 +1707,6 @@ try {
         this.wheel = this.wheel.bind(this);
         this.redraw = this.redraw.bind(this);
         this.handleParamChange = this.handleParamChange.bind(this);
-        this.onMidiMessage = this.onMidiMessage.bind(this);
   
         // Initialize properties for ResizeObserver
         this.resizeObserver = null;
@@ -1995,46 +1820,6 @@ try {
           set: (v) => { this.setState(v, true); }
         });
   
-        // MIDI Initialization
-        this.midilearn = this.getAttr("midilearn", opt.midilearn);
-        console.log("Initialized midilearn:", this.midilearn);
-        
-        this.midicc = this.getAttr("midicc", null);
-        console.log("Initialized midicc:", this.midicc);
-        
-        this.midiController = {};
-        this.midiMode = "normal";
-        
-        if (this.midicc) {
-            console.log("Parsing midicc:", this.midicc);
-            let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-            let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-            console.log("Setting MIDI controller - channel:", ch, "CC:", cc);
-            this.setMidiController(ch, cc);
-        }
-        
-        let retries = 0;
-        const maxRetries = 5; // Retry up to 50 times (5 seconds total if 100ms delay)
-        const attemptToLoadMidiLearn = () => {
-            if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-                const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-                for (let i = 0; i < ml.length; ++i) {
-                    if (ml[i].id === this.id) {
-                        console.log(`Loaded MIDI mapping for widget ${this.id}`);
-                        this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-                        return; // Stop retrying on success
-                    }
-                }
-                console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
-            } else if (retries < maxRetries) {
-                console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
-                setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
-            } else {
-                console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
-            }
-        };
-        attemptToLoadMidiLearn();
-  
         // Register in group if type is radio
         if (this.type === "radio" && this.group) {
           if (!window.webaudioSwitchGroups[this.group]) {
@@ -2147,38 +1932,6 @@ try {
         this.oldvalue=this.value;
       }
     }
-
-    handleSwitchMidiMessage(event) {
-
-      //console.log("handleSwitchMidiMessage:", event.data);
-      const data = event.data;
-      const status = data[0];
-      const channel = status & 0x0F;
-      const type = status & 0xF0;
-      const cc = data[1];
-      const value = data[2];
-    
-      if (type === 0xB0 && channel === this.midiController.channel && cc === this.midiController.cc) {
-        if (this.type === "toggle" || this.type === "radio") {
-          const newState = value > 0 ? 1 : 0;
-          this.setState(newState, true);
-        } else if (this.type === "kick") {
-          if (value > 0) {
-            this.triggerKick();
-          }
-        } else if (this.type === "sequential") {
-          // For sequential type, map MIDI value to state within min and max
-          const range = this._max - this._min + 1;
-          const mappedState = this._min + Math.floor((value / 128) * range);
-          this.setState(mappedState, true);
-        }
-      }
-  
-    }
-  
-      onMidiMessage(event) {
-
-      }
   
       setupCanvas() {
         // Get actual size
@@ -2561,163 +2314,147 @@ try {
 
 
 
-try {
-    customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
-        constructor() {
-            super();
-            this.addEventListener("keydown", this.keydown.bind(this));
-            this.addEventListener("mousedown", this.pointerdown.bind(this), { passive: false });
-            this.addEventListener("touchstart", this.pointerdown.bind(this), { passive: false });
-            this.addEventListener("wheel", this.wheel.bind(this), { passive: false });
-            this.addEventListener("mouseover", this.pointerover.bind(this));
-            this.addEventListener("mouseout", this.pointerout.bind(this));
-            this.addEventListener("contextmenu", this.contextMenu.bind(this));
 
-            this.updating = false; // Initialize the updating flag
+
+
+
+
+  try {
+    customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
+      constructor() {
+        super();
+        this.addEventListener("keydown", this.keydown);
+        this.addEventListener("mousedown", this.pointerdown, {passive: false});
+        this.addEventListener("touchstart", this.pointerdown, {passive: false});
+        this.addEventListener("wheel", this.wheel, { passive: false });
+        this.addEventListener("mouseover", this.pointerover);
+        this.addEventListener("mouseout", this.pointerout);
+        this.addEventListener("contextmenu", this.contextMenu);
+  
+        this.updating = false; // Initialize the updating flag
+      }
+  
+      connectedCallback() {
+        let root;
+        if(this.attachShadow)
+          root = this.attachShadow({mode: 'open'});
+        else
+          root = this;
+        root.innerHTML = `
+  <style>
+  ${this.basestyle}
+  :host{
+    display:inline-block;
+    user-select:none;
+    margin:0;
+    padding:0;
+    font-family: sans-serif;
+    font-size: 8px;
+    cursor:pointer;
+    position:relative;
+    vertical-align:baseline;
+  }
+  .webaudio-param-body{
+    display:inline-block;
+    position:relative;
+    text-align:center;
+    background:none;
+    margin:0;
+    padding:0;
+    font-family:sans-serif;
+    font-size:11px;
+    vertical-align:bottom;
+    border:none;
+  }
+  </style>
+  <input class='webaudio-param-body'  type='button' value='0' inputmode='none' tabindex='1' touch-action='none'/>
+  <div class='webaudioctrl-tooltip'></div>
+  `;
+        // Use querySelector to reliably select elements
+        this.elem = root.querySelector('.webaudio-param-body');
+        this.ttframe = root.querySelector('.webaudioctrl-tooltip');
+  
+        this.enable = this.getAttr("enable",1);
+        this._value = this.getAttr("value",0);
+        if (!this.hasOwnProperty("value")) {
+          Object.defineProperty(this,"value",{
+            get: ()=>{ return this._value },
+            set: (v)=>{ this._value = v; this.redraw(); }
+          });
+        }
+        this.defvalue = this.getAttr("defvalue",0);
+        this._fontsize = this.getAttr("fontsize", "9px"); // Default with unit
+        if (!this.hasOwnProperty("fontsize")) {
+          Object.defineProperty(this,"fontsize",{
+            get: ()=>{ return this._fontsize },
+            set: (v)=>{ this._fontsize = v; this.setupImage(); }
+          });
+        }
+        this._src = this.getAttr("src", opt.paramSrc);
+        if (!this.hasOwnProperty("src")) {
+          Object.defineProperty(this,"src",{
+            get: ()=>{ return this._src },
+            set: (v)=>{ this._src = v; this.setupImage(); }
+          });
+        }
+        this.link = this.getAttr("link","");
+        this._width = this.getAttr("width", "32px"); // Default with unit
+        if (!this.hasOwnProperty("width")) {
+          Object.defineProperty(this,"width",{
+            get: ()=>{ return this._width },
+            set: (v)=>{ this._width = v; this.setupImage(); }
+          });
+        }
+        this._height = this.getAttr("height", "20px"); // Default with unit
+        if (!this.hasOwnProperty("height")) {
+          Object.defineProperty(this,"height",{
+            get: ()=>{ return this._height },
+            set: (v)=>{ this._height = v; this.setupImage(); }
+          });
+        }
+        this._colors = this.getAttr("colors", opt.paramColors);
+        if (!this.hasOwnProperty("colors")) {
+          Object.defineProperty(this,"colors",{
+            get: ()=>{ return this._colors },
+            set: (v)=>{ this._colors = v; this.setupImage(); }
+          });
+        }
+        this.outline = this.getAttr("outline", opt.outline);
+        this.rconv = this.getAttr("rconv", null);
+        this.currentLink = null;
+
+        this.setupImage();
+  
+        // Setup event listener for triggering the numeric keyboard
+        this.setupKeyboardInteraction();
+  
+        if(window.webAudioControlsWidgetManager)
+          window.webAudioControlsWidgetManager.updateWidgets();
+  
+        this.fromLink = ((e)=>{
+          if (this.updating) return;
+          this.updating = true;
+          this.setValue(e.target.convValue.toFixed(e.target.digits));
+          this.updating = false;
+        }).bind(this);
+  
+        this.elem.onchange = () => {
+          if(!this.currentLink.target.conv || (this.currentLink.target.conv && this.rconv)){
+            let val = this.value = this.elem.value;
+            if(this.rconv){
+              let x = +this.elem.value;
+              val = eval(this.rconv);
+            }
+            if(this.currentLink){
+              if (!this.currentLink.updating) {
+                this.currentLink.updating = true;
+                this.currentLink.target.setValue(val, true);
+                this.currentLink.updating = false;
+              }
+            }
+          }
         }
 
-        connectedCallback() {
-            let root;
-            if (this.attachShadow)
-                root = this.attachShadow({ mode: 'open' });
-            else
-                root = this;
-
-            // Define the HTML structure with input and tooltip
-            root.innerHTML = `
-                <style>
-                    ${this.basestyle}
-                    :host{
-                        display:inline-block;
-                        user-select:none;
-                        margin:0;
-                        padding:0;
-                        font-family: sans-serif;
-                        font-size: 8px;
-                        cursor:pointer;
-                        position:relative;
-                        vertical-align:baseline;
-                    }
-                    .webaudio-param-body{
-                        display:inline-block;
-                        position:relative;
-                        text-align:center;
-                        background:none;
-                        margin:0;
-                        padding:0;
-                        font-family:sans-serif;
-                        font-size:11px;
-                        vertical-align:bottom;
-                        border:none;
-                        width: 100%;
-                        box-sizing: border-box;
-                    }
-                </style>
-                <!-- Keep input type as 'button' as per your preference -->
-                <input class='webaudio-param-body' type='button' value='0' inputmode='none' tabindex='1' touch-action='none'/>
-                <div class='webaudioctrl-tooltip'></div>
-            `;
-
-            // Use querySelector to reliably select elements
-            this.elem = root.querySelector('.webaudio-param-body');
-            this.ttframe = root.querySelector('.webaudioctrl-tooltip');
-
-            if (!this.elem) {
-                console.error('WebAudioParam: .webaudio-param-body element not found.');
-            } else {
-                console.log('WebAudioParam: .webaudio-param-body element successfully referenced.');
-            }
-
-            // Initialize properties from attributes or defaults
-            this.enable = this.getAttr("enable", 1);
-            this._value = this.getAttr("value", 0);
-            this.defvalue = this.getAttr("defvalue", 0);
-            this._fontsize = this.getAttr("fontsize", "9px"); // Default with unit
-            this._width = this.getAttr("width", "32px"); // Default with unit
-            this._height = this.getAttr("height", "20px"); // Default with unit
-            this._colors = this.getAttr("colors", opt.paramColors); // Expected format: "col1;col2;col3"
-
-            // Define getters and setters for properties
-            if (!this.hasOwnProperty("value")) {
-                Object.defineProperty(this, "value", {
-                    get: () => { return this._value },
-                    set: (v) => { this._value = v; this.redraw(); }
-                });
-            }
-
-            if (!this.hasOwnProperty("fontsize")) {
-                Object.defineProperty(this, "fontsize", {
-                    get: () => { return this._fontsize },
-                    set: (v) => { this._fontsize = v; this.setupImage(); }
-                });
-            }
-
-            if (!this.hasOwnProperty("src")) {
-                Object.defineProperty(this, "src", {
-                    get: () => { return this._src },
-                    set: (v) => { this._src = v; this.setupImage(); }
-                });
-            }
-
-            if (!this.hasOwnProperty("width")) {
-                Object.defineProperty(this, "width", {
-                    get: () => { return this._width },
-                    set: (v) => { this._width = v; this.setupImage(); }
-                });
-            }
-
-            if (!this.hasOwnProperty("height")) {
-                Object.defineProperty(this, "height", {
-                    get: () => { return this._height },
-                    set: (v) => { this._height = v; this.setupImage(); }
-                });
-            }
-
-            if (!this.hasOwnProperty("colors")) {
-                Object.defineProperty(this, "colors", {
-                    get: () => { return this._colors },
-                    set: (v) => { this._colors = v; this.setupImage(); }
-                });
-            }
-
-            // Other properties
-            this.outline = this.getAttr("outline", opt.outline);
-            this.rconv = this.getAttr("rconv", null);
-            this.link = this.getAttr("link", "");
-            this.setupImage();
-
-            // Setup event listener for triggering the numeric keyboard
-            this.setupKeyboardInteraction();
-
-            if (window.webAudioControlsWidgetManager)
-                window.webAudioControlsWidgetManager.updateWidgets();
-
-            // Handle linking if 'link' attribute is provided
-            const linkId = this.link;
-            if (linkId) {
-                const linkedElement = document.getElementById(linkId);
-                if (linkedElement) {
-                    this.currentLink = {
-                        target: linkedElement,
-                        func: (e) => {
-                            if (this.updating) return;
-                            this.updating = true;
-                            const newValue = linkedElement.convValue !== undefined && typeof linkedElement.convValue === "number"
-                                ? linkedElement.convValue.toFixed(linkedElement.digits)
-                                : linkedElement.convValue;
-                            this.setValue(newValue, true);
-                            this.updating = false;
-                        }
-                    };
-                    linkedElement.addEventListener("input", this.currentLink.func);
-                    // Initialize with linked element's value
-                    if (linkedElement.convValue !== undefined && typeof linkedElement.convValue === "number") {
-                        this.setValue(linkedElement.convValue.toFixed(linkedElement.digits));
-                    } else {
-                        this.setValue(linkedElement.convValue);
-                    }
-                }
-            }
 
             // Parameter Manager Integration
             this.rootParam = this.getAttr("root-param", null); // New attribute
@@ -2742,334 +2479,203 @@ try {
             }
 
             this.redraw();
+
+      }
+      disconnectedCallback(){
+
+       // Unsubscribe from ParameterManager
+       if (this.rootParam) {
+        user1Manager.unsubscribe(this, this.rootParam);
+    }
+
+      }
+  
+      setupImage(){
+        this.imgloaded=()=>{
+          if(this.src!=""&&this.src!=null){
+            this.elem.style.backgroundImage = "url("+this.src+")";
+            this.elem.style.backgroundSize = "100% 100%";
+            if(!this._width || this._width === "auto") this._width = this.img.width + "px";
+            if(!this._height || this._height === "auto") this._height = this.img.height + "px";
+          }
+          else{
+            if(!this._width) this._width = "32px";
+            if(!this._height) this._height = "20px";
+          }
+          this.elem.style.width = this._width;
+          this.elem.style.height = this._height;
+          this.elem.style.fontSize = this.fontsize;
+          let l=document.getElementById(this.link);
+          if(l&&typeof(l.value)!="undefined"){
+            if(typeof(l.convValue)=="number")
+              this.setValue(l.convValue.toFixed(l.digits));
+            else
+              this.setValue(l.convValue);
+            if(this.currentLink)
+              this.currentLink.target.removeEventListener("input",this.currentLink.func);
+            this.currentLink={target:l, func:(e)=>{
+              if (this.updating) return;
+              this.updating = true;
+              if(typeof(l.convValue)=="number")
+                this.setValue(l.convValue.toFixed(l.digits));
+              else
+                this.setValue(l.convValue);
+              this.updating = false;
+            }};
+            this.currentLink.target.addEventListener("input",this.currentLink.func);
+          }
+          this.redraw();
+        };
+        this.coltab = this.colors.split(";");
+        this.elem.style.color=this.coltab[0];
+        this.img=new Image();
+        this.img.onload=this.imgloaded.bind();
+        if(this.src==null){
+          this.elem.style.backgroundColor=this.coltab[1];
+          this.imgloaded();
         }
-
-        disconnectedCallback() {
-            // Clean up event listeners
-            if (this.currentLink && this.currentLink.target) {
-                this.currentLink.target.removeEventListener("input", this.currentLink.func);
-            }
-
-            // Unsubscribe from ParameterManager
-            if (this.rootParam) {
-                user1Manager.unsubscribe(this, this.rootParam);
-            }
+        else if(this.src==""){
+          this.elem.style.background="none";
+          this.imgloaded();
         }
-
-        setupImage() {
-            this.imgloaded = () => {
-                if (this.src !== "" && this.src != null) {
-                    this.elem.style.backgroundImage = "url(" + this.src + ")";
-                    this.elem.style.backgroundSize = "100% 100%";
-                    if (!this._width || this._width === "auto") this._width = this.img.width + "px";
-                    if (!this._height || this._height === "auto") this._height = this.img.height + "px";
-                }
-                else {
-                    if (!this._width) this._width = "32px";
-                    if (!this._height) this._height = "20px";
-                }
-                this.elem.style.width = this._width;
-                this.elem.style.height = this._height;
-                this.elem.style.fontSize = this.fontsize;
-                const l = document.getElementById(this.link);
-                if (l && typeof (l.value) !== "undefined") {
-                    if (typeof (l.convValue) === "number")
-                        this.setValue(l.convValue.toFixed(l.digits));
-                    else
-                        this.setValue(l.convValue);
-                    if (this.currentLink)
-                        this.currentLink.target.removeEventListener("input", this.currentLink.func);
-                    this.currentLink = { target: l, func: (e) => {
-                        if (this.updating) return;
-                        this.updating = true;
-                        if (typeof (l.convValue) === "number")
-                            this.setValue(l.convValue.toFixed(l.digits));
-                        else
-                            this.setValue(l.convValue);
-                        this.updating = false;
-                    } };
-                    this.currentLink.target.addEventListener("input", this.currentLink.func);
-                }
-                this.redraw();
-            };
-            this.coltab = this.colors.split(";");
-            this.elem.style.color = this.coltab[0];
-            this.img = new Image();
-            this.img.onload = this.imgloaded.bind(this);
-            if (this.src == null) {
-                this.elem.style.backgroundColor = this.coltab[1];
-                this.imgloaded();
-            }
-            else if (this.src == "") {
-                this.elem.style.background = "none";
-                this.imgloaded();
-            }
-            else {
-                this.img.src = this.src;
-            }
+        else{
+          this.img.src=this.src;
         }
-
-        /**
-         * Redraws the parameter display.
-         */
-        redraw() {
-            this.elem.value = this.value; // Update the input's value
+      }
+  
+      redraw() {
+        this.elem.value=this.value;
+      }
+  
+      setupKeyboardInteraction() {
+        const keyboardModal = document.getElementById("numericKeyboardModal");
+        const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
+  
+        const showModalHandler = (event) => {
+          if (!this.enable) return;
+  
+          // Pass current value to the numeric keyboard
+          keyboard.value = this.value || "";
+          keyboard.outputElement.textContent = keyboard.value;
+  
+          // Show the keyboard modal using Bootstrap's Modal API
+          const bootstrapModal = new bootstrap.Modal(keyboardModal);
+          bootstrapModal.show();
+  
+          // Move focus to the first interactive element in the modal
+          keyboard.outputElement.focus();
+  
+          // Handle the confirmation of a value
+          keyboard.addEventListener(
+            "submit",
+            (e) => {
+              const detail = e.detail;
+              const targetValue = detail.targetValue;
+              const interpolationDuration = detail.interpolationDuration;
+  
+              this.startInterpolation(targetValue, interpolationDuration);
+  
+              bootstrapModal.hide();
+  
+              // Return focus to the original element
+              this.elem.focus();
+            },
+            { once: true } // Ensure we only listen for one submit event per interaction
+          );
+  
+          // If the event is touchend, prevent the subsequent click event
+          if (event.type === 'touchend') {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        };
+  
+        // Add both click and touchend event listeners
+        this.elem.addEventListener("click", showModalHandler);
+        this.elem.addEventListener("touchend", showModalHandler, { passive: false });
+      }
+      onParameterChanged(parameterName, rawValue) {
+        if (parameterName === this.rootParam) {
+        //  console.debug(`[WebAudioParam] Parameter '${parameterName}' changed to: ${rawValue}`);
+          this.setValue(rawValue, false); // Update value without triggering another setRawValue
         }
-
-        setupKeyboardInteraction() {
-            const keyboardModal = document.getElementById("numericKeyboardModal");
-            const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
-
-            const showModalHandler = (event) => {
-                if (!this.enable) return;
-
-                // Pass current value to the numeric keyboard
-                keyboard.value = this.value || "";
-                keyboard.outputElement.textContent = keyboard.value;
-
-                // Show the keyboard modal using Bootstrap's Modal API
-                const bootstrapModal = new bootstrap.Modal(keyboardModal);
-                bootstrapModal.show();
-
-                // Move focus to the first interactive element in the modal
-                keyboard.outputElement.focus();
-
-                // Handle the confirmation of a value
-                keyboard.addEventListener(
-                    "submit",
-                    (e) => {
-                        const detail = e.detail;
-                        const targetValue = detail.targetValue;
-                        const interpolationDuration = detail.interpolationDuration;
-
-                        this.startInterpolation(targetValue, interpolationDuration);
-
-                        bootstrapModal.hide();
-
-                        // Return focus to the original element
-                        this.elem.focus();
-                    },
-                    { once: true } // Ensure we only listen for one submit event per interaction
-                );
-
-                // If the event is touchend, prevent the subsequent click event
-                if (event.type === 'touchend') {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            };
-
-            // Add both click and touchend event listeners
-            this.elem.addEventListener("click", showModalHandler);
-            this.elem.addEventListener("touchend", showModalHandler, { passive: false });
+      }
+      updateLinkedElements(value) {
+        if (this.currentLink && !this.currentLink.updating) {
+          this.currentLink.updating = true;
+          this.currentLink.target.setValue(value, true);
+          this.currentLink.updating = false;
         }
-
-        updateLinkedElements(value) {
-            if (this.currentLink && !this.currentLink.updating) {
-                this.currentLink.updating = true;
-                this.currentLink.target.setValue(value, true);
-                this.currentLink.updating = false;
-            }
-
-            // Trigger change event for other listeners
-            const event = new Event("change", { bubbles: true, cancelable: true });
-            this.dispatchEvent(event);
-        }
-
-        startInterpolation(targetValue, duration) {
-            const startValue = parseFloat(this.value);
-            const startTime = performance.now();
-
-            const step = (currentTime) => {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const newValue = startValue + (targetValue - startValue) * progress;
-
-                this.setValue(newValue, true); // Update the param value
-
-                if (progress < 1) {
-                    requestAnimationFrame(step);
-                } else {
-                    // Interpolation complete
-                    this.setValue(targetValue, true);
-                }
-            };
-
+  
+        // Trigger change event for other listeners
+        const event = new Event("change", { bubbles: true, cancelable: true });
+        this.dispatchEvent(event);
+      }
+  
+      startInterpolation(targetValue, duration) {
+        const startValue = parseFloat(this.value);
+        const startTime = performance.now();
+  
+        const step = (currentTime) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const newValue = startValue + (targetValue - startValue) * progress;
+  
+          this.setValue(newValue, true); // Update the param value
+  
+          if (progress < 1) {
             requestAnimationFrame(step);
-        }
-
+          } else {
+            // Interpolation complete
+            this.setValue(targetValue, true);
+          }
+        };
+  
+        requestAnimationFrame(step);
+      }
+  
         /**
          * Sets the value and optionally notifies the ParameterManager and dispatches events.
          * @param {number|string} v - The value to set.
          * @param {boolean} fire - Whether to notify the manager and dispatch events.
          */
         setValue(v, fire = false) {
-            if (this.updating) return;
-            this.updating = true;
-
-            // Ensure the value is a number
-            const numericValue = typeof v === "string" ? parseFloat(v) : v;
-            this.value = isNaN(numericValue) ? 0 : numericValue;
-
-            if (this.value !== this.oldvalue) {
-                this.redraw();
-                this.showtip(0);
-                if (fire) {
-                    // Determine priority using the centralized getPriority function
-                    const controllerType = "webaudio-param"; // Since this is WebAudioParam
-                    const priority = getPriority(controllerType);
-
-                    if (this.rootParam) {
-                        // Update ParameterManager with the new value
-                        user1Manager.setRawValue(
-                            this.rootParam,
-                            this.value,
-                            this, // Source controller
-                            priority
-                        );
-                    }
-
-                    // Dispatch events
-                    this.sendEvent("input");
-                    this.sendEvent("change");
-                }
-                this.oldvalue = this.value;
-
-                this.updateLinkedElements(this.value);
-            }
-
-            this.updating = false;
-        }
-
-        /**
-         * Handles parameter updates from ParameterManager.
-         * @param {string} parameterName - The name of the parameter that changed.
-         * @param {number} newValue - The new value of the parameter.
-         */
-        onParameterChanged(parameterName, newValue) {
-          //  console.log(`[WebAudioParam] onParameterChanged called for ${parameterName} with value ${newValue}`);
-            if (this.rootParam === parameterName) {
-                if (this.isBidirectional && this._value !== newValue) {
-                    this.updating = true; // Prevent feedback loops
-                    this._value = newValue;
-                    this.elem.value = this._value; // Directly update the input's value
-                    this.redraw(); // Ensure any additional visual updates
-                    this.updating = false;
-                }
-            }
-        }
-
-        /**
-         * Handles keydown events for accessibility.
-         * @param {KeyboardEvent} e - The keyboard event.
-         */
-        keydown(e) {
-            if (!this.enable) return;
-            let delta = 1; // Default delta
-            if (e.shiftKey) delta = 10; // Larger step with shift key
-            switch (e.key) {
-                case "ArrowUp":
-                    this.setValue(Number(this.value) + delta, true);
-                    break;
-                case "ArrowDown":
-                    this.setValue(Number(this.value) - delta, true);
-                    break;
-                default:
-                    return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        /**
-         * Handles wheel events for adjusting the param value.
-         * @param {WheelEvent} e - The wheel event.
-         */
-        wheel(e) {
-            if (!this.enable) return;
-
-            // Determine scroll direction
-            let direction = e.deltaY || (e.wheelDelta ? -e.wheelDelta : 0); // Use wheelDelta for fallback
-            direction = Math.sign(direction); // Normalize to -1 or 1
-
-            // Define step based on delta
-            let delta = direction * 1; // Adjust step size as needed
-
-            const newValue = Number(this.value) + delta;
-            this.setValue(newValue, true);
-
-            // Prevent default scrolling behavior
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        /**
-         * Handles pointer down events to initiate interactions.
-         * @param {PointerEvent} ev - The pointer event.
-         */
-        pointerdown(ev) {
-            ev.preventDefault(); // Stop default behavior
-            console.log("Debug: pointerdown triggered", ev);
-
-            if (!this.enable) return;
-
-            const e = ev.touches ? ev.touches[0] : ev;
-            if (!ev.touches && (e.buttons !== 1 && e.button !== 0)) return;
-
-            this.elem.focus();
-            console.log("Debug: Focus set on element", this.elem);
+          if (this.updating) return;
+          this.updating = true;
+        
+          const numericValue = typeof v === "string" ? parseFloat(v) : v;
+          this.value = isNaN(numericValue) ? 0 : numericValue;
+        
+          if (this.value !== this.oldvalue) {
             this.redraw();
-        }
-
-        /**
-         * Placeholder for mouseover event handler.
-         */
-        pointerover() {
-            // Implement as needed
-        }
-
-        /**
-         * Placeholder for mouseout event handler.
-         */
-        pointerout() {
-            // Implement as needed
-        }
-
-        /**
-         * Placeholder for context menu event handler.
-         */
-        contextMenu() {
-            // Implement as needed
-        }
-
-        /**
-         * Dispatches a custom event from the param.
-         * @param {string} eventName - The name of the event to dispatch.
-         */
-        sendEvent(eventName) {
-            const event = new Event(eventName, { bubbles: true, composed: true });
-            this.dispatchEvent(event);
-        }
-
-        /**
-         * Displays the tooltip with a specified delay.
-         * @param {number} delay - The delay in milliseconds before hiding the tooltip.
-         */
-        showtip(delay) {
-            // Implement tooltip display logic here
-            // This is a placeholder implementation
-            if (this.ttframe && this.valuetip) {
-                this.ttframe.textContent = this.convValue;
-                this.ttframe.style.opacity = '1';
-                setTimeout(() => {
-                    if (this.ttframe) this.ttframe.style.opacity = '0';
-                }, delay * 1000 || 1000);
+            if (fire && this.rootParam) {
+              // Update ParameterManager
+              user1Manager.setRawValue(this.rootParam, this.value, this, getPriority("webaudio-param"));
             }
+            this.oldvalue = this.value;
+          }
+        
+          this.updating = false;
         }
+
+      pointerdown(ev) {
+        ev.preventDefault(); // Stop default behavior
+        console.log("Debug: pointerdown triggered", ev);
+  
+        if (!this.enable) return;
+  
+        const e = ev.touches ? ev.touches[0] : ev;
+        if (!ev.touches && (e.buttons !== 1 && e.button !== 0)) return;
+  
+        this.elem.focus();
+        console.log("Debug: Focus set on element", this.elem);
+        this.redraw();
+      }
     });
-} catch (error) {
-    console.log("webaudio-param already defined or error in definition:", error);
-}
+  } catch(error){
+    console.log("webaudio-param already defined");
+  }
+
 
 try {
   customElements.define(
@@ -3402,27 +3008,24 @@ try {
 class WebAudioControlsWidgetManager {
   constructor() {
     console.log("Initializing WebAudioControlsWidgetManager...");
-
-    this.midiAccess = null;
     this.listOfWidgets = Array.from(
       document.querySelectorAll(
         "webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard"
       )
     );
-    this.listOfExternalMidiListeners = [];
-    this._trackId = null; // Initialize trackId
-    document.dispatchEvent(new Event("WebAudioControlsWidgetManagerReady"));
-    console.log("WebAudioControlsWidgetManager is ready.");
+/*     this.listOfExternalMidiListeners = [];
+ */    this._trackId = null; // Initialize trackId
 
     this.updateWidgets();
     console.log("After updateWidgets call, listOfWidgets:", this.listOfWidgets);
-  }
 
-  setTrackId(trackId) {
+    // Link with MIDIControllerInstance
+/*     this.midiController = MIDIControllerInstance;
+ */  }
+
+/*   setTrackId(trackId) {
     console.log(`Setting track ID to: ${trackId}`);
     this._trackId = trackId;
-
-    // Load MIDI Learn Table for the specific track
     this.loadMIDILearnTable();
   }
 
@@ -3432,45 +3035,18 @@ class WebAudioControlsWidgetManager {
       return;
     }
 
-    // Define the key using trackId
     const storageKey = `WebAudioControlsMidiLearn_${this._trackId}`;
     console.log(`Loading MIDI Learn Table using key: ${storageKey}`);
 
-    // Initialize MIDI only if required
+    // Delegating MIDI Learn operations to MIDIController
     if (window.UseWebAudioControlsMidi || opt.useMidi) {
-      console.log("MIDI is enabled. Initializing MIDI settings...");
-      if (opt.preserveMidiLearn) {
-        const storedMidiLearn = localStorage.getItem(storageKey);
-        console.log("Stored MIDI Learn Table in localStorage:", storedMidiLearn);
-
-        try {
-          this.midiLearnTable = JSON.parse(storedMidiLearn);
-          console.log("Parsed MIDI Learn Table:", this.midiLearnTable);
-        } catch (error) {
-          console.error("Error parsing MIDI Learn Table from localStorage:", error);
-          this.midiLearnTable = null;
-        }
-      } else {
-        console.log("MIDI Learn Table is not preserved. Setting to null.");
-        this.midiLearnTable = null;
-      }
-
-      this.initWebAudioControls();
+      this.midiController.loadMIDILearnTable(storageKey);
     } else {
       console.log("MIDI is disabled.");
-      this.midiLearnTable = null;
     }
-
-    console.log("Initialization complete. Final state:", {
-      midiAccess: this.midiAccess,
-      listOfWidgets: this.listOfWidgets,
-      listOfExternalMidiListeners: this.listOfExternalMidiListeners,
-      midiLearnTable: this.midiLearnTable,
-    });
   }
-
+ */
   updateWidgets() {
-    // Convert NodeList to Array
     this.listOfWidgets = Array.from(
       document.querySelectorAll(
         "webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard"
@@ -3479,193 +3055,31 @@ class WebAudioControlsWidgetManager {
     console.log("Widgets updated:", this.listOfWidgets);
   }
 
-  addWidget(w) {
-    if (typeof w !== "object") {
-      console.error("Invalid widget passed to addWidget:", w);
+  addWidget(widget) {
+    if (typeof widget !== "object") {
+      console.error("Invalid widget passed to addWidget:", widget);
       return;
     }
 
-    // Ensure listOfWidgets is an array
-    if (!Array.isArray(this.listOfWidgets)) {
-      console.warn("listOfWidgets is not an array. Converting...");
-      this.listOfWidgets = Array.from(this.listOfWidgets);
-    }
+    this.listOfWidgets.push(widget);
+    console.log(`Widget added: ${widget.id || widget.tagName}`);
+  }
 
-    // Add the widget to the array
-    this.listOfWidgets.push(w);
-    console.log(`Widget added: ${w.id || w.tagName}`);
+/*   handleMIDIMessage(event) {
+    // Delegate MIDI message handling to MIDIControllerInstance
+    this.midiController.handleMidiMessage(event);
 
-    // Optionally, apply MIDI mappings if available
-    if (this.midiLearnTable) {
-      const mapping = this.midiLearnTable.find((entry) => entry.id === w.id);
-      if (mapping) {
-        w.midiController = mapping.cc;
-        console.log(`Applied MIDI mapping to widget ${w.id}`, mapping.cc);
+    // Allow widgets to process MIDI events
+    for (let widget of this.listOfWidgets) {
+      if (widget.processMidiEvent) {
+        widget.processMidiEvent(event);
       }
     }
   }
-
-  initWebAudioControls() {
-    if (navigator.requestMIDIAccess) {
-      navigator
-        .requestMIDIAccess({ sysex: true }) // Enable sysex if required
-        .then(
-          (midiAccess) => {
-            this.onMIDIStarted(midiAccess);
-          },
-          (err) => {
-            console.error("MIDI not initialized - error encountered:", err.message);
-          }
-        );
-    } else {
-      console.error("Web MIDI API not supported in this browser.");
-    }
-  }
-
-  enableInputs(midiAccess) {
-    let inputs = midiAccess.inputs.values();
-    for (
-      let input = inputs.next();
-      input && !input.done;
-      input = inputs.next()
-    ) {
-      input.value.onmidimessage = this.handleMIDIMessage.bind(this);
-      console.log(`Enabled MIDI input: ${input.value.name}`);
-    }
-  }
-
-  midiConnectionStateChange(e) {
-    console.log(`MIDI port ${e.port.name} is ${e.port.connection}`);
-    // Re-enable inputs if necessary
-    if (e.port.connection === "connected") {
-      this.enableInputs(this.midiAccess);
-    }
-  }
-
-  onMIDIStarted(midi) {
-    console.log("MIDI access granted.");
-    this.midiAccess = midi; // Correctly using the 'midi' parameter
-    midi.onstatechange = this.midiConnectionStateChange.bind(this);
-    this.enableInputs(midi); // Pass midiAccess to enableInputs
-  }
-
-  // Add hooks for external midi listeners support
-  addMidiListener(callback) {
-    if (typeof callback === "function") {
-      this.listOfExternalMidiListeners.push(callback);
-      console.log("Added external MIDI listener.");
-    } else {
-      console.error("Callback provided to addMidiListener is not a function.");
-    }
-  }
-
-  getCurrentConfigAsJSON() {
-    // Assuming currentConfig is defined elsewhere
-    if (typeof currentConfig !== "undefined") {
-      return JSON.stringify(currentConfig);
-    } else {
-      console.error("currentConfig is not defined.");
-      return "{}";
-    }
-  }
-
-  handleMIDIMessage(event) {
-    // Retained: Log the incoming MIDI message data
-   // console.log(`MIDI IN:`, event.data);
-
-    // Handle external MIDI messages
-    this.listOfExternalMidiListeners.forEach(function (externalListener) {
-      externalListener(event);
-    });
-
-    if (
-      (event.data[0] & 0xf0) === 0xf0 ||
-      ((event.data[0] & 0xf0) === 0xb0 && event.data[1] >= 120)
-    )
-      return;
-
-    for (let w of this.listOfWidgets) {
-      if (w.processMidiEvent) w.processMidiEvent(event);
-    }
-  }
-
-  contextMenuOpen(e, knob) {
-    if (!this.midiAccess) return;
-    let menu = document.getElementById("webaudioctrl-context-menu");
-    menu.style.left = e.pageX + "px";
-    menu.style.top = e.pageY + "px";
-    menu.knob = knob;
-    menu.classList.add("active");
-    menu.knob.focus();
-    menu.knob.addEventListener("keydown", this.contextMenuCloseByKey.bind(this));
-    console.log("Context menu opened for knob:", knob.id || knob.tagName);
-  }
-
-  contextMenuCloseByKey(e) {
-    if (e.keyCode == 27) this.contextMenuClose();
-  }
-
-  contextMenuClose() {
-    let menu = document.getElementById("webaudioctrl-context-menu");
-    if (menu.knob) {
-      menu.knob.removeEventListener(
-        "keydown",
-        this.contextMenuCloseByKey
-      );
-    }
-    menu.classList.remove("active");
-    let menuItemLearn = document.getElementById(
-      "webaudioctrl-context-menu-learn"
-    );
-    menuItemLearn.innerHTML = "Learn";
-    if (menu.knob) {
-      menu.knob.midiMode = "normal";
-    }
-    console.log("Context menu closed.");
-  }
-
-  contextMenuLearn() {
-    let menu = document.getElementById("webaudioctrl-context-menu");
-    let menuItemLearn = document.getElementById(
-      "webaudioctrl-context-menu-learn"
-    );
-    menuItemLearn.innerHTML = "Listening...";
-    menu.knob.midiMode = "learn";
-    console.log("Context menu set to 'Learn' mode.");
-  }
-
-  contextMenuClear(e) {
-    let menu = document.getElementById("webaudioctrl-context-menu");
-    if (menu.knob) {
-      menu.knob.midiController = {};
-      console.log(
-        `MIDI LOG: Cleared MIDI mapping for widget: ${menu.knob.id || menu.knob.tagName}`
-      );
-    }
-    this.contextMenuClose();
-  }
-
-  preserveMidiLearn() {
-    if (!opt.preserveMidiLearn) return;
-
-    if (!this._trackId) {
-      console.error("Track ID is not set. Cannot preserve MIDI Learn Table.");
-      return;
-    }
-
-    const storageKey = `WebAudioControlsMidiLearn_${this._trackId}`;
-    const v = [];
-    for (let w of this.listOfWidgets) {
-      if (w.id)
-        v.push({ id: w.id, cc: w.midiController });
-    }
-    const s = JSON.stringify(v);
-    localStorage.setItem(storageKey, s);
-    console.log(
-      `MIDI LOG: Preserved MIDI Learn mappings to localStorage with key: ${storageKey}`
-    );
-  }
+ */
+  // Context menu and other methods can also delegate to MIDIController as needed.
 }
+
 
 // Instantiate and attach the manager if MIDI is enabled
 if (window.UseWebAudioControlsMidi || opt.useMidi) {

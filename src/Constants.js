@@ -70,7 +70,7 @@ export const PRIORITY_MAP = {
     "cosmic-lfo-A": 11,
     "cosmic-lfo-B": 12,
     "cosmic-lfo-C": 13,
-    "midi": 14,
+    "MIDI": 1,
 
     // MIDI controllers will have dynamic priorities
 };
