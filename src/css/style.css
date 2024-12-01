@@ -16,10 +16,10 @@
 
 /* Color Variables */
 :root {
-    --col1: rgb(255, 255, 255); /* Default color */
-    --col2: rgba(108, 108, 108, 0.478);  /* Hover and active color */
-    --col3: #000000; 
-    --col4: #ffffff00; 
+    --color1: rgb(255, 255, 255); /* Default color */
+    --color2: rgba(108, 108, 108, 0.478);  /* Hover and active color */
+    --color3: #000000; 
+    --color4: #ffffff00; 
 
 }
 *{
@@ -109,7 +109,7 @@ canvas {
     left: 4vw;
     width: 92vw;
     height: 92vh;
-    border: 1.5px solid var(--col1);
+    border: 1.5px solid var(--color1);
     border-radius: 5px;
     display: flex;
     flex-direction: column; /* Ensures vertical stacking */

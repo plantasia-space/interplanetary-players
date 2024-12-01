@@ -18,13 +18,13 @@ export const Constants = {
     
         // Update CSS variables for colors
         if (color1) {
-            document.documentElement.style.setProperty('--col1', color1);
-            console.log(`[COLORS] Set --col1 to ${color1}`);
+            document.documentElement.style.setProperty('--color1', color1);
+            console.log(`[COLORS] Set --color1 to ${color1}`);
         }
     
         if (color2) {
-            document.documentElement.style.setProperty('--col2', color2);
-            console.log(`[COLORS] Set --col2 to ${color2}`);
+            document.documentElement.style.setProperty('--color2', color2);
+            console.log(`[COLORS] Set --color2 to ${color2}`);
         }
     
         // Update the colors for all knobs

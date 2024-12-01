@@ -414,8 +414,8 @@ try {
             font-family: sans-serif;
             font-size: 11px;
             /* Utilize CSS variables for styling */
-            --knob-col1: var(--col1, #e00); /* Fill color */
-            --knob-col2: var(--col2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
+            --knob-col1: var(--color1, #e00); /* Fill color */
+            --knob-col2: var(--color2, rgba(0, 0, 0, 0.3)); /* Background color with alpha */
             --knob-outline: var(--knob-outline, none); /* Outline color */
             /* Set width and height to either specified values or maintain square */
             --knob-size: ${this.hasAttribute("width") && this.hasAttribute("height") ? 
