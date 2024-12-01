@@ -139,10 +139,10 @@
 
 /* Container Within Sub-frame */
 .action-gui-subcontainer {
-    width: 100%;
-    max-width: 100%;
+    width: 96%;
+    max-width: 96%;
     display: flex;
-    
+    align-self: center;
     flex-direction: column;
     gap: 2vmin;
     box-sizing: border-box;
