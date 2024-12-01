@@ -19,9 +19,13 @@ addLights(scene);
 
 const dataManager = new DataManager();
 const audioPlayer = new AudioPlayer(); // Instantiate AudioPlayer
+
 const user1Manager = new ParameterManager();
+const rootParams = ['x', 'y', 'z', 'rotation-x', 'body-level', 'body-envelope'];
+
 
 let animationRunning = false;
+let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
 
 // Initialize Application
@@ -91,103 +95,125 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
+
+/**
+ * Sets up the WebAudioControlsWidgetManager, including MIDI listeners
+ * and event listeners for switches and knobs.
+ */
+function setupWebAudioControlsWidgetManager() {
+    if (!window.webAudioControlsWidgetManager) {
+        console.error("webAudioControlsWidgetManager is not defined.");
+        return;
+    }
+
+    console.log("webAudioControlsWidgetManager is defined.");
+
+    // Add external MIDI listeners if needed
+    window.webAudioControlsWidgetManager.addMidiListener((event) => {
+        if (midiDumpEnabled) {
+            console.log("MIDI DUMP:", event.data);
+
+            // Log registered widgets after a delay
+            setTimeout(() => {
+                console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
+            }, 100);
+        }
+    });
+
+    setupSwitchListeners(['xBalance', 'yBalance', 'zBalance']);
+    setupKnobListeners(['xKnob', 'yKnob', 'zKnob']);
+}
+
+/**
+ * Sets up event listeners for switches by their IDs.
+ * @param {Array<string>} switchIds - Array of switch element IDs.
+ */
+function setupSwitchListeners(switchIds) {
+    switchIds.forEach(switchId => {
+        const switchElement = document.getElementById(switchId);
+        if (switchElement) {
+            switchElement.addEventListener('change', () => {
+                console.log(`${switchId} state changed to:`, switchElement.state);
+            });
+        } else {
+            console.warn(`Element with id '${switchId}' not found.`);
+        }
+    });
+}
+
+/**
+ * Sets up event listeners for knobs by their IDs.
+ * @param {Array<string>} knobIds - Array of knob element IDs.
+ */
+function setupKnobListeners(knobIds) {
+    knobIds.forEach(knobId => {
+        const knob = document.getElementById(knobId);
+        if (knob) {
+            knob.addEventListener('change', () => {
+           //     console.log(`${knobId} value changed to:`, knob.value);
+            });
+        } else {
+            console.warn(`Element with id '${knobId}' not found.`);
+        }
+    });
+}
+
+/**
+ * Sets up alignment for the collapse menu and attaches relevant event listeners.
+ */
+function setupCollapseMenuAlignment() {
+    const infoButton = document.getElementById("informationMenuButton");
+    const collapseMenu = document.getElementById("collapseInfoMenu");
+
+    if (!infoButton || !collapseMenu) {
+        console.error("Information button or collapse menu element not found.");
+        return;
+    }
+
+    const verticalOffsetVH = 2; // Vertical offset in `vh`
+    const horizontalOffsetVW = -1; // Horizontal offset in `vw`
+
+    const alignCollapseMenu = () => {
+        const buttonRect = infoButton.getBoundingClientRect();
+        const headerRect = document.querySelector(".header-row").getBoundingClientRect();
+
+        const calculatedTop = buttonRect.bottom - headerRect.top + (verticalOffsetVH * window.innerHeight) / 100;
+        const calculatedLeft = buttonRect.left - headerRect.left + (horizontalOffsetVW * window.innerWidth) / 100;
+
+        collapseMenu.style.top = `${calculatedTop}px`;
+        collapseMenu.style.left = `${calculatedLeft}px`;
+    };
+
+    // Align initially
+    alignCollapseMenu();
+
+    // Adjust on window resize
+    window.addEventListener("resize", alignCollapseMenu);
+
+    // Optionally adjust when the menu is shown
+    infoButton.addEventListener("click", alignCollapseMenu);
+}
 
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Application initialized.");
 
-
-
-    // Initialize the application and start the animation loop
+    // Initialize application and animation loop
     initializeApp().then(animate);
 
+    // Handle WebAudioControlsWidgetManager setup
+    setupWebAudioControlsWidgetManager();
 
+    // Setup collapse menu alignment
+    setupCollapseMenuAlignment();
 
-
-    // Check if the WebAudioControlsWidgetManager is available
-    if (window.webAudioControlsWidgetManager) {
-        console.log("webAudioControlsWidgetManager is defined.");
-
-        // Add external MIDI listeners if needed
-        window.webAudioControlsWidgetManager.addMidiListener((event) => {
-            if (midiDumpEnabled) {
-                console.log("MIDI DUMP:", event.data);
-
-                // Log registered widgets after ensuring widgets have connected
-                setTimeout(() => {
-                    console.log("Registered Widgets:", window.webAudioControlsWidgetManager.listOfWidgets);
-                }, 100); // 100ms delay
-            }
-        });
-
-        // Function to handle switch state changes
-        const handleSwitchChange = (switchId) => {
-            const switchElement = document.getElementById(switchId);
-            if (switchElement) {
-                switchElement.addEventListener('change', (e) => {
-                    console.log(`${switchId} state changed to:`, switchElement.state);
-                });
-            } else {
-                console.warn(`Element with id '${switchId}' not found.`);
-            }
-        };
-
-        // Attach event listeners to all switches
-        const switchIds = ['xBalance', 'yBalance', "zBalance"];
-        switchIds.forEach(id => handleSwitchChange(id));
-
-        // Add event listeners to knobs
-        const knobIds = ['xKnob', 'yKnob', 'zKnob'];
-        knobIds.forEach(id => {
-            const knob = document.getElementById(id);
-            if (knob) {
-                knob.addEventListener('change', (e) => {
-                    // Example: Log knob value changes
-                   // console.log(`${id} value changed to:`, knob.value);
-                });
-            } else {
-                console.warn(`Element with id '${id}' not found.`);
-            }
-        });
-    } else {
-        console.error("webAudioControlsWidgetManager is not defined.");
-    }
-
-
-    const infoButton = document.getElementById("informationMenuButton");
-    const collapseMenu = document.getElementById("collapseInfoMenu");
-    
-    // Adjust these offsets as needed
-    const verticalOffsetVH = 2; // Vertical offset in `vh` (percentage of viewport height)
-    const horizontalOffsetVW = -1; // Horizontal offset in `vw` (percentage of viewport width)
-    
-    function alignCollapseMenu() {
-      const buttonRect = infoButton.getBoundingClientRect();
-      const headerRect = document.querySelector(".header-row").getBoundingClientRect();
-    
-      // Calculate the `top` position based on button's bottom relative to the parent container
-      const calculatedTop = buttonRect.bottom - headerRect.top + (verticalOffsetVH * window.innerHeight) / 100;
-    
-      // Calculate the `left` position relative to the button
-      const calculatedLeft = buttonRect.left - headerRect.left + (horizontalOffsetVW * window.innerWidth) / 100;
-    
-      // Apply styles to the collapse menu
-      collapseMenu.style.top = `${calculatedTop}px`;
-      collapseMenu.style.left = `${calculatedLeft}px`;
-    }
-    
-    // Align initially
-    alignCollapseMenu();
-    
-    // Adjust on window resize
-    window.addEventListener("resize", alignCollapseMenu);
-    
-    // Optionally, adjust when the menu is shown
-    infoButton.addEventListener("click", alignCollapseMenu);
+    // Add root parameters to the ParameterManager
+    rootParams.forEach((paramName) => {
+        user1Manager.addParameter(paramName, 0, false); // Initial value = 0, isBidirectional = false
+    });
+  
 
 });
+
 export { user1Manager };
-
-

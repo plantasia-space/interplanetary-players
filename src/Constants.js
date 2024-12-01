@@ -100,3 +100,32 @@ export const Constants = {
 // Export individual constants for convenience
 export const DEFAULT_TRACK_ID = Constants.DEFAULT_TRACK_ID;
 export const TRACK_ID = Constants.TRACK_ID;
+
+// Define a priority map for controller types
+export const PRIORITY_MAP = {
+    "webaudio-knob": 2,
+    "webaudio-slider": 3,
+    "webaudio-switch": 4,
+    "webaudio-numeric-keyboard": 5,
+    "webaudio-param": 6,
+    "webaudio-keyboard": 7,
+    "sensor-x": 8,
+    "sensor-y": 9,
+    "sensor-z": 10,
+    "cosmic-lfo-A": 11,
+    "cosmic-lfo-B": 12,
+    "cosmic-lfo-C": 13,
+    // MIDI controllers will have dynamic priorities
+};
+
+export const DEFAULT_PRIORITY = 100; // Fallback priority for undefined types
+
+/**
+ * Retrieves the priority for a given controller type.
+ * Defaults to DEFAULT_PRIORITY if the type is not in the PRIORITY_MAP.
+ * @param {string} controllerType - The type of the controller (e.g., 'webaudio-knob').
+ * @returns {number} - The priority value.
+ */
+export function getPriority(controllerType) {
+    return PRIORITY_MAP[controllerType] || DEFAULT_PRIORITY;
+}

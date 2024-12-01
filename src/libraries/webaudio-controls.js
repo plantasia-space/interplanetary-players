@@ -34,7 +34,8 @@
  *
  * */
 
- import { Constants, TRACK_ID } from './../Constants.js';
+ import { Constants, TRACK_ID, getPriority } from './../Constants.js';
+ import { user1Manager } from './../Main.js';
 
  
  if(window.customElements){
@@ -382,17 +383,20 @@ this.onFocus = () => {
 
 }
 
+
 try {
   customElements.define("webaudio-knob", class WebAudioKnob extends WebAudioControlsWidget {
     constructor() {
       super();
       this.resizeObserver = null; // Reference to ResizeObserver
+
       // Bind event handlers to ensure correct 'this' context
       this.onFocus = this.onFocus.bind(this);
       this.onBlur = this.onBlur.bind(this);
       this.onPointerDown = this.pointerdown.bind(this);
       this.onPointerMove = this.pointermove.bind(this);
       this.onPointerUp = this.pointerup.bind(this);
+      this.onParameterChanged = this.onParameterChanged.bind(this); // Handler for parameter updates
     }
 
     connectedCallback() {
@@ -541,45 +545,23 @@ try {
       // Setup label positioning
       this.setupLabel();
 
-      // MIDI related setup
-      this.midilearn = this.getAttr("midilearn", opt.midilearn);
-      console.log("Initialized midilearn:", this.midilearn);
+      // Parameter Manager Integration
+      this.rootParam = this.getAttr("root-param", null); // New attribute
+      this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
 
-      this.midicc = this.getAttr("midicc", null);
-      console.log("Initialized midicc:", this.midicc);
+      // Controller name based on the knob's ID or a unique identifier
+      this.controllerName = this.id || `knob-${Math.random().toString(36).substr(2, 9)}`;
 
-      this.midiController = {};
-      this.midiMode = "normal";
+      // Register with ParameterManager if rootParam is specified
+      if (this.rootParam) {
+        // Ensure the parameter exists in ParameterManager
+        user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
 
-      if (this.midicc) {
-        console.log("Parsing midicc:", this.midicc);
-        let ch = parseInt(this.midicc.substring(0, this.midicc.lastIndexOf("."))) - 1;
-        let cc = parseInt(this.midicc.substring(this.midicc.lastIndexOf(".") + 1));
-        console.log("Setting MIDI controller - channel:", ch, "CC:", cc);
-        this.setMidiController(ch, cc);
+        // Subscribe to ParameterManager updates for this parameter with the retrieved priority
+        user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
       }
 
-      let retries = 0;
-      const maxRetries = 5; // Retry up to 5 times (5 * 100ms = 500ms total)
-      const attemptToLoadMidiLearn = () => {
-        if (window.webAudioControlsWidgetManager && window.webAudioControlsWidgetManager.midiLearnTable) {
-          const ml = window.webAudioControlsWidgetManager.midiLearnTable;
-          for (let i = 0; i < ml.length; ++i) {
-            if (ml[i].id === this.id) {
-              console.log(`Loaded MIDI mapping for widget ${this.id}`);
-              this.setMidiController(ml[i].cc.channel, ml[i].cc.cc);
-              return; // Stop retrying on success
-            }
-          }
-          console.warn(`No MIDI mapping found for widget ID: ${this.id}`);
-        } else if (retries < maxRetries) {
-          console.warn(`Retrying MIDI load for widget ID: ${this.id}. Attempt: ${++retries}`);
-          setTimeout(attemptToLoadMidiLearn, 100); // Retry after 100ms
-        } else {
-          console.error(`Failed to load MIDI mapping for widget ID: ${this.id} after ${maxRetries} attempts.`);
-        }
-      };
-      attemptToLoadMidiLearn();
+      // MIDI related setup - Removed MIDI event handling since ParameterManager manages it
 
       // Additional properties
       this.digits = 0;
@@ -619,6 +601,11 @@ try {
       // Remove any global event listeners if necessary
       window.removeEventListener('pointermove', this.onPointerMove);
       window.removeEventListener('pointerup', this.onPointerUp);
+
+      // Unsubscribe from ParameterManager
+      if (this.rootParam) {
+        user1Manager.unsubscribe(this, this.rootParam);
+      }
     }
 
     setupImage() {
@@ -636,11 +623,11 @@ try {
             return color;
           })
         : ["#e00", "#000", "#000"];
-    
+
       // Determine actual size
       let width, height;
       const style = getComputedStyle(this.elem);
-    
+
       if (this._width && this._height) {
         width = parseInt(this._width);
         height = parseInt(this._height);
@@ -649,63 +636,64 @@ try {
         width = parseInt(style.width) || 64;
         height = parseInt(style.height) || 64;
       }
-    
+
       // Handle high DPI displays
       const dpr = window.devicePixelRatio || 1;
       this.canvas.width = width * dpr;
       this.canvas.height = height * dpr;
       this.canvas.style.width = `${width}px`;
       this.canvas.style.height = `${height}px`;
-    
+
       const ctx = this.canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-    
+
       // Apply outline if specified
       this.canvas.style.outline = this.outline;
-    
+
       // Calculate radius based on width and height
       if (this._diameter) {
         this.radius = parseInt(this._diameter) / 2 - 5; // Padding of 5px
       } else {
         this.radius = Math.min(width, height) / 2 - 5; // Dynamic padding adjustment
       }
-    
+
       this.centerX = width / 2;
       this.centerY = height / 2;
-    
+
       // Redraw the knob with updated dimensions
       this.redraw();
-    
+
       // Setup ResizeObserver for dynamic responsiveness
       if (!this.resizeObserver) {
         this.resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
             const newWidth = entry.contentRect.width || parseInt(style.width) || 64;
             const newHeight = entry.contentRect.height || parseInt(style.height) || 64;
-    
+
             const dpr = window.devicePixelRatio || 1;
             this.canvas.width = newWidth * dpr;
             this.canvas.height = newHeight * dpr;
             this.canvas.style.width = `${newWidth}px`;
             this.canvas.style.height = `${newHeight}px`;
-    
+
             const ctx = this.canvas.getContext('2d');
             ctx.scale(dpr, dpr);
-    
+
             // Recalculate radius and center dynamically
             this.radius = Math.min(newWidth, newHeight) / 2 - 5; // Adjust radius for padding
             this.centerX = newWidth / 2;
             this.centerY = newHeight / 2;
-    
+
             // Redraw the knob with updated dimensions
             this.redraw();
           }
         });
       }
-    
+
       // Observe the parent element for size changes
       this.resizeObserver.observe(this.elem.parentElement || this.elem);
     }
+
     redraw() {
       let ratio;
       this.digits = 0;
@@ -770,6 +758,11 @@ try {
       */
     }
 
+    /**
+     * Sets the internal value without triggering events.
+     * @param {number} v - The value to set.
+     * @returns {boolean} - Returns true if the value changed, else false.
+     */
     _setValue(v) {
       if (this.step)
         v = (Math.round((v - this.min) / this.step)) * this.step + this.min;
@@ -790,17 +783,58 @@ try {
         }
         this.redraw();
         this.showtip(0);
-        return 1;
+        return true;
       }
-      return 0;
+      return false;
     }
 
-    setValue(v, f) {
-      if (this._setValue(v) && f)
-        this.sendEvent("input"), this.sendEvent("change");
+    /**
+     * Sets the value and optionally notifies the ParameterManager and dispatches events.
+     * @param {number} v - The value to set.
+     * @param {boolean} fire - Whether to notify the manager and dispatch events.
+     */
+    setValue(v, fire = false) {
+      if (this._setValue(v)) {
+        if (fire) {
+          // Determine priority using the centralized getPriority function
+          const priority = getPriority("webaudio-knob");
+          if (this.rootParam) {
+            // Update ParameterManager with the new value
+            user1Manager.setValue(
+              this.rootParam,
+              this._value,
+              this, // Source controller
+              priority
+            );
+          }
+
+          // Dispatch events
+          this.sendEvent("input");
+          this.sendEvent("change");
+        }
+      }
     }
 
+    /**
+     * Handles parameter updates from ParameterManager.
+     * @param {string} parameterName - The name of the parameter that changed.
+     * @param {number} newValue - The new value of the parameter.
+     */
+    onParameterChanged(parameterName, newValue) {
+      if (this.rootParam === parameterName) {
+        if (this.isBidirectional && this._value !== newValue) {
+          this._setValue(newValue); // Update knob's internal value
+          this.redraw(); // Redraw to reflect the new value
+        }
+      }
+    }
+
+    /**
+     * Handles keydown events for accessibility.
+     * @param {KeyboardEvent} e - The keyboard event.
+     */
     keydown(e) {
+      if (!this.enable) return;
       let delta = this.step;
       if (delta === 0)
         delta = 1;
@@ -818,13 +852,17 @@ try {
       e.stopPropagation();
     }
 
+    /**
+     * Handles wheel events for adjusting the knob value.
+     * @param {WheelEvent} e - The wheel event.
+     */
     wheel(e) {
       if (!this.enable) return;
-    
+
       // Determine scroll direction
       let direction = e.deltaY || (e.wheelDelta ? -e.wheelDelta : 0); // Use wheelDelta for fallback
       direction = Math.sign(direction); // Normalize to -1 or 1
-    
+
       if (this.log) {
         // Logarithmic mode
         let r = Math.log(this.value / this.min) / Math.log(this.max / this.min);
@@ -840,27 +878,31 @@ try {
         const newValue = +this.value + delta;
         this.setValue(newValue, true);
       }
-    
+
       // Prevent default scrolling behavior
       e.preventDefault();
       e.stopPropagation();
     }
 
+    /**
+     * Handles pointer down events to initiate dragging.
+     * @param {PointerEvent} ev - The pointer event.
+     */
     pointerdown(ev) {
       if (!this.enable) return;
       let e = ev;
-    
+
       // Only handle primary buttons (usually left mouse button) and touch
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-    
+
       // Prevent multiple pointers
       if (this.drag) return;
-    
+
       if (typeof e.pointerId === 'undefined') {
         console.warn('pointerId is undefined.');
         return;
       }
-    
+
       this.elem.setPointerCapture(e.pointerId);
       this.drag = true;
       this.startVal = this.value;
@@ -877,6 +919,10 @@ try {
       e.stopPropagation();
     }
 
+    /**
+     * Handles pointer move events to update the knob's value.
+     * @param {PointerEvent} ev - The pointer event.
+     */
     pointermove(ev) {
       if (!this.drag)
         return;
@@ -899,6 +945,10 @@ try {
       this.setValue(newValue, true);
     }
 
+    /**
+     * Handles pointer up events to end dragging.
+     * @param {PointerEvent} ev - The pointer event.
+     */
     pointerup(ev) {
       if (!this.drag)
         return;
@@ -922,11 +972,10 @@ try {
       // Handle blur event
     }
 
-    // Implement other necessary methods like setupLabel, sendEvent, showtip, setMidiController, etc.
-    // These implementations depend on your existing codebase and are assumed to be present.
-
+    /**
+     * Sets up the label positioning and styling.
+     */
     setupLabel() {
-      // Example implementation, adjust as necessary
       if (this.label) {
         this.label.style.position = 'absolute';
         this.label.style.bottom = '0';
@@ -936,11 +985,19 @@ try {
       }
     }
 
+    /**
+     * Dispatches a custom event from the knob.
+     * @param {string} eventName - The name of the event to dispatch.
+     */
     sendEvent(eventName) {
       const event = new Event(eventName, { bubbles: true, composed: true });
       this.dispatchEvent(event);
     }
 
+    /**
+     * Displays the tooltip with a specified delay.
+     * @param {number} delay - The delay in milliseconds before hiding the tooltip.
+     */
     showtip(delay) {
       // Implement tooltip display logic here
       // This is a placeholder implementation
@@ -953,16 +1010,9 @@ try {
       }
     }
 
-    setMidiController(channel, cc) {
-      // Implement MIDI controller setup here
-      // Placeholder implementation
-      this.midiController.channel = channel;
-      this.midiController.cc = cc;
-      // Additional MIDI setup logic
-    }
   });
 } catch (error) {
-  console.log("webaudio-knob already defined");
+  console.log("webaudio-knob already defined or error in definition:", error);
 }
 
 
