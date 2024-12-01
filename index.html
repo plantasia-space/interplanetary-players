@@ -205,47 +205,43 @@
                   <!-- Sub-Column 1 -->
                   <div class="col-4 d-flex flex-column align-items-center">
                     <!-- Knob -->
-                    <webaudio-knob id="xKnob" class="xyz-knobs" root-param="x" is-bidirectional="1"  step="0.01" min="-100" max="100"
-                      colors="var(--color1);var(--color2);var(--color3)" midilearn="1">
-                    </webaudio-knob>
+                    <div id="xKnobContainer"></div>
                     <!-- Balance Button -->
                     <webaudio-switch id="xBalance" type="kick" min="0" max="1" class="xyz-balance" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
                     <!-- WebAudio Param -->
-                    <webaudio-param link="xKnob" width="6vmin" height="2.4vmin" fontsize="1.7vmin"  colors="var(--color1);black">
+                    <webaudio-param width="6vmin" height="2.4vmin" root-param="x" is-bidirectional="true" fontsize="1.7vmin"  colors="var(--color1);black">
                     </webaudio-param>
                   </div>
 
                   <!-- Sub-Column 2 -->
                   <div class="col-4 d-flex flex-column align-items-center">
                     <!-- Knob -->
-                    <webaudio-knob id="yKnob" class="xyz-knobs" root-param="y" is-bidirectional="1" step="0.01" min="-100" max="100"
-                      colors="var(--color1);var(--color2);var(--color3)" midilearn="1">
-                    </webaudio-knob>
+                    <div id="yKnobContainer"></div>
+
                     <!-- Balance Button -->
                     <webaudio-switch id="yBalance" type="kick" class="xyz-balance" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
 
                     <!-- WebAudio Param -->
-                    <webaudio-param link="yKnob"  width="6vmin" height="2.4vmin" fontsize="1.7vmin" colors="var(--color1);black">
+                    <webaudio-param   width="6vmin" height="2.4vmin" root-param="y" is-bidirectional="true" fontsize="1.7vmin" colors="var(--color1);black">
                     </webaudio-param>
                   </div>
 
                   <!-- Sub-Column 3 -->
                   <div class="col-4 d-flex flex-column align-items-center">
                     <!-- Knob -->
-                    <webaudio-knob id="zKnob" class="xyz-knobs" root-param="z" is-bidirectional="1" step="0.01" min="-100" max="100"
-                      colors="var(--color1);var(--color2);var(--color3)" midilearn="1">
-                    </webaudio-knob>
+                    <div id="zKnobContainer"></div>
+
                     <!-- Balance Button -->
                     <webaudio-switch id="zBalance" type="kick" class="xyz-balance" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
 
                     <!-- WebAudio Param -->
-                    <webaudio-param link="zKnob"  width="6vmin" height="2.4vmin" fontsize="1.7vmin" colors="var(--color1);black">
+                    <webaudio-param  width="6vmin" height="2.4vmin" root-param="z" is-bidirectional="true" fontsize="1.7vmin" colors="var(--color1);black">
                     </webaudio-param>
                   </div>
                 </div>

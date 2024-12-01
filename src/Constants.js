@@ -47,6 +47,57 @@ export const Constants = {
         });
 
     },
+    updateKnobsFromTrackData(trackId) {
+        const trackData = this.getTrackData(trackId);
+        if (!trackData || !trackData.soundEngine) {
+            console.error('No valid track data or sound engine information found.');
+            return;
+        }
+    
+        // Extract x, y, z parameters from the track data
+        const { x, y, z } = trackData.soundEngine.soundEngineParams;
+    
+        // Map parameters to their respective containers
+        const paramsToContainers = {
+            x: document.getElementById('xKnobContainer'),
+            y: document.getElementById('yKnobContainer'),
+            z: document.getElementById('zKnobContainer'),
+        };
+    
+        Object.entries({ x, y, z }).forEach(([paramKey, param]) => {
+            const container = paramsToContainers[paramKey];
+    
+            if (!container) {
+                console.warn(`Container for ${paramKey} not found.`);
+                return;
+            }
+    
+            // Clear existing knob if any
+            container.innerHTML = '';
+    
+            if (!param) {
+                console.warn(`Parameter '${paramKey}' is missing or undefined in sound engine data.`);
+                return;
+            }
+    
+            // Create knob element
+            const knob = document.createElement('webaudio-knob');
+            knob.id = `${paramKey}Knob`;
+            knob.className = 'xyz-knobs';
+            knob.setAttribute('root-param', paramKey);
+            knob.setAttribute('step', '0.01');
+            knob.setAttribute('colors', 'var(--color1);var(--color2);var(--color3)');
+            knob.setAttribute('midilearn', '1');
+            knob.setAttribute('min', param.min);
+            knob.setAttribute('max', param.max);
+            knob.setAttribute('value', param.initValue);
+    
+            // Append knob to the container
+            container.appendChild(knob);
+    
+            console.log(`Created ${knob.id}: min=${param.min}, max=${param.max}, value=${param.initValue}`);
+        });
+    },
     /**
      * Sets and caches track data for the specified trackId.
      * @param {string} trackId - The track ID.
@@ -59,9 +110,6 @@ export const Constants = {
         this.TRACK_DATA = trackData;
         lscache.set(trackId, trackData, this.CACHE_EXPIRY_MINUTES);
         console.log(`[CACHE] Cached track data for trackId: ${trackId}`, trackData);
-
-
-
     },
 
     
@@ -115,6 +163,8 @@ export const PRIORITY_MAP = {
     "cosmic-lfo-A": 11,
     "cosmic-lfo-B": 12,
     "cosmic-lfo-C": 13,
+    "midi": 14,
+
     // MIDI controllers will have dynamic priorities
 };
 

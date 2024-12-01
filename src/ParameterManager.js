@@ -62,7 +62,7 @@ export class ParameterManager {
   setValue(parameterName, value, sourceController = null, priority = Infinity) {
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
-      console.log("subscriptor", parameterName, "value", value);
+      //console.log("subscriptor", parameterName, "value", value);
 
       // Update only if the new priority is higher (numerically lower)
       if (priority <= param.lastPriority) {

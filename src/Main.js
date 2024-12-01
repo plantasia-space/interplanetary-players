@@ -54,6 +54,7 @@ async function initializeApp() {
 
         // Apply colors based on TRACK_DATA
         Constants.applyColorsFromTrackData();
+        Constants.updateKnobsFromTrackData(trackId)
         window.webAudioControlsWidgetManager.setTrackId(trackId);
 
         // Populate placeholders using the default type 'monitorInfo'
