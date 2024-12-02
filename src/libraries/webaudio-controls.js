@@ -500,8 +500,11 @@ try {
 
             // Register with ParameterManager if rootParam is specified
             if (this.rootParam) {      
+
+              const priority = getPriority("webaudio-knob");
+
               // Subscribe to ParameterManager updates for this parameter with the retrieved priority
-              user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
+              user1Manager.subscribe(this, this.rootParam, priority);
             }
 
       // Controller name based on the knob's ID or a unique identifier
@@ -941,8 +944,8 @@ try {
       this.keydown = this.keydown.bind(this);
       this.wheel = this.wheel.bind(this);
       this.redraw = this.redraw.bind(this);
-      this.handleParamChange = this.handleParamChange.bind(this);
-
+/*       this.handleParamChange = this.handleParamChange.bind(this);
+ */
       // Initialize properties for ResizeObserver
       this.resizeObserver = null;
     }
@@ -1046,7 +1049,22 @@ try {
       }
       this.fireflag = true;
 
+      // Parameter Manager Integration
+      this.rootParam = this.getAttr("root-param", null); // New attribute
+      this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
 
+            // Register with ParameterManager if rootParam is specified
+            if (this.rootParam) {      
+              // Subscribe to ParameterManager updates for this parameter with the retrieved priority
+              const priority = getPriority("webaudio-slider");
+
+              user1Manager.subscribe(this, this.rootParam, priority);
+            }
+
+      // Controller name based on the knob's ID or a unique identifier
+      this.controllerName = this.id || `knob-${Math.random().toString(36).substr(2, 9)}`;
+
+      
       // Register the slider globally
       window.webaudioSliders = window.webaudioSliders || {};
       if (this.id) window.webaudioSliders[this.id] = this;
@@ -1077,7 +1095,10 @@ try {
       if (this.linkedParam) {
         this.linkedParam.removeEventListener("input", this.handleParamChange);
       }
-
+      // Unsubscribe from ParameterManager
+      if (this.rootParam) {
+        user1Manager.unsubscribe(this, this.rootParam);
+      }
       // Remove from widget manager
       if (window.webAudioControlsWidgetManager)
         window.webAudioControlsWidgetManager.removeWidget(this);
@@ -1406,9 +1427,24 @@ try {
      */
     setValue(v, fire = false) {
       if (this._setValue(v) && fire) {
+
+        // Determine priority using the centralized getPriority function
+        const priority = getPriority("webaudio-slider");
+
+        if (this.rootParam) {
+          // Update ParameterManager with the new value
+          user1Manager.setRawValue(
+            this.rootParam,
+            this._value,
+            this, // Source controller
+            priority
+          );
+        }
+        console.log("listParameters", user1Manager.listParameters());
+
         this.sendEvent("input");
         this.sendEvent("change");
-        this.updateLinkedParam(); // Update linked param if exists
+        //this.updateLinkedParam(); // Update linked param if exists
       }
     }
 
@@ -1434,6 +1470,20 @@ try {
       e.preventDefault();
       e.stopPropagation();
     }
+
+      /**
+   * Handles parameter updates from ParameterManager.
+   * @param {string} parameterName - The name of the parameter that changed.
+   * @param {number} newValue - The new value of the parameter.
+   */
+      onParameterChanged(parameterName, newValue) {
+        if (this.rootParam === parameterName) {
+          if (this.isBidirectional && this._value !== newValue) {
+            console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
+            this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
+          }
+        }
+      }
 
     /**
      * Handles wheel events for adjusting the slider value.
@@ -1888,7 +1938,9 @@ try {
       // Register with ParameterManager if rootParam is specified
       if (this.rootParam) {
         // Subscribe to ParameterManager updates for this parameter with the retrieved priority
-        user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
+        const priority = getPriority("webaudio-switch");
+
+        user1Manager.subscribe(this, this.rootParam, priority);
       }
         // Event listeners
         this.elem.addEventListener('keydown', this.keydown);
@@ -2189,7 +2241,20 @@ try {
                 this.sendEvent('change');
             }
         }
-    
+        /**
+     * Handles parameter updates from ParameterManager.
+     * @param {string} parameterName - The name of the parameter that changed.
+     * @param {number} newValue - The new value of the parameter.
+     */
+        onParameterChanged(parameterName, newValue) {
+          if (this.rootParam === parameterName) {
+            if (this.isBidirectional && this._value !== newValue) {
+              console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
+              this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
+            }
+          }
+        }
+        
       updateParameter(normalizedValue, mode) {
         const priority = getPriority(`webaudio-${mode}`);
         user1Manager.setNormalizedValue(
