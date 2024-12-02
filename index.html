@@ -207,11 +207,11 @@
                     <!-- Knob -->
                     <div id="xKnobContainer"></div>
                     <!-- Balance Button -->
-                    <webaudio-switch id="xBalance" type="kick" min="0" max="1" class="xyz-balance" midilearn="1"
+                    <webaudio-switch id="xBalance" type="kick" min="0" max="1" root-param="x" class="xyz-balance" is-bidirectional="false" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
                     <!-- WebAudio Param -->
-                    <webaudio-param width="6vmin" height="2.4vmin" root-param="x" is-bidirectional="true" fontsize="1.7vmin"  colors="var(--color1);black">
+                    <webaudio-param width="6vmin" height="2.4vmin" label="x" tooltip="x" root-param="x" is-bidirectional="true" fontsize="1.7vmin"  colors="var(--color1);black">
                     </webaudio-param>
                   </div>
 
@@ -221,7 +221,7 @@
                     <div id="yKnobContainer"></div>
 
                     <!-- Balance Button -->
-                    <webaudio-switch id="yBalance" type="kick" class="xyz-balance" min="0" max="1" midilearn="1"
+                    <webaudio-switch id="yBalance" type="kick" class="xyz-balance" is-bidirectional="false" root-param="y" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
 
@@ -236,7 +236,7 @@
                     <div id="zKnobContainer"></div>
 
                     <!-- Balance Button -->
-                    <webaudio-switch id="zBalance" type="kick" class="xyz-balance" min="0" max="1" midilearn="1"
+                    <webaudio-switch id="zBalance" type="kick" class="xyz-balance" is-bidirectional="false" root-param="z" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
 

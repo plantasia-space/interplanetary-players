@@ -498,17 +498,16 @@ try {
       this.rootParam = this.getAttr("root-param", null); // New attribute
       this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
 
+            // Register with ParameterManager if rootParam is specified
+            if (this.rootParam) {      
+              // Subscribe to ParameterManager updates for this parameter with the retrieved priority
+              user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
+            }
+
       // Controller name based on the knob's ID or a unique identifier
       this.controllerName = this.id || `knob-${Math.random().toString(36).substr(2, 9)}`;
 
-      // Register with ParameterManager if rootParam is specified
-      if (this.rootParam) {
-        // Ensure the parameter exists in ParameterManager
-        //user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
 
-        // Subscribe to ParameterManager updates for this parameter with the retrieved priority
-        user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
-      }
       
 
       // Additional properties
@@ -1684,10 +1683,6 @@ try {
 
 
 
-
-
-  
-
   try {
     // Helper function to draw a hexagon
     function drawHexagon(ctx, x, y, radius, fillStyle, strokeStyle) {
@@ -1711,9 +1706,6 @@ try {
       ctx.stroke();
     }
 
-
-
-
     customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
       constructor() {
         super();
@@ -1721,10 +1713,10 @@ try {
         // Bind methods
         this.pointerdown = this.pointerdown.bind(this);
         this.keydown = this.keydown.bind(this);
-        this.wheel = this.wheel.bind(this);
-        this.redraw = this.redraw.bind(this);
-        this.handleParamChange = this.handleParamChange.bind(this);
-  
+         this.wheel = this.wheel.bind(this);
+         this.redraw = this.redraw.bind(this);
+         this.handleParamChange = this.handleParamChange.bind(this);
+   
         // Initialize properties for ResizeObserver
         this.resizeObserver = null;
   
@@ -1889,6 +1881,15 @@ try {
         this.setupCanvas();
         this.redraw();
   
+            // Parameter Manager Integration
+        this.rootParam = this.getAttr("root-param", null); // New attribute
+        this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
+
+      // Register with ParameterManager if rootParam is specified
+      if (this.rootParam) {
+        // Subscribe to ParameterManager updates for this parameter with the retrieved priority
+        user1Manager.subscribe(this, this.rootParam, "webaudio-knob");
+      }
         // Event listeners
         this.elem.addEventListener('keydown', this.keydown);
         this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
@@ -1913,8 +1914,8 @@ try {
         this.elem.removeEventListener('keydown', this.keydown);
         this.elem.removeEventListener('mousedown', this.pointerdown);
         this.elem.removeEventListener('touchstart', this.pointerdown);
-        this.elem.removeEventListener('wheel', this.wheel, { passive: false });
-  
+         this.elem.removeEventListener('wheel', this.wheel, { passive: false });
+   
         // Unobserve ResizeObserver
         if (this.resizeObserver) {
           this.resizeObserver.unobserve(this);
@@ -1924,7 +1925,10 @@ try {
         if (this.linkedParam) {
           this.linkedParam.removeEventListener("input", this.handleParamChange);
         }
-  
+        // Unsubscribe from ParameterManager
+        if (this.rootParam) {
+          user1Manager.unsubscribe(this, this.rootParam);
+        }
         // Remove from widget manager
         if (window.webAudioControlsWidgetManager)
           window.webAudioControlsWidgetManager.removeWidget(this);
@@ -1935,20 +1939,7 @@ try {
         }
       }
   
-  
-      setValue(v,f){
-      this.value=v;
-      this.checked=(!!v);
-      if(this.value!=this.oldvalue){
-        this.redraw();
-        this.showtip(0);
-        if(f){
-          this.sendEvent("input");
-          this.sendEvent("change");
-        }
-        this.oldvalue=this.value;
-      }
-    }
+
   
       setupCanvas() {
         // Get actual size
@@ -2082,7 +2073,20 @@ try {
             return this._state === 1;
         }
       }
-  
+    
+      setValue(v,f){
+        this.value=v;
+        this.checked=(!!v);
+        if(this.value!=this.oldvalue){
+          this.redraw();
+          this.showtip(0);
+          if(f){
+            this.sendEvent("input");
+            this.sendEvent("change");
+          }
+          this.oldvalue=this.value;
+        }
+      }
       _setState(v) {
         // Removed 'sequential' type handling to prevent conflicts
         v = parseInt(v);
@@ -2128,46 +2132,79 @@ try {
       }
   
       setState(v, fire = false) {
+        let normalizedValue;
+    
         if (this.type === 'sequential') {
-          // For sequential, ensure state wraps correctly based on step
-          let newState = v;
-          if (newState > this._max) {
-            newState = this._min;
-          } else if (newState < this._min) {
-            newState = this._max;
-          }
-  
-          if (newState !== this._state) {
-            this._state = newState;
-            this.fireflag = true;
-            this.redraw();
-            if (fire) {
-              this.sendEvent("input");
-              this.sendEvent("change");
-              this.updateLinkedParam(); // Update linked param if exists
+            // For sequential, ensure state wraps correctly based on step
+            let newState = v;
+            if (newState > this._max) {
+                newState = this._min;
+            } else if (newState < this._min) {
+                newState = this._max;
             }
-          }
-        } else {
-          if (this._setState(v) && fire) {
-            this.sendEvent("input");
-            this.sendEvent("change");
-            this.updateLinkedParam(); // Update linked param if exists
-  
-            // If in radio mode, ensure group behavior
-            if (this.type === "radio" && this.group) {
-              // Already handled in _setState
+    
+            if (newState !== this._state) {
+                this._state = newState;
+                this.fireflag = true;
+                this.redraw();
+    
+                if (fire && this.rootParam) {
+                    normalizedValue = this.normalizeValue(newState, this._min, this._max);
+                    this.updateParameter(normalizedValue, 'sequential');
+                }
             }
-  
-            // If in kick mode, reset after activation
-            if (this.type === "kick" && v === 1) {
-              setTimeout(() => {
-                this.setState(0, true);
-              }, 100); // 100ms delay; adjust as needed
+        } else if (this.type === 'toggle') {
+            // Handle toggle mode
+            const newState = v ? 1 : 0; // 1 for "on", 0 for "off"
+    
+            if (newState !== this._state) {
+                this._state = newState;
+                this.fireflag = true;
+                this.redraw();
+    
+                if (fire && this.rootParam) {
+                    normalizedValue = newState; // Normalized: 0 for off, 1 for on
+                    this.updateParameter(normalizedValue, 'toggle');
+                }
             }
-          }
+        } else if (this.type === 'kick') {
+            // Handle kick mode
+            if (v === 1 && fire) {
+                normalizedValue = 0.5; // Fixed value for kick button
+                if (this.rootParam) {
+                    this.updateParameter(normalizedValue, 'kick');
+                }
+    
+                // Reset state after a delay
+                setTimeout(() => {
+                    this._state = 0; // Reset state to "not pressed"
+                    this.redraw();
+                }, 100); // Adjust delay as needed
+            }
         }
-      }
+    
+        // Dispatch input and change events for all modes
+            if (fire) {
+                this.sendEvent('input');
+                this.sendEvent('change');
+            }
+        }
+    
+      updateParameter(normalizedValue, mode) {
+        const priority = getPriority(`webaudio-${mode}`);
+        user1Manager.setNormalizedValue(
+            this.rootParam,
+            normalizedValue,
+            this, // Source controller
+            priority
+        );
   
+      console.debug(`[setState] ${mode} mode: Updated parameter '${this.rootParam}' with normalized value: ${normalizedValue}`);
+  }
+      normalizeValue(value, min, max) {
+        return (value - min) / (max - min);
+      }
+
       keydown(e) {
         if (!this.enable) return;
         switch (this.type) {
@@ -2326,15 +2363,6 @@ try {
   
   
   
-  
-
-
-
-
-
-
-
-
 
   try {
     customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
@@ -2611,12 +2639,16 @@ try {
         this.elem.addEventListener("click", showModalHandler);
         this.elem.addEventListener("touchend", showModalHandler, { passive: false });
       }
-      onParameterChanged(parameterName, rawValue) {
-        if (parameterName === this.rootParam) {
-        //  console.debug(`[WebAudioParam] Parameter '${parameterName}' changed to: ${rawValue}`);
-          this.setValue(rawValue, false); // Update value without triggering another setRawValue
+
+      onParameterChanged(parameterName, newValue) {
+        if (this.rootParam === parameterName) {
+          if (this.isBidirectional && this._value !== newValue) {
+            console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
+            this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
+          }
         }
       }
+
       updateLinkedElements(value) {
         if (this.currentLink && !this.currentLink.updating) {
           this.currentLink.updating = true;

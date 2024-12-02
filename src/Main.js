@@ -70,38 +70,40 @@ async function initializeApp() {
 
 
 function initializeRootParams(parameterManager, trackData) {
-    const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
-  
-    // Extract x, y, z from trackData dynamically
-    const { x, y, z } = trackData.soundEngine.soundEngineParams;
-  
-    // Map for parameter initialization
-    const paramConfigs = {
-      x: { ...x },
+  const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
+
+  // Extract x, y, z from trackData dynamically
+  const { x, y, z } = trackData.soundEngine.soundEngineParams;
+
+  // Map for parameter initialization
+  const paramConfigs = {
+      x: { ...x }, // Example: { initValue: 1, min: -100, max: 100 }
       y: { ...y },
       z: { ...z },
-      'body-level': { initValue: 0.5, min: 0.0001, max: 1, label: 'Volume (Logarithmic)' }, // Log scale
-      'body-envelope': { initValue: 0, min: -1, max: 1, label: 'Envelope' },
-    };
-  
-    // Iterate through rootParams and add them to ParameterManager
-    rootParams.forEach((paramName) => {
+      'body-level': { initValue: 0.5, min: 0.0001, max: 1 }, // No need for labels in root params
+      'body-envelope': { initValue: 0, min: -1, max: 1 },
+  };
+
+ // console.log("[paramConfigs:", paramConfigs);
+
+  // Iterate through rootParams and add them to ParameterManager
+  rootParams.forEach((paramName) => {
       const config = paramConfigs[paramName];
       if (config) {
-        const { initValue, min, max, label } = config;
-  
-        // Validate the configuration
-        if (typeof initValue === 'number' && typeof min === 'number' && typeof max === 'number') {
-          parameterManager.addParameter(paramName, initValue, min, max, true); // Bidirectional = true
-          console.debug(`[initializeRootParams] Added: ${label || paramName}`, config);
-        } else {
-          console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
-        }
+          const { initValue, min, max } = config;
+
+          // Validate the configuration
+          if (typeof initValue === 'number' && typeof min === 'number' && typeof max === 'number') {
+            user1Manager.addParameter(paramName, initValue, min, max, true); // Bidirectional = true
+             // console.debug(`[initializeRootParams] Added: ${paramName}`, config);
+          } else {
+              console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
+          }
       } else {
-        console.warn(`[initializeRootParams] Parameter '${paramName}' not found in configs.`);
+          console.warn(`[initializeRootParams] Parameter '${paramName}' not found in configs.`);
       }
-    });
-  }
+  });
+}
 
 
 window.addEventListener('resize', () => {
