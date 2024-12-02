@@ -1,4 +1,9 @@
-/* General resets */
+/* Charles Bukowski Style is the answer to everything
+"Not many have style
+Not many can keep style
+I have seen dogs with more style than men,
+although not many dogs have style.
+Cats have it with abundance."*/
 
 /*
     • 2D UI Elements:
@@ -17,7 +22,7 @@
 /* Color Variables */
 :root {
     --color1: rgb(255, 255, 255); /* Default color */
-    --color2: rgba(108, 108, 108, 0.478);  /* Hover and active color */
+    --color2: rgb(0, 0, 0);  /* Hover and active color */
     --color3: #000000; 
     --color4: #ffffff00; 
 

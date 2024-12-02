@@ -996,7 +996,6 @@ try {
             white-space: nowrap;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.2s;
           }
           .webaudioctrl-label {
             position: absolute;
@@ -1174,7 +1173,7 @@ try {
     setupCanvas() {
       // Get actual size
       let rect = this.elem.getBoundingClientRect();
-      const knobSizeMultiplier = 0.4; 
+      const knobSizeMultiplier = 0.3; 
 
       // Check and set default width and height if they are 0
       if (rect.width === 0) {
@@ -1301,16 +1300,14 @@ try {
       ctx.clearRect(0, 0, this._width, this._height);
 
       // Draw centered track line
-      ctx.strokeStyle = "#ffffff" || '#333'; // Track color
-      ctx.lineWidth = 2; // Increased line width for better visibility
+      ctx.strokeStyle = "#ffffff"; // Track color
+      ctx.lineWidth = 2;
       ctx.beginPath();
       if (this.isHorizontal) {
-        // Centered horizontal line
         const centerY = this.trackY + this.trackHeight / 2;
         ctx.moveTo(this.trackX, centerY);
         ctx.lineTo(this.trackX + this.trackLength, centerY);
       } else {
-        // Centered vertical line
         const centerX = this.trackX + this.trackHeight / 2;
         ctx.moveTo(centerX, this.trackY);
         ctx.lineTo(centerX, this.trackY + this.trackLength);
@@ -1319,7 +1316,7 @@ try {
 
       // Draw filled portion
       ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
-      ctx.lineWidth = 2; // Thicker line for filled portion
+      ctx.lineWidth = 2;
       ctx.beginPath();
       if (this.isHorizontal) {
         const centerY = this.trackY + this.trackHeight / 2;
@@ -1332,36 +1329,56 @@ try {
       }
       ctx.stroke();
 
-      // Draw triangular knob/pointer
+      // Draw equilateral triangular knob/pointer
       ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
-      ctx.strokeStyle = this.coltab[4] || '#777'; // Knob border color
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = this.coltab[3] || '#777'; // Knob border color
+      ctx.lineWidth = 3;
 
       ctx.beginPath();
-      const size = this.knobSize / 2;
-      if (this.isHorizontal) {
-        // Triangle pointing to the right
-        const knobX = this.trackX + this.trackLength * ratio;
-        const knobY = this.trackY + this.trackHeight / 2;
+      const side = this.knobSize; // Length of each side of the triangle
+      const height = (Math.sqrt(3) / 2) * side; // Height of equilateral triangle
 
-        ctx.moveTo(knobX + size, knobY); // Right point
-        ctx.lineTo(knobX - size, knobY - size); // Top-left point
-        ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
+      if (this.isHorizontal) {
+        const knobX = this.trackX + this.trackLength * ratio; // Knob position on the X-axis
+        const knobY = this.trackY + this.trackHeight / 2; // Center Y position
+
+        // Define triangle points for horizontal slider (pointing right)
+        // Tip at (knobX, knobY)
+        // Base shifted left by height
+        const tipX = knobX;
+        const tipY = knobY;
+
+        const baseLeftX = knobX - height;
+        const baseTopY = knobY - (side / 2);
+        const baseBottomY = knobY + (side / 2);
+
+        ctx.moveTo(tipX, tipY); // Tip of the triangle
+        ctx.lineTo(baseLeftX, baseTopY); // Top-left point
+        ctx.lineTo(baseLeftX, baseBottomY); // Bottom-left point
         ctx.closePath();
       } else {
-        // Triangle pointing upwards
-        const knobX = this.trackX + this.trackHeight / 2;
-        const knobY = this.trackY + this.trackLength * (1 - ratio);
+        const knobX = this.trackX + this.trackHeight / 2; // Center X position
+        const knobY = this.trackY + this.trackLength * (1 - ratio); // Knob position on the Y-axis
 
-        ctx.moveTo(knobX, knobY - size); // Top point
-        ctx.lineTo(knobX - size, knobY + size); // Bottom-left point
-        ctx.lineTo(knobX + size, knobY + size); // Bottom-right point
+        // Define triangle points for vertical slider (pointing up)
+        // Tip at (knobX, knobY)
+        // Base shifted down by height
+        const tipX = knobX;
+        const tipY = knobY;
+
+        const baseLeftX = knobX - (side / 2);
+        const baseRightX = knobX + (side / 2);
+        const baseBottomY = knobY + height;
+
+        ctx.moveTo(tipX, tipY); // Tip of the triangle
+        ctx.lineTo(baseLeftX, baseBottomY); // Bottom-left point
+        ctx.lineTo(baseRightX, baseBottomY); // Bottom-right point
         ctx.closePath();
       }
 
       ctx.fill();
-      ctx.stroke(); // Only for the knob/pointer
-    }    
+      ctx.stroke();
+    }
 
     /**
      * Sets the internal value without triggering events.
