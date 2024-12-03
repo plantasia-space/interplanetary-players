@@ -1,12 +1,10 @@
-// ParameterManager.js
-
 export class ParameterManager {
   constructor() {
     if (ParameterManager.instance) {
       return ParameterManager.instance;
     }
 
-    this.parameters = new Map(); // Map of parameterName -> { rawValue, normalizedValue, min, max, subscribers, isBidirectional, lastPriority }
+    this.parameters = new Map(); // Map of parameterName -> parameter object
     ParameterManager.instance = this;
   }
 
@@ -22,27 +20,39 @@ export class ParameterManager {
   }
 
   /**
-   * Adds a new parameter to the manager with optional bidirectional communication.
+   * Adds a new parameter to the manager with optional bidirectional communication and transformation functions.
    * @param {string} name - The parameter name.
    * @param {number} rawValue - The initial raw value of the parameter.
    * @param {number} min - The minimum value for the parameter range.
    * @param {number} max - The maximum value for the parameter range.
    * @param {boolean} isBidirectional - Indicates if the parameter supports bidirectional updates.
+   * @param {function} inputTransform - Function to transform input values to raw values.
+   * @param {function} outputTransform - Function to transform raw values to output values.
    */
-  addParameter(name, rawValue = 0, min = 0, max = 1, isBidirectional = false) {
+  addParameter(
+    name,
+    rawValue = 0,
+    min = 0,
+    max = 1,
+    isBidirectional = false,
+    inputTransform = (x) => x, // Default linear transform
+    outputTransform = (x) => x // Default linear transform
+  ) {
     if (this.parameters.has(name)) {
-        console.warn(`[addParameter] Parameter '${name}' already exists. Updating settings.`);
-        const param = this.parameters.get(name);
+      console.warn(`[addParameter] Parameter '${name}' already exists. Updating settings.`);
+      const param = this.parameters.get(name);
 
-        // Update settings
-        param.rawValue = Math.min(max, Math.max(min, rawValue)); // Clamp rawValue to the new range
-        param.normalizedValue = this.normalize(param.rawValue, min, max);
-        param.min = min;
-        param.max = max;
-        param.isBidirectional = isBidirectional;
+      // Update settings
+      param.rawValue = Math.min(max, Math.max(min, rawValue)); // Clamp rawValue to the new range
+      param.normalizedValue = this.normalize(param.rawValue, min, max);
+      param.min = min;
+      param.max = max;
+      param.isBidirectional = isBidirectional;
+      param.inputTransform = inputTransform;
+      param.outputTransform = outputTransform;
 
-        console.debug(`[addParameter] Updated parameter '${name}' with rawValue: ${param.rawValue}, min: ${min}, max: ${max}, bidirectional: ${isBidirectional}`);
-        return;
+      //console.debug(`[addParameter] Updated parameter '${name}' with rawValue: ${param.rawValue}, min: ${min}, max: ${max}, bidirectional: ${isBidirectional}`);
+      return;
     }
 
     // Otherwise, create a new parameter
@@ -50,18 +60,22 @@ export class ParameterManager {
     const normalizedValue = this.normalize(clampedRawValue, min, max);
 
     this.parameters.set(name, {
-        name,
-        rawValue: clampedRawValue,
-        normalizedValue,
-        min,
-        max,
-        subscribers: new Set(),
-        isBidirectional,
-        lastPriority: Infinity,
+      name,
+      rawValue: clampedRawValue,
+      normalizedValue,
+      min,
+      max,
+      subscribers: new Set(),
+      isBidirectional,
+      lastPriority: Infinity,
+      lastUpdateTimestamp: 0, // Initialize timestamp
+      lastController: null, // Initialize controller
+      inputTransform,
+      outputTransform,
     });
 
-    console.debug(`[addParameter] Added new parameter '${name}' with rawValue: ${clampedRawValue}, normalizedValue: ${normalizedValue}, min: ${min}, max: ${max}`);
-}
+    //console.debug(`[addParameter] Added new parameter '${name}' with rawValue: ${clampedRawValue}, normalizedValue: ${normalizedValue}, min: ${min}, max: ${max}`);
+  }
 
   /**
    * Subscribes a controller to a parameter with a specified priority.
@@ -74,14 +88,17 @@ export class ParameterManager {
       console.error(`Controller must implement 'onParameterChanged' method.`);
       return;
     }
-  
+
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
       param.subscribers.add({ controller, priority });
+      //console.debug(`[subscribe] Controller subscribed to '${parameterName}' with priority ${priority}`);
     } else {
       console.warn(`Parameter '${parameterName}' does not exist. Adding with default values.`);
       this.addParameter(parameterName);
-      this.parameters.get(parameterName).subscribers.add({ controller, priority });
+      const param = this.parameters.get(parameterName);
+      param.subscribers.add({ controller, priority });
+      //console.debug(`[subscribe] Controller subscribed to newly added parameter '${parameterName}' with priority ${priority}`);
     }
   }
 
@@ -93,9 +110,17 @@ export class ParameterManager {
   unsubscribe(controller, parameterName) {
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
+      const initialSize = param.subscribers.size;
       param.subscribers = new Set(
         [...param.subscribers].filter((sub) => sub.controller !== controller)
       );
+      if (param.subscribers.size < initialSize) {
+        //console.debug(`[unsubscribe] Controller unsubscribed from '${parameterName}'`);
+      } else {
+        console.warn(`[unsubscribe] Controller was not subscribed to '${parameterName}'`);
+      }
+    } else {
+      console.warn(`[unsubscribe] Parameter '${parameterName}' does not exist.`);
     }
   }
 
@@ -110,111 +135,125 @@ export class ParameterManager {
   setRawValue(parameterName, rawValue, sourceController = null, priority = Infinity) {
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
-  
-      //console.debug(`[setRawValue] Parameter: ${parameterName}, Raw Value: ${rawValue}, Source Controller:`, sourceController);
-      //console.debug(`[setRawValue] Current Parameter State:`, param);
-  
+
       const now = Date.now();
       const simultaneousThreshold = 50; // 50 ms for "simultaneous" updates
-  
+
       // Determine if this update is "simultaneous"
       const isSimultaneous = now - (param.lastUpdateTimestamp || 0) < simultaneousThreshold;
-  
-      // Allow updates if:
-      // 1. They have a higher priority during simultaneous updates
-      // 2. They occur after the last update timestamp (sequential updates)
+
+      // Check if the source controller is the same
+      const isSameController = sourceController === param.lastController;
+
+      //console.debug(`[ParameterManager] setRawValue called for '${parameterName}' with rawValue=${rawValue}, priority=${priority}, isSimultaneous=${isSimultaneous}, isSameController=${isSameController}`);
+
       if (
-        (!isSimultaneous || priority <= param.lastPriority) &&
-        (!isSimultaneous || sourceController !== param.lastController)
+        (!isSimultaneous || priority < param.lastPriority) ||
+        (isSimultaneous && isSameController)
       ) {
         const normalizedValue = this.normalize(rawValue, param.min, param.max);
-  
-        //console.debug(`[setRawValue] Normalized Value: ${normalizedValue}, Priority: ${priority}, Last Priority: ${param.lastPriority}`);
-  
+
         if (param.rawValue !== rawValue) {
-          //console.debug(`[setRawValue] Updating Parameter: ${parameterName}, Previous Value: ${param.rawValue}`);
-  
           param.rawValue = rawValue;
           param.normalizedValue = normalizedValue;
           param.lastPriority = priority;
           param.lastUpdateTimestamp = now;
           param.lastController = sourceController;
-  
-          //console.debug(`[setRawValue] New Parameter State:`, param);
-  
+
+          //console.debug(`[ParameterManager] Updated '${parameterName}' to rawValue=${rawValue}, normalizedValue=${normalizedValue}`);
+
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
             if (controller !== sourceController || param.isBidirectional) {
               if (typeof controller.onParameterChanged === 'function') {
-                //console.debug(`[setRawValue] Notifying Controller:`, controller);
-                controller.onParameterChanged(parameterName, rawValue);
+                // Apply the output transformation before notifying
+                const transformedValue = param.outputTransform(param.rawValue);
+                //console.debug(`[ParameterManager] Notifying controller of '${parameterName}' with value=${transformedValue}`);
+                controller.onParameterChanged(parameterName, transformedValue);
               } else {
-                console.warn(`[setRawValue] Controller does not implement 'onParameterChanged':`, controller);
+                console.warn(`[ParameterManager] Controller does not implement 'onParameterChanged':`, controller);
               }
             }
           });
         } else {
-          //console.debug(`[setRawValue] No Change in Raw Value for Parameter: ${parameterName}`);
+          //console.debug(`[ParameterManager] No change in rawValue for '${parameterName}'. Update skipped.`);
         }
       } else {
-        //console.debug(`[setRawValue] Update Skipped for Parameter: ${parameterName}, Priority: ${priority}, Last Priority: ${param.lastPriority}`);
+        //console.debug(`[ParameterManager] Update for '${parameterName}' ignored due to priority or simultaneous threshold.`);
       }
     } else {
-      console.warn(`[setRawValue] Parameter '${parameterName}' not found.`);
+      console.warn(`[ParameterManager] setRawValue: Parameter '${parameterName}' not found.`);
     }
   }
-/**
- * Updates the normalized value of a parameter and notifies subscribers.
- * Converts normalized to raw before updating.
- * @param {string} parameterName - The parameter name.
- * @param {number} normalizedValue - The new normalized value to set [0, 1].
- * @param {object|null} sourceController - The controller making the change (optional).
- * @param {number} priority - The priority of the update (1 is highest).
- */
-setNormalizedValue(parameterName, normalizedValue, sourceController = null, priority = Infinity) {
-  if (this.parameters.has(parameterName)) {
-    const param = this.parameters.get(parameterName);
 
-    const now = Date.now();
-    const simultaneousThreshold = 50; // 50 ms for "simultaneous" updates
+  /**
+   * Updates the normalized value of a parameter and notifies subscribers.
+   * Converts normalized to raw before updating.
+   * @param {string} parameterName - The parameter name.
+   * @param {number} normalizedValue - The new normalized value to set [0, 1].
+   * @param {object|null} sourceController - The controller making the change (optional).
+   * @param {number} priority - The priority of the update (1 is highest).
+   */
+  setNormalizedValue(parameterName, normalizedValue, sourceController = null, priority = Infinity) {
+    if (this.parameters.has(parameterName)) {
+      const param = this.parameters.get(parameterName);
 
-    // Determine if this update is "simultaneous"
-    const isSimultaneous = now - (param.lastUpdateTimestamp || 0) < simultaneousThreshold;
+      const now = Date.now();
+      const simultaneousThreshold = 50; // 50 ms for "simultaneous" updates
 
-    // Allow updates if:
-    // 1. Higher priority during simultaneous updates
-    // 2. Sequential updates (outside the simultaneous threshold)
-    if (
-      (!isSimultaneous || priority <= param.lastPriority) &&
-      (!isSimultaneous || sourceController !== param.lastController)
-    ) {
-      const rawValue = this.denormalize(normalizedValue, param.min, param.max);
+      // Determine if this update is "simultaneous"
+      const isSimultaneous = now - (param.lastUpdateTimestamp || 0) < simultaneousThreshold;
 
-      if (param.rawValue !== rawValue || param.normalizedValue !== normalizedValue) {
-        // Update both raw and normalized values
-        param.rawValue = rawValue;
-        param.normalizedValue = normalizedValue;
-        param.lastPriority = priority;
-        param.lastUpdateTimestamp = now;
-        param.lastController = sourceController;
+      // Check if the source controller is the same
+      const isSameController = sourceController === param.lastController;
 
-        // Notify subscribers with raw value
-        param.subscribers.forEach(({ controller }) => {
-          if (controller !== sourceController || param.isBidirectional) {
-            controller.onParameterChanged(parameterName, rawValue); // Always notify with raw value
-          }
-        });
+      //console.debug(`[ParameterManager] setNormalizedValue called for '${parameterName}' with normalizedValue=${normalizedValue}, priority=${priority}, isSimultaneous=${isSimultaneous}, isSameController=${isSameController}`);
+
+      if (
+        (!isSimultaneous || priority < param.lastPriority) ||
+        (isSimultaneous && isSameController)
+      ) {
+        const rawValue = this.denormalize(normalizedValue, param.min, param.max);
+
+        if (param.rawValue !== rawValue || param.normalizedValue !== normalizedValue) {
+          // Update both raw and normalized values
+          param.rawValue = rawValue;
+          param.normalizedValue = normalizedValue;
+          param.lastPriority = priority;
+          param.lastUpdateTimestamp = now;
+          param.lastController = sourceController;
+
+          //console.debug(`[ParameterManager] Updated '${parameterName}' to rawValue=${rawValue}, normalizedValue=${normalizedValue}`);
+
+          // Notify subscribers
+          param.subscribers.forEach(({ controller }) => {
+            if (controller !== sourceController || param.isBidirectional) {
+              if (typeof controller.onParameterChanged === 'function') {
+                // Apply the output transformation before notifying
+                const transformedValue = param.outputTransform(param.rawValue);
+                //console.debug(`[ParameterManager] Notifying controller of '${parameterName}' with value=${transformedValue}`);
+                controller.onParameterChanged(parameterName, transformedValue);
+              } else {
+                console.warn(`[ParameterManager] Controller does not implement 'onParameterChanged':`, controller);
+              }
+            }
+          });
+        } else {
+          //console.debug(`[ParameterManager] No change in normalizedValue for '${parameterName}'. Update skipped.`);
+        }
+      } else {
+        //console.debug(`[ParameterManager] Update for '${parameterName}' ignored due to priority or simultaneous threshold.`);
       }
     }
   }
-}
+
   /**
    * Retrieves the current raw value of a parameter.
    * @param {string} parameterName - The parameter name.
    * @returns {number|null} - The raw value of the parameter or null if it doesn't exist.
    */
   getRawValue(parameterName) {
-    return this.parameters.get(parameterName)?.rawValue || null;
+    return this.parameters.get(parameterName)?.rawValue ?? null;
   }
 
   /**
@@ -223,7 +262,7 @@ setNormalizedValue(parameterName, normalizedValue, sourceController = null, prio
    * @returns {number|null} - The normalized value of the parameter or null if it doesn't exist.
    */
   getNormalizedValue(parameterName) {
-    return this.parameters.get(parameterName)?.normalizedValue || null;
+    return this.parameters.get(parameterName)?.normalizedValue ?? null;
   }
 
   /**
@@ -263,8 +302,11 @@ setNormalizedValue(parameterName, normalizedValue, sourceController = null, prio
       isBidirectional: param.isBidirectional,
       lastPriority: param.lastPriority,
       subscribers: [...param.subscribers],
+      inputTransform: param.inputTransform,
+      outputTransform: param.outputTransform,
     }));
   }
 }
+
 // Export the Singleton instance
-export const ParameterManagerInstance = ParameterManager.getInstance();
+export const user1Manager = ParameterManager.getInstance();

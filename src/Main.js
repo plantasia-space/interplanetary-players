@@ -9,6 +9,7 @@ import { setupInteractions, updateKnobsFromTrackData, applyColorsFromTrackData  
 import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
 import { ButtonGroup } from './ButtonGroup.js';
 import { ParameterManager } from './ParameterManager.js';
+import { logarithmic, exponential, piecewiseLinear } from './Transformations.js';
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -77,14 +78,26 @@ function initializeRootParams(parameterManager, trackData) {
 
   // Map for parameter initialization
   const paramConfigs = {
-      x: { ...x }, // Example: { initValue: 1, min: -100, max: 100 }
-      y: { ...y },
-      z: { ...z },
-      'body-level': { initValue: 0.5, min: 0.0001, max: 1 }, // No need for labels in root params
-      'body-envelope': { initValue: 0, min: -1, max: 1 },
-  };
+    x: { ...x }, // Example: { initValue: 1, min: -100, max: 100 }
+    y: { ...y },
+    z: { ...z },
+    'body-level': { 
+      initValue: 0.0, 
+      min: -60, 
+      max: 6, 
+      inputTransform: logarithmic.inverse, // Correctly named key
+      outputTransform: logarithmic.forward       // Correctly named key
+    }, 
+    'body-envelope': { 
+      initValue: 0, 
+      min: -1, 
+      max: 1,
+    },
 
- // console.log("[paramConfigs:", paramConfigs);
+  };
+  console.log("1", logarithmic.inverse);
+
+  console.log("[paramConfigs:", paramConfigs);
 
   // Iterate through rootParams and add them to ParameterManager
   rootParams.forEach((paramName) => {

@@ -132,15 +132,33 @@
         <!-- Mid Container -->
         <div class="mid-container">
           <div class="col-1">
-            <!-- Vertical Slider -->
-            <webaudio-slider id="gSlider" tracking="rel" sensitivity="40" root-param="body-level" is-bidirectional="true" log="1"  colors="#00000000;#00000000;var(--color2);var(--color1)" value=".5"
-              min="0.0001" max="1" step="0.001" midilearn="1"   style="width: calc(4vmin + 4vmax); height: 100%;" direction="vert">
+            <!-- Vertical Slider with Raw Attributes -->
+            <webaudio-slider 
+              id="gSlider" 
+              tracking="rel" 
+              root-param="body-level" 
+              is-bidirectional="true"   
+              colors="#00000000;#00000000;var(--color2);var(--color1)" 
+              value="-60"         
+              min="-60"          
+              max="6"
+              sensitivity="15" 
+              step="0.1"   
+              style="width: 100%; height: 100%;" 
+              direction="vert">
             </webaudio-slider>
 
-            <webaudio-param  width="6vmin" height="2.4vmin"  root-param="body-level" is-bidirectional="true"  fontsize="1.7vmin"  colors="var(--color1);black">
-            </webaudio-param>
-          </div>
 
+
+            <webaudio-param  
+              width="6vmin" 
+              height="2.4vmin"  
+              root-param="body-level" 
+              is-bidirectional="true"  
+              fontsize="1.7vmin"  
+              colors="var(--color1);black">
+            </webaudio-param> 
+          </div>
         </div>
 
         <!-- Bottom-Aligned Buttons -->

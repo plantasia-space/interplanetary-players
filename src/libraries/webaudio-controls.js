@@ -944,10 +944,13 @@ try {
       this.keydown = this.keydown.bind(this);
       this.wheel = this.wheel.bind(this);
       this.redraw = this.redraw.bind(this);
-/*       this.handleParamChange = this.handleParamChange.bind(this);
- */
+      this.onParameterChanged = this.onParameterChanged.bind(this); // Ensure correct binding
+
       // Initialize properties for ResizeObserver
       this.resizeObserver = null;
+
+      // Flag to prevent circular updates
+      this.updatingFromSlider = false;
     }
 
     connectedCallback() {
@@ -998,6 +1001,7 @@ try {
             white-space: nowrap;
             pointer-events: none;
             opacity: 0;
+            transition: opacity 0.3s;
           }
           .webaudioctrl-label {
             position: absolute;
@@ -1006,6 +1010,8 @@ try {
             top: 100%;
             left: 0;
             transform: translateY(4px);
+            font-size: 10px;
+            color: #fff;
           }
           :host(:focus) .webaudio-slider-body {
             outline: none;
@@ -1053,17 +1059,24 @@ try {
       this.rootParam = this.getAttr("root-param", null); // New attribute
       this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
 
-            // Register with ParameterManager if rootParam is specified
-            if (this.rootParam) {      
-              // Subscribe to ParameterManager updates for this parameter with the retrieved priority
-              const priority = getPriority("webaudio-slider");
+      // Register with ParameterManager if rootParam is specified
+      if (this.rootParam) {      
+        // Subscribe to ParameterManager updates for this parameter with the retrieved priority
+        const priority = getPriority("webaudio-slider");
 
-              user1Manager.subscribe(this, this.rootParam, priority);
-            }
+        user1Manager.subscribe(this, this.rootParam, priority);
+
+        // **Initialization Step**
+        const initialRaw = user1Manager.getRawValue(this.rootParam);
+        if (initialRaw !== null) {
+          this._setValue(initialRaw, false);
+        } else {
+          user1Manager.setRawValue(this.rootParam, this._value, this, priority);
+        }
+      }
 
       // Controller name based on the knob's ID or a unique identifier
       this.controllerName = this.id || `knob-${Math.random().toString(36).substr(2, 9)}`;
-
       
       // Register the slider globally
       window.webaudioSliders = window.webaudioSliders || {};
@@ -1112,16 +1125,18 @@ try {
       this.tracking = (this.getAttr("tracking", "rel") || "rel").toLowerCase();
       this._value = parseFloat(this.getAttribute("value")) || 0;
       this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
-      this._min = parseFloat(this.getAttribute("min")) || 0;
-      this._max = parseFloat(this.getAttribute("max")) || 100;
-      this._step = parseFloat(this.getAttribute("step")) || 1;
+      this._min = parseFloat(this.getAttribute("min")) || -60; // Default to -60 dB if not set
+      this._max = parseFloat(this.getAttribute("max")) || 6;
+      this._step = parseFloat(this.getAttribute("step")) || 0.1; // Default to 0.1 dB step for precision
       this._direction = this.getAttribute("direction") || "horz";
-      this.log = parseInt(this.getAttr("log", 0)) === 1; // Parse as boolean
+      this.log = parseInt(this.getAttr("log", 0), 10) === 1; // Parse as boolean
       this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
       this.outline = this.getAttribute("outline") || "none";        
       this.setupLabel();
-      // Clamp sensitivity between 1 and 128
-      this.sensitivity = Math.min(Math.max(parseFloat(this.getAttribute("sensitivity")) || 1, 1), 128);
+      
+      // Clamp sensitivity between 1 and 127
+      this.sensitivity = Math.min(Math.max(parseInt(this.getAttribute("sensitivity"), 10) || 1, 1), 127);
+      
       this.valuetip = this.getAttr("valuetip", opt.valuetip);
       this.tooltip = this.getAttribute("tooltip") || null;
       this.conv = this.getAttribute("conv") || null;
@@ -1129,7 +1144,6 @@ try {
 
       // Ensure 'min' is valid for logarithmic scaling
       if (this.log && this._min <= 0) {
-        console.warn("webaudio-slider: Logarithmic scale requires min > 0. Setting min to 1.");
         this._min = 1;
         this.setAttribute("min", this._min);
       }
@@ -1197,13 +1211,11 @@ try {
 
       // Check and set default width and height if they are 0
       if (rect.width === 0) {
-        console.warn("webaudio-slider: Container width is 0. Setting default width based on direction.");
         this.elem.style.width = this._direction.toLowerCase() === "vert" ? "50px" : "300px"; // Set default width based on direction
         rect = this.elem.getBoundingClientRect(); // Update rect after setting width
       }
 
       if (rect.height === 0) {
-        console.warn("webaudio-slider: Container height is 0. Setting default height based on direction.");
         this.elem.style.height = this._direction.toLowerCase() === "vert" ? "200px" : "50px"; // Set default height based on direction
         rect = this.elem.getBoundingClientRect(); // Update rect after setting height
       }
@@ -1223,7 +1235,7 @@ try {
       // Recalculate dimensions proportionally based on direction
       if (this._direction.toLowerCase() === "horz") {
         this.isHorizontal = true;
-        this.knobSize = this._height * knobSizeMultiplier; // 40% of height for horizontal
+        this.knobSize = this._height * knobSizeMultiplier; // 30% of height for horizontal
         const padding = this.knobSize;
         this.trackLength = this._width - 2 * padding;
         this.trackHeight = this._height * 0.2; // 20% of height
@@ -1231,14 +1243,13 @@ try {
         this.trackY = (this._height - this.trackHeight) / 2;
       } else if (this._direction.toLowerCase() === "vert") {
         this.isHorizontal = false;
-        this.knobSize = this._width * knobSizeMultiplier; // 40% of width for vertical
+        this.knobSize = this._width * knobSizeMultiplier; // 30% of width for vertical
         const padding = this.knobSize;
         this.trackLength = this._height - 2 * padding;
-        this.trackHeight = this._width * knobSizeMultiplier; // 20% of width
+        this.trackHeight = this._width * knobSizeMultiplier; // 30% of width
         this.trackX = (this._width - this.trackHeight) / 2;
         this.trackY = padding;
       } else {
-        console.warn(`webaudio-slider: Invalid direction "${this._direction}". Defaulting to horizontal.`);
         this.isHorizontal = true;
         this.knobSize = this._height * knobSizeMultiplier;
         const padding = this.knobSize;
@@ -1273,11 +1284,9 @@ try {
       if (this.conv) {
         const x = this._value;
         try {
-          this.convValue = eval(this.conv);
-          if (typeof this.convValue === "function")
-            this.convValue = this.convValue(x);
+          // Safer alternative to eval: using Function constructor
+          this.convValue = Function('x', `return ${this.conv};`)(x);
         } catch (error) {
-          console.error(`webaudio-slider: Error evaluating conv expression "${this.conv}":`, error);
           this.convValue = this._value;
         }
       } else {
@@ -1301,6 +1310,9 @@ try {
         this.fireflag = false;
       }
 
+      // Update label
+      this.setupLabel();
+
       // Update linked param if exists
       if (this.linkedParam) {
         if (parseFloat(this.linkedParam.value) !== this._value) {
@@ -1319,85 +1331,89 @@ try {
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this._width, this._height);
 
-      // Draw centered track line
-      ctx.strokeStyle = "#ffffff"; // Track color
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      if (this.isHorizontal) {
-        const centerY = this.trackY + this.trackHeight / 2;
-        ctx.moveTo(this.trackX, centerY);
-        ctx.lineTo(this.trackX + this.trackLength, centerY);
-      } else {
-        const centerX = this.trackX + this.trackHeight / 2;
-        ctx.moveTo(centerX, this.trackY);
-        ctx.lineTo(centerX, this.trackY + this.trackLength);
+      try {
+        // Draw centered track line
+        ctx.strokeStyle = "#ffffff"; // Track color
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (this.isHorizontal) {
+          const centerY = this.trackY + this.trackHeight / 2;
+          ctx.moveTo(this.trackX, centerY);
+          ctx.lineTo(this.trackX + this.trackLength, centerY);
+        } else {
+          const centerX = this.trackX + this.trackHeight / 2;
+          ctx.moveTo(centerX, this.trackY);
+          ctx.lineTo(centerX, this.trackY + this.trackLength);
+        }
+        ctx.stroke();
+
+        // Draw filled portion
+        ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (this.isHorizontal) {
+          const centerY = this.trackY + this.trackHeight / 2;
+          ctx.moveTo(this.trackX, centerY);
+          ctx.lineTo(this.trackX + this.trackLength * ratio, centerY);
+        } else {
+          const centerX = this.trackX + this.trackHeight / 2;
+          ctx.moveTo(centerX, this.trackY + this.trackLength * (1 - ratio));
+          ctx.lineTo(centerX, this.trackY + this.trackLength);
+        }
+        ctx.stroke();
+
+        // Draw equilateral triangular knob/pointer
+        ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
+        ctx.strokeStyle = this.coltab[3] || '#777'; // Knob border color
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        const side = this.knobSize; // Length of each side of the triangle
+        const height = (Math.sqrt(3) / 2) * side; // Height of equilateral triangle
+
+        if (this.isHorizontal) {
+          const knobX = this.trackX + this.trackLength * ratio; // Knob position on the X-axis
+          const knobY = this.trackY + this.trackHeight / 2; // Center Y position
+
+          // Define triangle points for horizontal slider (pointing right)
+          // Tip at (knobX, knobY)
+          // Base shifted left by height
+          const tipX = knobX;
+          const tipY = knobY;
+
+          const baseLeftX = knobX - height;
+          const baseTopY = knobY - (side / 2);
+          const baseBottomY = knobY + (side / 2);
+
+          ctx.moveTo(tipX, tipY); // Tip of the triangle
+          ctx.lineTo(baseLeftX, baseTopY); // Top-left point
+          ctx.lineTo(baseLeftX, baseBottomY); // Bottom-left point
+          ctx.closePath();
+        } else {
+          const knobX = this.trackX + this.trackHeight / 2; // Center X position
+          const knobY = this.trackY + this.trackLength * (1 - ratio); // Knob position on the Y-axis
+
+          // Define triangle points for vertical slider (pointing up)
+          // Tip at (knobX, knobY)
+          // Base shifted down by height
+          const tipX = knobX;
+          const tipY = knobY;
+
+          const baseLeftX = knobX - (side / 2);
+          const baseRightX = knobX + (side / 2);
+          const baseBottomY = knobY + height;
+
+          ctx.moveTo(tipX, tipY); // Tip of the triangle
+          ctx.lineTo(baseLeftX, baseBottomY); // Bottom-left point
+          ctx.lineTo(baseRightX, baseBottomY); // Bottom-right point
+          ctx.closePath();
+        }
+
+        ctx.fill();
+        ctx.stroke();
+      } catch (error) {
+        // Handle any drawing errors silently
       }
-      ctx.stroke();
-
-      // Draw filled portion
-      ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      if (this.isHorizontal) {
-        const centerY = this.trackY + this.trackHeight / 2;
-        ctx.moveTo(this.trackX, centerY);
-        ctx.lineTo(this.trackX + this.trackLength * ratio, centerY);
-      } else {
-        const centerX = this.trackX + this.trackHeight / 2;
-        ctx.moveTo(centerX, this.trackY + this.trackLength * (1 - ratio));
-        ctx.lineTo(centerX, this.trackY + this.trackLength);
-      }
-      ctx.stroke();
-
-      // Draw equilateral triangular knob/pointer
-      ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
-      ctx.strokeStyle = this.coltab[3] || '#777'; // Knob border color
-      ctx.lineWidth = 3;
-
-      ctx.beginPath();
-      const side = this.knobSize; // Length of each side of the triangle
-      const height = (Math.sqrt(3) / 2) * side; // Height of equilateral triangle
-
-      if (this.isHorizontal) {
-        const knobX = this.trackX + this.trackLength * ratio; // Knob position on the X-axis
-        const knobY = this.trackY + this.trackHeight / 2; // Center Y position
-
-        // Define triangle points for horizontal slider (pointing right)
-        // Tip at (knobX, knobY)
-        // Base shifted left by height
-        const tipX = knobX;
-        const tipY = knobY;
-
-        const baseLeftX = knobX - height;
-        const baseTopY = knobY - (side / 2);
-        const baseBottomY = knobY + (side / 2);
-
-        ctx.moveTo(tipX, tipY); // Tip of the triangle
-        ctx.lineTo(baseLeftX, baseTopY); // Top-left point
-        ctx.lineTo(baseLeftX, baseBottomY); // Bottom-left point
-        ctx.closePath();
-      } else {
-        const knobX = this.trackX + this.trackHeight / 2; // Center X position
-        const knobY = this.trackY + this.trackLength * (1 - ratio); // Knob position on the Y-axis
-
-        // Define triangle points for vertical slider (pointing up)
-        // Tip at (knobX, knobY)
-        // Base shifted down by height
-        const tipX = knobX;
-        const tipY = knobY;
-
-        const baseLeftX = knobX - (side / 2);
-        const baseRightX = knobX + (side / 2);
-        const baseBottomY = knobY + height;
-
-        ctx.moveTo(tipX, tipY); // Tip of the triangle
-        ctx.lineTo(baseLeftX, baseBottomY); // Bottom-left point
-        ctx.lineTo(baseRightX, baseBottomY); // Bottom-right point
-        ctx.closePath();
-      }
-
-      ctx.fill();
-      ctx.stroke();
     }
 
     /**
@@ -1405,15 +1421,25 @@ try {
      * @param {number} v - The value to set.
      * @returns {boolean} - Returns true if the value changed, else false.
      */
-    _setValue(v) {
-      if (this._step) {
+    _setValue(v, fire = true) { // Added fire parameter for flexibility
+      if (this._step && this._step > 0) {
+        // Align v to the nearest step
         v = Math.round((v - this._min) / this._step) * this._step + this._min;
       }
+
+      // Clamp value within min and max
       v = Math.min(this._max, Math.max(this._min, v));
-      if (v !== this._value) {
+
+      // Round to avoid floating-point precision issues
+      const decimalPlaces = this.digits > 0 ? this.digits : 0;
+      v = parseFloat(v.toFixed(decimalPlaces));
+
+      // Determine if the value has changed
+      const valueChanged = v !== this._value;
+
+      if (valueChanged) {
         this._value = v;
         this.fireflag = true;
-
         this.redraw();
         return true;
       }
@@ -1425,26 +1451,25 @@ try {
      * @param {number} v - The value to set.
      * @param {boolean} fire - Whether to fire 'input' and 'change' events.
      */
-    setValue(v, fire = false) {
-      if (this._setValue(v) && fire) {
+    setValue(v, fire = false) { // Default fire to false to prevent unwanted events
+      if (this._setValue(v, fire)) {
+        if (fire) {
+          // Determine priority using the centralized getPriority function
+          const priority = getPriority("webaudio-slider");
 
-        // Determine priority using the centralized getPriority function
-        const priority = getPriority("webaudio-slider");
+          if (this.rootParam) {
+            // Update ParameterManager with the new value
+            user1Manager.setRawValue(
+              this.rootParam,
+              this._value,
+              this, // Source controller
+              priority
+            );
+          }
 
-        if (this.rootParam) {
-          // Update ParameterManager with the new value
-          user1Manager.setRawValue(
-            this.rootParam,
-            this._value,
-            this, // Source controller
-            priority
-          );
+          this.sendEvent("input");
+          this.sendEvent("change");
         }
-        console.log("listParameters", user1Manager.listParameters());
-
-        this.sendEvent("input");
-        this.sendEvent("change");
-        //this.updateLinkedParam(); // Update linked param if exists
       }
     }
 
@@ -1471,19 +1496,23 @@ try {
       e.stopPropagation();
     }
 
-      /**
-   * Handles parameter updates from ParameterManager.
-   * @param {string} parameterName - The name of the parameter that changed.
-   * @param {number} newValue - The new value of the parameter.
-   */
-      onParameterChanged(parameterName, newValue) {
-        if (this.rootParam === parameterName) {
-          if (this.isBidirectional && this._value !== newValue) {
-            console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
-            this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
+    /**
+     * Handles parameter updates from ParameterManager.
+     * @param {string} parameterName - The name of the parameter that changed.
+     * @param {number} newValue - The new value of the parameter.
+     */
+    onParameterChanged(parameterName, newValue) {
+      if (this.rootParam === parameterName) {
+        if (this.isBidirectional) {
+          const newRawValue = newValue; // Treat as raw value
+          if (this._value !== newRawValue) {
+            this.updatingFromSlider = true;
+            this.setValue(newRawValue, false);
+            this.updatingFromSlider = false;
           }
         }
       }
+    }
 
     /**
      * Handles wheel events for adjusting the slider value.
@@ -1596,13 +1625,19 @@ try {
       let newValue;
       if (this.log) {
         if (this._min <= 0) {
-          console.warn("webaudio-slider: Logarithmic scale requires min > 0.");
           newValue = this._min;
         } else {
           newValue = this._min * Math.pow(this._max / this._min, ratio);
         }
       } else {
         newValue = this._min + ratio * (this._max - this._min);
+      }
+
+      // Snap to max or min if at the boundaries to ensure precision
+      if (ratio === 1) {
+        newValue = this._max;
+      } else if (ratio === 0) {
+        newValue = this._min;
       }
 
       this.setValue(newValue, true);
@@ -1623,11 +1658,11 @@ try {
       // Determine value change based on orientation
       let deltaRatio;
       if (this.isHorizontal) {
-        // Sensitivity: 1 to 128, higher means less change per pixel
-        deltaRatio = (deltaX / 128) * (this.sensitivity / 128);
+        // Sensitivity: 1 to 127, higher means less change per pixel
+        deltaRatio = (deltaX / 128) * (this.sensitivity / 127);
       } else {
         // Vertical slider: moving up increases, moving down decreases
-        deltaRatio = (-deltaY / 128) * (this.sensitivity / 128);
+        deltaRatio = (-deltaY / 128) * (this.sensitivity / 127);
       }
 
       if (this.log && this._min > 0) {
@@ -1635,6 +1670,14 @@ try {
         let newLog = this.startLog + deltaRatio;
         newLog = Math.max(0, Math.min(1, newLog));
         let newValue = this._min * Math.pow(this._max / this._min, newLog);
+
+        // Snap to max or min if near the boundaries to ensure precision
+        if (newLog === 1) {
+          newValue = this._max;
+        } else if (newLog === 0) {
+          newValue = this._min;
+        }
+
         this.setValue(newValue, true);
       } else {
         // Linear mode
@@ -1645,7 +1688,14 @@ try {
           deltaValue = (-deltaY / 128) * this.sensitivity;
         }
         let newValue = this.startValue + deltaValue;
-        newValue = Math.min(this._max, Math.max(this._min, newValue));
+
+        // Snap to max or min if near the boundaries to ensure precision
+        if (newValue >= this._max) {
+          newValue = this._max;
+        } else if (newValue <= this._min) {
+          newValue = this._min;
+        }
+
         this.setValue(newValue, true);
       }
     }
@@ -1684,7 +1734,8 @@ try {
       setTimeout(() => {
         if (this.tooltip) {
           this.ttframe.style.opacity = 1;
-          this.ttframe.textContent = this.convValue;
+          // Display '-∞' if value is at min
+          this.ttframe.textContent = this._value === this._min ? '-∞' : this.convValue;
         }
       }, delay);
     }
@@ -1708,7 +1759,8 @@ try {
       if (this.valuetip) {
         valueToShow = this.valuetip.replace("{value}", valueToShow);
       }
-      this.ttframe.textContent = valueToShow;
+      // Display '-∞' if value is at min
+      this.ttframe.textContent = this._value === this._min ? '-∞' : valueToShow;
       this.ttframe.style.opacity = 1;
       setTimeout(() => {
         this.ttframe.style.opacity = 0;
@@ -1719,16 +1771,13 @@ try {
      * Sets up the label. Customize this method based on your labeling needs.
      */
     setupLabel() {
-      // Example Implementation:
-      // Update the label to show the current value
-      this.label.textContent = this.convValue;
+      // Update the label to show the current value or '-∞' if at min
+      this.label.textContent = this._value === this._min ? '-∞' : this.convValue;
     }
   });
 } catch (error) {
-  console.error("webaudio-slider already defined or error in definition:", error);
+  // Silently handle if the component is already defined or any other errors
 }
-
-
 
 
 
