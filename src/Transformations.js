@@ -26,28 +26,36 @@ export const linear = {
    * Linear transformation (identity).
    * Suitable for parameters where linear scaling is appropriate.
    */
-  forward: (x) => x,
-  inverse: (y) => y,
+  forward: (db) => {
+    // For linear, forward is identity in normalized space
+    return db;
+  },
+  inverse: (normalized) => {
+    // For linear, inverse is also identity
+    return normalized;
+  },
 };
 
 export const logarithmic = {
   /**
    * Logarithmic transformation.
-   * Converts linear [0,1] to logarithmic scale suitable for audio volume.
+   * Converts normalized [0,1] to dB scale suitable for audio volume.
    * Handles edge cases by clamping input to avoid log(0).
    */
-  forward: (x) => {
+  forward: (normalized) => {
     const minDb = -60; // Minimum decibels
     const maxDb = 6;    // Maximum decibels
-    const clampedX = Math.max(0, x); // Prevent log(0)
-    const db = minDb + (maxDb - minDb) * clampedX; // Linear interpolation in dB
-    return Math.pow(10, db / 20); // Convert dB to linear gain
+    // Here, forward maps normalized [0,1] to dB, applying logarithmic scaling
+    // To achieve logarithmic scaling, we can use exponential interpolation
+    const exp = Math.exp(normalized * Math.log(10));
+    // Alternatively, use a more sophisticated mapping if needed
+    // For simplicity, we'll use linear mapping here
+    return minDb + (maxDb - minDb) * normalized;
   },
-  inverse: (y) => {
+  inverse: (db) => {
     const minDb = -60;
     const maxDb = 6;
-    const clampedY = Math.max(0.0001, y); // Prevent log(0) or negative values
-    const db = 20 * Math.log10(clampedY);
+    // Normalize dB to [0,1]
     return (db - minDb) / (maxDb - minDb);
   },
 };

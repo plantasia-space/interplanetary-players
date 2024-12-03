@@ -9,7 +9,7 @@ import { setupInteractions, updateKnobsFromTrackData, applyColorsFromTrackData  
 import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
 import { ButtonGroup } from './ButtonGroup.js';
 import { ParameterManager } from './ParameterManager.js';
-import { logarithmic, exponential, piecewiseLinear } from './Transformations.js';
+import { logarithmic, exponential } from './Transformations.js';
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -60,7 +60,7 @@ async function initializeApp() {
         // Populate placeholders
         setupInteractions(dataManager, audioPlayer);
         dataManager.populatePlaceholders('monitorInfo');
-
+        console.log("setted parameters", user1Manager.listParameters());
         // Load the model and display it in the scene
         await loadAndDisplayModel(scene, trackData);
         console.log('[APP] Model loaded successfully.');
@@ -71,52 +71,73 @@ async function initializeApp() {
 
 
 function initializeRootParams(parameterManager, trackData) {
-  const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
-
-  // Extract x, y, z from trackData dynamically
-  const { x, y, z } = trackData.soundEngine.soundEngineParams;
-
-  // Map for parameter initialization
-  const paramConfigs = {
-    x: { ...x }, // Example: { initValue: 1, min: -100, max: 100 }
-    y: { ...y },
-    z: { ...z },
-    'body-level': { 
-      initValue: 0.0, 
-      min: -60, 
-      max: 6, 
-      inputTransform: logarithmic.inverse, // Correctly named key
-      outputTransform: logarithmic.forward       // Correctly named key
-    }, 
-    'body-envelope': { 
-      initValue: 0, 
-      min: -1, 
-      max: 1,
-    },
-
-  };
-  console.log("1", logarithmic.inverse);
-
-  console.log("[paramConfigs:", paramConfigs);
-
-  // Iterate through rootParams and add them to ParameterManager
-  rootParams.forEach((paramName) => {
+    const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
+  
+    // Extract x, y, z from trackData dynamically
+    const { x, y, z } = trackData.soundEngine.soundEngineParams;
+  
+    // Map for parameter initialization
+    const paramConfigs = {
+      x: { ...x }, // Example: { initValue: 1, min: -100, max: 100 }
+      y: { ...y },
+      z: { ...z },
+      'body-level': { 
+        initValue: 0.0, 
+        min: -60, 
+        max: 6, 
+        inputTransform: logarithmic.inverse, // Correctly named key
+        outputTransform: logarithmic.forward  // Correctly named key
+      }, 
+      'body-envelope': { 
+        initValue: 0, 
+        min: -1, 
+        max: 1,
+      },
+    };
+    
+    console.log("1", logarithmic.inverse);
+    console.log("[paramConfigs:", paramConfigs);
+  
+    // Iterate through rootParams and add them to ParameterManager
+    rootParams.forEach((paramName) => {
       const config = paramConfigs[paramName];
       if (config) {
-          const { initValue, min, max } = config;
-
-          // Validate the configuration
-          if (typeof initValue === 'number' && typeof min === 'number' && typeof max === 'number') {
-            user1Manager.addParameter(paramName, initValue, min, max, true); // Bidirectional = true
-             // console.debug(`[initializeRootParams] Added: ${paramName}`, config);
+        const { initValue, min, max, inputTransform, outputTransform } = config;
+  
+        // Validate the configuration
+        if (typeof initValue === 'number' && typeof min === 'number' && typeof max === 'number') {
+          // Conditionally pass transformation functions if they exist
+          if (inputTransform && outputTransform) {
+            parameterManager.addParameter(
+              paramName,
+              initValue,
+              min,
+              max,
+              true, // Bidirectional = true
+              inputTransform, // Pass inputTransform
+              outputTransform // Pass outputTransform
+            );
+            console.debug(`[initializeRootParams] Added/Updated parameter '${paramName}' with transformations.`, config);
           } else {
-              console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
+            // If no transformation functions are provided, use defaults
+            parameterManager.addParameter(
+              paramName,
+              initValue,
+              min,
+              max,
+              true // Bidirectional = true
+              // inputTransform and outputTransform default to linear
+            );
+            console.debug(`[initializeRootParams] Added/Updated parameter '${paramName}' without transformations.`, config);
           }
+        } else {
+          console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
+        }
       } else {
-          console.warn(`[initializeRootParams] Parameter '${paramName}' not found in configs.`);
+        console.warn(`[initializeRootParams] Parameter '${paramName}' not found in configs.`);
       }
-  });
-}
+    });
+  }
 
 
 window.addEventListener('resize', () => {

@@ -1451,14 +1451,12 @@ try {
      * @param {number} v - The value to set.
      * @param {boolean} fire - Whether to fire 'input' and 'change' events.
      */
-    setValue(v, fire = false) { // Default fire to false to prevent unwanted events
+    setValue(v, fire = false) {
       if (this._setValue(v, fire)) {
         if (fire) {
-          // Determine priority using the centralized getPriority function
           const priority = getPriority("webaudio-slider");
-
           if (this.rootParam) {
-            // Update ParameterManager with the new value
+            // Send the slider's value directly; the ParameterManager will handle transformations
             user1Manager.setRawValue(
               this.rootParam,
               this._value,
@@ -1466,7 +1464,6 @@ try {
               priority
             );
           }
-
           this.sendEvent("input");
           this.sendEvent("change");
         }
@@ -1504,12 +1501,11 @@ try {
     onParameterChanged(parameterName, newValue) {
       if (this.rootParam === parameterName) {
         if (this.isBidirectional) {
-          const newRawValue = newValue; // Treat as raw value
-          if (this._value !== newRawValue) {
-            this.updatingFromSlider = true;
-            this.setValue(newRawValue, false);
-            this.updatingFromSlider = false;
-          }
+          this.updatingFromParameter = true;
+          // Update the slider's value with the transformed value from the ParameterManager
+          this.setValue(newValue, false);
+          this.updatingFromParameter = false;
+          console.debug(`[WebAudioSlider] Parameter '${parameterName}' updated to: ${newValue}`);
         }
       }
     }
@@ -2756,9 +2752,12 @@ try {
 
       onParameterChanged(parameterName, newValue) {
         if (this.rootParam === parameterName) {
-          if (this.isBidirectional && this._value !== newValue) {
-            console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
-            this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
+          if (this.isBidirectional) {
+            this.updatingFromParameter = true;
+            // Update the slider's value with the transformed value from the ParameterManager
+            this.setValue(newValue, false);
+            this.updatingFromParameter = false;
+            console.debug(`[WebAudioSlider] Parameter '${parameterName}' updated to: ${newValue}`);
           }
         }
       }
