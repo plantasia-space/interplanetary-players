@@ -178,38 +178,36 @@ function animate() {
  * Sets up alignment for the collapse menu and attaches relevant event listeners.
  */
 function setupCollapseMenuAlignment() {
-    const infoButton = document.getElementById("informationMenuButton");
-    const collapseMenu = document.getElementById("collapseInfoMenu");
+  const infoButton = document.getElementById("informationMenuButton");
+  const collapseMenu = document.getElementById("collapseInfoMenu");
+  if (!infoButton || !collapseMenu) {
+      console.error("Information button or collapse menu element not found.");
+      return;
+  }
 
-    if (!infoButton || !collapseMenu) {
-        console.error("Information button or collapse menu element not found.");
-        return;
-    }
+  const verticalOffsetVH = 2; // Vertical offset in `vh`
+  const horizontalOffsetVW = -1; // Horizontal offset in `vw`
 
-    const verticalOffsetVH = 2; // Vertical offset in `vh`
-    const horizontalOffsetVW = -1; // Horizontal offset in `vw`
+  const alignCollapseMenu = () => {
+      const buttonRect = infoButton.getBoundingClientRect();
+      const headerRect = document.querySelector(".header-row").getBoundingClientRect();
 
-    const alignCollapseMenu = () => {
-        const buttonRect = infoButton.getBoundingClientRect();
-        const headerRect = document.querySelector(".header-row").getBoundingClientRect();
+      const calculatedTop = buttonRect.bottom - headerRect.top + (verticalOffsetVH * window.innerHeight) / 100;
+      const calculatedLeft = buttonRect.left - headerRect.left + (horizontalOffsetVW * window.innerWidth) / 100;
 
-        const calculatedTop = buttonRect.bottom - headerRect.top + (verticalOffsetVH * window.innerHeight) / 100;
-        const calculatedLeft = buttonRect.left - headerRect.left + (horizontalOffsetVW * window.innerWidth) / 100;
+      collapseMenu.style.top = `${calculatedTop}px`;
+      collapseMenu.style.left = `${calculatedLeft}px`;
+  };
 
-        collapseMenu.style.top = `${calculatedTop}px`;
-        collapseMenu.style.left = `${calculatedLeft}px`;
-    };
+  // Align initially
+  alignCollapseMenu();
 
-    // Align initially
-    alignCollapseMenu();
+  // Adjust on window resize
+  window.addEventListener("resize", alignCollapseMenu);
 
-    // Adjust on window resize
-    window.addEventListener("resize", alignCollapseMenu);
-
-    // Optionally adjust when the menu is shown
-    infoButton.addEventListener("click", alignCollapseMenu);
+  // Remove or comment out the following line to prevent conflicts
+  infoButton.addEventListener("click", alignCollapseMenu);
 }
-
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Application initialized.");

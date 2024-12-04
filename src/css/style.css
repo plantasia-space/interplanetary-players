@@ -41,9 +41,6 @@ html, body {
     font-family: 'SpaceMono', sans-serif;
 }
 
-webaudio-knob, webaudio-param, webaudio-slider, webaudio-switch, webaudio-numeric-keyboard {
-    pointer-events: auto;
-  }
 
 webaudioctrl-context-menu {
     margin: 0;
@@ -61,6 +58,50 @@ webaudio-slider {
     margin: 0;
     padding: 0;
   }
+
+
+/* Default state: Widgets are interactive */
+webaudio-knob,
+webaudio-param,
+webaudio-slider,
+webaudio-switch,
+webaudio-numeric-keyboard {
+  pointer-events: auto;
+}
+
+/* MIDI Learn mode: Disable pointer events on widgets */
+.midi-learn-mode webaudio-knob,
+.midi-learn-mode webaudio-param,
+.midi-learn-mode webaudio-slider,
+.midi-learn-mode webaudio-switch,
+.midi-learn-mode webaudio-numeric-keyboard {
+  pointer-events: none;
+}
+
+/* Overlay element */
+.widget-overlay {
+  position: fixed; /* Changed from absolute to fixed */
+  z-index: 1000; /* Ensure overlays have a defined stacking order */
+  pointer-events: auto;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+/* Highlight automatable elements during MIDI Learn mode */
+.midi-learn-highlight {
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(159, 159, 159, 0.5);
+}
+
+/* Optional: Change cursor to indicate interactivity */
+[data-automatable="true"]:hover {
+  cursor: pointer;
+}
+
+/* Ensure the Bootstrap dropdown menu appears above overlays */
+#midi-context-menu.show {
+  z-index: 1050; /* Higher than overlays */
+}
 
 
 

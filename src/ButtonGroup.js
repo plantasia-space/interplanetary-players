@@ -47,10 +47,20 @@ export class ButtonGroup {
      * Initialize the ButtonGroup by setting up SVGs and event bindings.
      */
     init() {
-        console.log(`ButtonGroup Init: Setting up dynamic SVGs and events.`);
-        this.adjustForMidiSupport(); // Adjust dropdown for MIDI
+        console.log(`Initializing dropdowns for "${this.containerSelector}"`);
+    
+        if (this.collapseInstance) {
+            this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
+        }
+    
+        this.adjustForMidiSupport();
         this.loadDynamicSVGs();
         this.bindEvents();
+    
+        // Avoid global dropdown interference
+        this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
+            new bootstrap.Dropdown(dropdown, { autoClose: 'outside' });
+        });
     }
     /**
      * Adjust the dropdown for MIDI support before setting up icons and events.
@@ -125,21 +135,24 @@ export class ButtonGroup {
         this.menuItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 const newIconPath = item.getAttribute('data-icon');
                 const newValue = item.getAttribute('data-value');
-
+    
                 if (newIconPath && newValue) {
                     this.icon.setAttribute('data-src', newIconPath);
                     this.icon.setAttribute('aria-label', newValue);
                     this.fetchAndSetSVG(newIconPath, this.icon, true);
                 }
-
+    
                 this.onSelectionChange(newValue);
             });
         });
-
+    
         if (this.closeGridBtn) {
-            this.closeGridBtn.addEventListener('click', () => {
+            this.closeGridBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 this.hideGrid();
             });
         }
@@ -249,62 +262,35 @@ export class ButtonGroup {
  */
 handleInteractionDropdown(selectedValue) {
     console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
-
+  
     switch (selectedValue) {
-        case 'Jam':
-            console.log('Jam mode activated.');
-            // Default mode, no additional behavior needed
-            break;
-
-        case 'MIDI':
-            console.log('MIDI mode activated.');
-            this.activateMIDI();
-            break;
-
-        case 'Sensors':
-            console.log('Sensors mode activated.');
-            this.activateSensors();
-            break;
-
-        case 'Cosmic LFO':
-            console.log('Cosmic LFO mode activated.');
-            this.activateCosmicLFO();
-            break;
-
-        default:
-            console.warn(`Unknown interaction mode: ${selectedValue}`);
+      case 'Jam':
+        console.log('Jam mode activated.');
+        break;
+  
+      case 'MIDI':
+        console.log('MIDI mode activated.');
+        MIDIControllerInstance.activateMIDI().then(() => {
+          MIDIControllerInstance.enableMidiLearn();
+        });
+        break;
+  
+      case 'Sensors':
+        console.log('Sensors mode activated.');
+        this.activateSensors();
+        break;
+  
+      case 'Cosmic LFO':
+        console.log('Cosmic LFO mode activated.');
+        this.activateCosmicLFO();
+        break;
+  
+      default:
+        console.warn(`Unknown interaction mode: ${selectedValue}`);
     }
-}
+  }
 
-/**
- * Activate MIDI mode with custom modal messaging.
- */
-async activateMIDI() {
-    console.log('Activating MIDI...');
 
-    // Attempt to request MIDI access
-    try {
-        await MIDIControllerInstance.onMidiIconClick();
-        console.log('MIDI activated successfully.');
-
-        // Debug before showing modal
-        console.log('Preparing to show success modal for MIDI activation...');
-        showUniversalModal(
-            'MIDI Activated',
-            'MIDI has been successfully activated! You can now use your MIDI devices.',
-            'Okay'
-        );
-    } catch (error) {
-        console.error('Failed to activate MIDI:', error);
-
-        // Debug before showing error modal
-        console.log('Preparing to show failure modal for MIDI activation...');
-        showUniversalModal(
-            'MIDI Activation Failed',
-            'There was an error while trying to activate MIDI. Please check your settings and try again.',
-            'Close'
-        );
-    }
-}
+  
 
 }

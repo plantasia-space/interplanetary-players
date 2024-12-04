@@ -2523,6 +2523,7 @@ try {
     font-size: 8px;
     cursor:pointer;
     position:relative;
+    border-radius: 10px;
     vertical-align:baseline;
   }
   .webaudio-param-body{
@@ -2530,6 +2531,7 @@ try {
     position:relative;
     text-align:center;
     background:none;
+    border-radius: 10px;
     margin:0;
     padding:0;
     font-family:sans-serif;
@@ -2538,7 +2540,7 @@ try {
     border:none;
   }
   </style>
-  <input class='webaudio-param-body'  type='button' value='0' inputmode='none' tabindex='1' touch-action='none'/>
+  <input class='webaudio-param-body'  type='button'  value='0' inputmode='none' tabindex='1' touch-action='none'/>
   <div class='webaudioctrl-tooltip'></div>
   `;
         // Use querySelector to reliably select elements
@@ -2685,6 +2687,7 @@ try {
           this.elem.style.width = this._width;
           this.elem.style.height = this._height;
           this.elem.style.fontSize = this.fontsize;
+          
           let l=document.getElementById(this.link);
           if(l&&typeof(l.value)!="undefined"){
             if(typeof(l.convValue)=="number")

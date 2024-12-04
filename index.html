@@ -38,25 +38,25 @@
         </button>
         <ul class="dropdown-menu" aria-labelledby="informationMenuButton">
           <li>
-            <a class="dropdown-item" href="#" data-value="Control Monitor">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Control Monitor">
               <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon">
               Control Monitor
             </a>
           </li>
           <li>
-            <a class="dropdown-item" href="#" data-value="Track">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Track">
               <img src="/assets/icons/track.svg" alt="Track" class="menu-item-icon">
               Track
             </a>
           </li>
           <li>
-            <a class="dropdown-item" href="#" data-value="Interplanetary Player">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Interplanetary Player">
               <img src="/assets/icons/interplanetary-player.svg" alt="Interplanetary Player" class="menu-item-icon">
               Interplanetary Player
             </a>
           </li>
           <li>
-            <a class="dropdown-item" href="#" data-value="Sound Engine">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Sound Engine">
               <img src="/assets/icons/sound_engine.svg" alt="Sound Engine" class="menu-item-icon">
               Sound Engine
             </a>
@@ -145,16 +145,17 @@
             sensitivity="0.15" 
             step="0.1"   
             direction="vert"
+            data-automatable="true"
            >
           </webaudio-slider>
  <!-- show-label -->
             <webaudio-param  
               width="10vmin" 
-              height="2.5vmin" 
+              height="3.0vmin" 
               fontsize="2.1vmin"   
               root-param="body-level" 
               is-bidirectional="true"  
-              colors="var(--color1);black">
+              colors="var(--color1);#0000007d">
             </webaudio-param> 
           </div>
         </div>
@@ -176,35 +177,35 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="transportMenuButton">
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Play" data-icon="/assets/icons/play_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Play" data-icon="/assets/icons/play_circle.svg">
                           <img src="/assets/icons/play_circle.svg" alt="Play" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Play
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Pause" data-icon="/assets/icons/pause_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Pause" data-icon="/assets/icons/pause_circle.svg">
                           <img src="/assets/icons/pause_circle.svg" alt="Pause" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Pause
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Stop" data-icon="/assets/icons/stop_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Stop" data-icon="/assets/icons/stop_circle.svg">
                           <img src="/assets/icons/stop_circle.svg" alt="Stop" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Stop
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Rec" data-icon="/assets/icons/rec_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Rec" data-icon="/assets/icons/rec_circle.svg">
                           <img src="/assets/icons/rec_circle.svg" alt="Rec" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Rec
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Playback" data-icon="/assets/icons/playback.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Playback" data-icon="/assets/icons/playback.svg">
                           <img src="/assets/icons/playback.svg" alt="Playback" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Playback
@@ -223,11 +224,11 @@
                     <!-- Knob -->
                     <div id="xKnobContainer"></div>
                     <!-- Balance Button -->
-                    <webaudio-switch id="xBalance" type="kick" min="0" max="1" root-param="x" class="xyz-balance" is-bidirectional="false" midilearn="1"
+                    <webaudio-switch id="xBalance" data-automatable="true" type="kick" min="0" max="1" root-param="x" class="xyz-balance" is-bidirectional="false" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
                     <!-- WebAudio Param -->
-                    <webaudio-param  width="10vmin" height="2.5vmin" fontsize="2.4vmin"   label="x" tooltip="x" root-param="x" is-bidirectional="true"   colors="var(--color1);black">
+                    <webaudio-param  width="10vmin" height="3.0vmin" fontsize="2.4vmin"   label="x" tooltip="x" root-param="x" is-bidirectional="true"   colors="var(--color1);#0000007d">
                     </webaudio-param>
                   </div>
 
@@ -237,12 +238,12 @@
                     <div id="yKnobContainer"></div>
 
                     <!-- Balance Button -->
-                    <webaudio-switch id="yBalance" type="kick" class="xyz-balance" is-bidirectional="false" root-param="y" min="0" max="1" midilearn="1"
+                    <webaudio-switch id="yBalance" type="kick" class="xyz-balance" data-automatable="true" is-bidirectional="false" root-param="y" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
 
                     <!-- WebAudio Param -->
-                    <webaudio-param   width="10vmin" height="2.5vmin" fontsize="2.4vmin" root-param="y" is-bidirectional="true"  colors="var(--color1);black">
+                    <webaudio-param   width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="y" is-bidirectional="true"  colors="var(--color1);#0000007d">
                     </webaudio-param>
                   </div>
 
@@ -252,12 +253,12 @@
                     <div id="zKnobContainer"></div>
 
                     <!-- Balance Button -->
-                    <webaudio-switch id="zBalance" type="kick" class="xyz-balance" is-bidirectional="false" root-param="z" min="0" max="1" midilearn="1"
+                    <webaudio-switch id="zBalance" type="kick" class="xyz-balance" data-automatable="true" is-bidirectional="false" root-param="z" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
 
                     <!-- WebAudio Param -->
-                    <webaudio-param  width="10vmin" height="2.5vmin" fontsize="2.4vmin" root-param="z" is-bidirectional="true"  colors="var(--color1);black">
+                    <webaudio-param  width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="z" is-bidirectional="true"  colors="var(--color1);#0000007d">
                     </webaudio-param>
                   </div>
                 </div>
@@ -266,6 +267,9 @@
               <!-- Cosmic-LFO Button Column (1 column) -->
               <div class="col-1 d-flex justify-content-center">
                 <!-- Interaction Button Group -->
+                 <!-- Add this button somewhere accessible in your UI -->
+                <button id="cancel-midi-learn" style="display: none;">Cancel MIDI Learn</button>
+
                 <div class="button-group-container" data-group="interaction-dropdown">
                   <div class="dropup-center dropup">
                     <button class="btn interaction-button dropdown-toggle" type="button" id="interactionMenuButton"
@@ -274,21 +278,21 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="interactionMenuButton">
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Jam" data-icon="/assets/icons/jam.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="Jam" data-icon="/assets/icons/jam.svg">
                           <img src="/assets/icons/jam.svg" alt="Jam" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Jam
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="MIDI" data-icon="/assets/icons/midi.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="MIDI" data-icon="/assets/icons/midi.svg">
                           <img src="/assets/icons/midi.svg" alt="MIDI" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           MIDI
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Sensors"
+                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="Sensors"
                           data-icon="/assets/icons/motion-sensor.svg">
                           <img src="/assets/icons/motion-sensor.svg" alt="Sensors" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
@@ -296,7 +300,7 @@
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-value="Cosmic LFO"
+                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="Cosmic LFO"
                           data-icon="/assets/icons/cosmic-lfo.svg">
                           <img src="/assets/icons/cosmic-lfo.svg" alt="Cosmic LFO" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
@@ -314,6 +318,19 @@
       </div>
     </div>
   </div>
+<!-- MIDI Context Menu Dropdown -->
+<div id="midi-context-menu" class="dropdown-menu" data-bs-auto-close="outside" style="display: none;">
+  <a class="dropdown-item" href="#" id="midi-context-learn">Learn</a>
+  <a class="dropdown-item" href="#" id="midi-context-delete">Delete Mapping</a>
+  <a class="dropdown-item" href="#" id="midi-context-close">Close</a>
+</div>
+<a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Control Monitor">
+  <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon">
+  Control Monitor
+</a>
+
+
+
 
   <!-- Universal Modal -->
 <div class="modal fade" id="universalModal" tabindex="-1" aria-labelledby="universalModalLabel" aria-hidden="true">
