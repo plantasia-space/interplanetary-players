@@ -85,6 +85,7 @@ function initializeRootParams(parameterManager, trackData) {
         initValue: 0.0, 
         min: -60, 
         max: 6, 
+        scale: "logarithmic", // Include scale
         inputTransform: logarithmic.inverse, // Correctly named key
         outputTransform: logarithmic.forward  // Correctly named key
       }, 
@@ -102,7 +103,7 @@ function initializeRootParams(parameterManager, trackData) {
     rootParams.forEach((paramName) => {
       const config = paramConfigs[paramName];
       if (config) {
-        const { initValue, min, max, inputTransform, outputTransform } = config;
+        const { initValue, min, max, scale, inputTransform, outputTransform } = config;
   
         // Validate the configuration
         if (typeof initValue === 'number' && typeof min === 'number' && typeof max === 'number') {
@@ -114,6 +115,7 @@ function initializeRootParams(parameterManager, trackData) {
               min,
               max,
               true, // Bidirectional = true
+              scale,
               inputTransform, // Pass inputTransform
               outputTransform // Pass outputTransform
             );

@@ -764,7 +764,6 @@ try {
     onParameterChanged(parameterName, newValue) {
       if (this.rootParam === parameterName) {
         if (this.isBidirectional && this._value !== newValue) {
-          console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
           this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
         }
       }
@@ -1125,8 +1124,10 @@ try {
       this.tracking = (this.getAttr("tracking", "rel") || "rel").toLowerCase();
       this._value = parseFloat(this.getAttribute("value")) || 0;
       this.defvalue = parseFloat(this.getAttribute("defvalue")) || this._value;
-      this._min = parseFloat(this.getAttribute("min")) || -60; // Default to -60 dB if not set
-      this._max = parseFloat(this.getAttribute("max")) || 6;
+      this._min = parseFloat(this.getAttribute("min"));
+      if (isNaN(this._min)) this._min = 0.;
+      this._max = parseFloat(this.getAttribute("max"));
+      if (isNaN(this._max)) this._max = 1.;  
       this._step = parseFloat(this.getAttribute("step")) || 0.1; // Default to 0.1 dB step for precision
       this._direction = this.getAttribute("direction") || "horz";
       this.log = parseInt(this.getAttr("log", 0), 10) === 1; // Parse as boolean
@@ -1505,7 +1506,6 @@ try {
           // Update the slider's value with the transformed value from the ParameterManager
           this.setValue(newValue, false);
           this.updatingFromParameter = false;
-          console.debug(`[WebAudioSlider] Parameter '${parameterName}' updated to: ${newValue}`);
         }
       }
     }
@@ -2294,7 +2294,6 @@ try {
         onParameterChanged(parameterName, newValue) {
           if (this.rootParam === parameterName) {
             if (this.isBidirectional && this._value !== newValue) {
-              console.debug(`[WebAudioKnob] Parameter '${parameterName}' updated to: ${newValue}`);
               this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
             }
           }
@@ -2614,29 +2613,38 @@ try {
             // Parameter Manager Integration
             this.rootParam = this.getAttr("root-param", null); // New attribute
             this.isBidirectional = this.getAttr("is-bidirectional", "false") === "true"; // Parse as boolean
-
+          
             // Controller name based on the param's ID or a unique identifier
             this.controllerName = this.id || `param-${Math.random().toString(36).substr(2, 9)}`;
-
+          
             // Register with ParameterManager if rootParam is specified
             if (this.rootParam) {
-                // Ensure the parameter exists in ParameterManager
-                //user1Manager.addParameter(this.rootParam, this._value, this.isBidirectional);
-
-                // Determine controller type for priority mapping
-                const controllerType = "webaudio-param"; // Since this is WebAudioParam
-
-                // Get priority from Constants
-                const priority = getPriority(controllerType);
-
-                // Subscribe to ParameterManager updates for this parameter with the retrieved priority
-                user1Manager.subscribe(this, this.rootParam, priority);
+              // Determine controller type for priority mapping
+              const controllerType = "webaudio-param"; // Since this is WebAudioParam
+          
+              // Get priority from Constants
+              const priority = getPriority(controllerType);
+          
+              // Subscribe to ParameterManager updates for this parameter with the retrieved priority
+              user1Manager.subscribe(this, this.rootParam, priority);
+          
+              // Retrieve parameter details
+              const paramDetails = user1Manager.getParameter(this.rootParam);
+              if (paramDetails) {
+                // Set min and max
+                this.min = paramDetails.min;
+                this.max = paramDetails.max;
+          
+                // Determine if the parameter is logarithmic
+                this.isLogarithmic = paramDetails.scale === 'logarithmic';
+              } else {
+                console.warn(`Parameter '${this.rootParam}' not found in ParameterManager.`);
+              }
             }
-
+          
             this.redraw();
-
-      }
-      disconnectedCallback(){
+          }      
+        disconnectedCallback(){
 
        // Unsubscribe from ParameterManager
        if (this.rootParam) {
@@ -2699,57 +2707,99 @@ try {
       }
   
       redraw() {
-        this.elem.value=this.value;
+        let displayValue = this.value;
+        if (this.isLogarithmic) {
+          // Define a threshold near the minimum value
+          const threshold = this.min + 0.0001 * (this.max - this.min);
+          if (this.value <= threshold) {
+            displayValue = '-∞';
+          }
+        }
+      
+        this.elem.value = displayValue;
       }
   
       setupKeyboardInteraction() {
         const keyboardModal = document.getElementById("numericKeyboardModal");
         const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
-  
+      
         const showModalHandler = (event) => {
           if (!this.enable) return;
-  
-          // Pass current value to the numeric keyboard
-          keyboard.value = this.value || "";
-          keyboard.outputElement.textContent = keyboard.value;
-  
-          // Show the keyboard modal using Bootstrap's Modal API
+      
+          // Fetch the latest min and max values from ParameterManager
+          if (this.rootParam) {
+            const paramDetails = user1Manager.getParameter(this.rootParam);
+            if (paramDetails) {
+              this.min = paramDetails.min;
+              this.max = paramDetails.max;
+            } else {
+              this.min = null;
+              this.max = null;
+            }
+          }
+      
+          // Update the keyboard's min and max values
+          if (keyboard) {
+            keyboard.updateLimits(this.min, this.max);
+          }
+      
+          // Show the keyboard modal
           const bootstrapModal = new bootstrap.Modal(keyboardModal);
           bootstrapModal.show();
-  
+      
           // Move focus to the first interactive element in the modal
           keyboard.outputElement.focus();
-  
+      
           // Handle the confirmation of a value
           keyboard.addEventListener(
             "submit",
             (e) => {
               const detail = e.detail;
-              const targetValue = detail.targetValue;
-              const interpolationDuration = detail.interpolationDuration;
-  
-              this.startInterpolation(targetValue, interpolationDuration);
-  
+              const userValue = detail.targetValue;
+      
+              // Validate and set value within the min-max range when updating the parameter
+              const validatedValue = this.validateValue(userValue);
+              this.startInterpolation(validatedValue, detail.interpolationDuration);
+      
               bootstrapModal.hide();
-  
+      
               // Return focus to the original element
               this.elem.focus();
             },
             { once: true } // Ensure we only listen for one submit event per interaction
           );
-  
-          // If the event is touchend, prevent the subsequent click event
+      
+          // Prevent the default behavior for touch events
           if (event.type === 'touchend') {
             event.preventDefault();
             event.stopPropagation();
           }
         };
-  
+      
         // Add both click and touchend event listeners
         this.elem.addEventListener("click", showModalHandler);
         this.elem.addEventListener("touchend", showModalHandler, { passive: false });
-      }
+      }/**
+ * Validates the user-provided value against min and max constraints.
+ * If the value exceeds the limits, it will be clamped.
+ * @param {number} value - The user-provided value.
+ * @returns {number} - The validated value within the constraints.
+ */
+validateValue(value) {
+  let validatedValue = value;
 
+  if (this.min !== null && validatedValue < this.min) {
+    console.warn(`Value ${validatedValue} is below the minimum ${this.min}. Clamping.`);
+    validatedValue = this.min;
+  }
+
+  if (this.max !== null && validatedValue > this.max) {
+    console.warn(`Value ${validatedValue} exceeds the maximum ${this.max}. Clamping.`);
+    validatedValue = this.max;
+  }
+
+  return validatedValue;
+}
       onParameterChanged(parameterName, newValue) {
         if (this.rootParam === parameterName) {
           if (this.isBidirectional) {
@@ -2757,10 +2807,27 @@ try {
             // Update the slider's value with the transformed value from the ParameterManager
             this.setValue(newValue, false);
             this.updatingFromParameter = false;
-            console.debug(`[WebAudioSlider] Parameter '${parameterName}' updated to: ${newValue}`);
           }
         }
       }
+      onScaleChanged(parameterName, scale) {
+
+        if (this.rootParam === parameterName) {
+          this.isLogarithmic = scale === "logarithmic";
+          console.debug(`[WebAudioParam] Scale of '${parameterName}' updated to: ${scale}`);
+          this.redraw();
+        }
+      }
+
+      onRangeChanged(parameterName, min, max) {
+        if (this.rootParam === parameterName) {
+          this.min = min;
+          this.max = max;
+          console.debug(`[WebAudioParam] Range of '${parameterName}' updated to min=${min}, max=${max}`);
+          this.redraw();
+        }
+      }
+
 
       updateLinkedElements(value) {
         if (this.currentLink && !this.currentLink.updating) {
@@ -2775,24 +2842,25 @@ try {
       }
   
       startInterpolation(targetValue, duration) {
+        const validatedTarget = this.validateValue(targetValue); // Validate target value
         const startValue = parseFloat(this.value);
         const startTime = performance.now();
-  
+      
         const step = (currentTime) => {
           const elapsed = currentTime - startTime;
           const progress = Math.min(elapsed / duration, 1);
-          const newValue = startValue + (targetValue - startValue) * progress;
-  
+          const newValue = startValue + (validatedTarget - startValue) * progress;
+      
           this.setValue(newValue, true); // Update the param value
-  
+      
           if (progress < 1) {
             requestAnimationFrame(step);
           } else {
             // Interpolation complete
-            this.setValue(targetValue, true);
+            this.setValue(validatedTarget, true);
           }
         };
-  
+      
         requestAnimationFrame(step);
       }
   
@@ -2982,7 +3050,12 @@ try {
         <div class="divider-line"></div>
         <div class="output">${this.value || "0.00"}</div>
         <div class="keyboard-and-slider-container">
+            <div class="limits">
+            <span>Min: <span id="minValue">${this.min || "N/A"}</span></span>
+            <span>Max: <span id="maxValue">${this.max || "N/A"}</span></span>
+           </div>
             <div class="numeric-keyboard">
+            
                 ${this.createButtons()}
             </div>
         </div>
@@ -3005,6 +3078,7 @@ try {
           this.interpolationDuration = parseFloat(this.sliderHorz.value) * 1000; // Convert to milliseconds
 
           this.sliderHorz.addEventListener("input", (e) => {
+            
             const sliderValue = parseFloat(e.target.value);
             this.sliderValueElement.textContent = sliderValue.toFixed(2); // Format to 2 decimals
             this.interpolationDuration = sliderValue * 1000; // Convert to milliseconds
@@ -3033,9 +3107,13 @@ try {
           if (this.isModalVisible) return; // Avoid reattaching listeners
           this.isModalVisible = true;
           this.hasStartedTyping = false;
+        
+          // Update min and max limits
+          this.updateLimits(this.min, this.max);
+        
           this.outputElement.textContent = this.value || "0";
           this.keyboardModal.classList.add("active");
-
+        
           // Add `keydown` listener only if it hasn't been added
           document.addEventListener("keydown", this.handleKeyboardInputBound);
         };
@@ -3126,6 +3204,21 @@ try {
       
         // Emit a single 'input' event
         this.dispatchEvent(new Event("input"));
+      }
+      updateLimits(min, max) {
+        this.min = min;
+        this.max = max;
+      
+        const minValueElement = this.shadowRoot.querySelector("#minValue");
+        const maxValueElement = this.shadowRoot.querySelector("#maxValue");
+      
+        if (minValueElement) {
+          minValueElement.textContent = min !== null ? min : "N/A";
+        }
+      
+        if (maxValueElement) {
+          maxValueElement.textContent = max !== null ? max : "N/A";
+        }
       }
 
       animateInterpolation(timestamp) {

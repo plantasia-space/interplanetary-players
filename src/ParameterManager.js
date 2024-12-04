@@ -23,16 +23,16 @@ export class ParameterManager {
     return ParameterManager.instance;
   }
 
+
   /**
-   * Adds a new parameter to the manager with optional bidirectional communication and transformation functions.
-   * If the parameter already exists, updates its settings and notifies subscribers of the current value.
-   * @param {string} name - The parameter name.
-   * @param {number} normalizedValue - The initial normalized value of the parameter [0, 1].
-   * @param {number} min - The minimum raw value for the parameter range.
-   * @param {number} max - The maximum raw value for the parameter range.
-   * @param {boolean} isBidirectional - Indicates if the parameter supports bidirectional updates.
-   * @param {function} inputTransform - Function to transform input normalized values to raw values.
-   * @param {function} outputTransform - Function to transform raw values to normalized values.
+   * Adds or updates a parameter with the given configuration.
+   * @param {string} name - The name of the parameter.
+   * @param {number} normalizedValue - The normalized value [0,1].
+   * @param {number} min - The minimum raw value.
+   * @param {number} max - The maximum raw value.
+   * @param {boolean} isBidirectional - If true, allows two-way updates.
+   * @param {function} inputTransform - Function to transform input values.
+   * @param {function} outputTransform - Function to transform output values.
    */
   addParameter(
     name,
@@ -40,50 +40,58 @@ export class ParameterManager {
     min = 0,
     max = 1,
     isBidirectional = false,
-    inputTransform = (x) => x, // Default linear transform
-    outputTransform = (x) => x  // Default linear transform
+    scale = "linear",
+    inputTransform = (x) => x,
+    outputTransform = (x) => x
   ) {
     if (this.parameters.has(name)) {
-      console.warn(`[addParameter] Parameter '${name}' already exists. Updating settings.`);
       const param = this.parameters.get(name);
-
-      // Apply inputTransform to the incoming normalizedValue to get rawValue
+      let rangeChanged = false;
+      let scaleChanged = false;
+  
+      if (min !== param.min || max !== param.max) {
+        rangeChanged = true;
+        param.min = min;
+        param.max = max;
+      }
+  
+      if (scale !== param.scale) {
+        scaleChanged = true;
+        param.scale = scale;
+      }
+  
+      // Update raw and normalized values
       const transformedRawValue = inputTransform(normalizedValue);
-      const clampedRawValue = Math.min(max, Math.max(min, transformedRawValue)); // Clamp rawValue to the new range
+      const clampedRawValue = Math.min(max, Math.max(min, transformedRawValue));
       const updatedNormalizedValue = this.normalize(clampedRawValue, min, max);
-
-      // Update settings
+  
       param.rawValue = clampedRawValue;
       param.normalizedValue = updatedNormalizedValue;
-      param.min = min;
-      param.max = max;
       param.isBidirectional = isBidirectional;
       param.inputTransform = inputTransform;
       param.outputTransform = outputTransform;
-
-      console.debug(`[addParameter] Updated parameter '${name}' with rawValue: ${param.rawValue}, normalizedValue: ${param.normalizedValue}, min: ${min}, max: ${max}, bidirectional: ${isBidirectional}`);
-
-      // Notify subscribers of the current value with updated transforms
-      param.subscribers.forEach(({ controller }) => {
-        if (typeof controller.onParameterChanged === 'function') {
-          // Apply the output transformation before notifying
-          const transformedValue = outputTransform(param.rawValue);
-          console.debug(`[addParameter] Notifying controller of '${name}' with updated value=${transformedValue}`);
-          controller.onParameterChanged(name, transformedValue);
-        } else {
-          console.warn(`[addParameter] Controller does not implement 'onParameterChanged':`, controller);
-        }
-      });
-
+  
+      if (rangeChanged) {
+        // Emit range update event
+        this.emitRangeUpdate(name, min, max);
+      }
+  
+      if (scaleChanged) {
+        // Emit scale update event
+        this.emitScaleUpdate(name, scale);
+      }
+  
+      // Notify subscribers of value change
+      this.emitValueUpdate(name, param.outputTransform(param.rawValue));
+  
       return;
     }
-
+  
     // Otherwise, create a new parameter
-    // Apply inputTransform to the incoming normalizedValue to get rawValue
     const transformedRawValue = inputTransform(normalizedValue);
-    const clampedRawValue = Math.min(max, Math.max(min, transformedRawValue)); // Clamp rawValue to the range
+    const clampedRawValue = Math.min(max, Math.max(min, transformedRawValue));
     const normalized = this.normalize(clampedRawValue, min, max);
-
+  
     this.parameters.set(name, {
       name,
       rawValue: clampedRawValue,
@@ -93,15 +101,62 @@ export class ParameterManager {
       subscribers: new Set(),
       isBidirectional,
       lastPriority: Infinity,
-      lastUpdateTimestamp: 0, // Initialize timestamp
-      lastController: null, // Initialize controller
+      lastUpdateTimestamp: 0,
+      lastController: null,
+      scale,
       inputTransform,
       outputTransform,
     });
-
-    console.debug(`[addParameter] Added new parameter '${name}' with rawValue: ${clampedRawValue}, normalizedValue: ${normalized}, min: ${min}, max: ${max}`);
+  
+    // Emit both range and value update events
+    this.emitRangeUpdate(name, min, max);
+    this.emitValueUpdate(name, transformedRawValue);
+    this.emitScaleUpdate(name, scale);
+  }
+  /**
+   * Emits a range update event for a parameter.
+   * @param {string} name - The parameter name.
+   * @param {number} min - The new minimum value.
+   * @param {number} max - The new maximum value.
+   */
+  emitRangeUpdate(name, min, max) {
+    const param = this.parameters.get(name);
+    param.subscribers.forEach(({ controller }) => {
+      if (typeof controller.onRangeChanged === 'function') {
+        controller.onRangeChanged(name, min, max);
+      }
+    });
+    //console.debug(`[ParameterManager] Emitted range update for '${name}' with min=${min}, max=${max}`);
   }
 
+    /**
+     * Emits a value update event for a parameter.
+     * @param {string} name - The parameter name.
+     * @param {number} value - The new value.
+     */
+    emitValueUpdate(name, value) {
+      const param = this.parameters.get(name);
+      param.subscribers.forEach(({ controller }) => {
+        if (typeof controller.onParameterChanged === 'function') {
+          controller.onParameterChanged(name, value);
+        }
+      });
+      //console.debug(`[ParameterManager] Emitted value update for '${name}' with value=${value}`);
+    }
+/**
+ * Emits a scale update event for a parameter.
+ * @param {string} name - The parameter name.
+ * @param {string} scale - The new scale value (e.g., "linear" or "logarithmic").
+ */
+emitScaleUpdate(name, scale) {
+  const param = this.parameters.get(name);
+  param.subscribers.forEach(({ controller }) => {
+    if (typeof controller.onScaleChanged === 'function') {
+      controller.onScaleChanged(name, scale);
+    }
+  });
+  console.debug(`[ParameterManager] Emitted scale update for '${name}' with scale=${scale}`);
+}
   /**
    * Subscribes a controller to a parameter with a specified priority.
    * @param {object} controller - The controller subscribing to the parameter.
@@ -117,14 +172,14 @@ export class ParameterManager {
     if (this.parameters.has(parameterName)) {
       const param = this.parameters.get(parameterName);
       param.subscribers.add({ controller, priority });
-      console.debug(`[subscribe] Controller subscribed to '${parameterName}' with priority ${priority}`);
+      //console.debug(`[subscribe] Controller subscribed to '${parameterName}' with priority ${priority}`);
     } else {
       console.warn(`Parameter '${parameterName}' does not exist. Adding with default values.`);
       // Initialize with default normalized value 0
       this.addParameter(parameterName, 0, 0, 1, false);
       const param = this.parameters.get(parameterName);
       param.subscribers.add({ controller, priority });
-      console.debug(`[subscribe] Controller subscribed to newly added parameter '${parameterName}' with priority ${priority}`);
+      //console.debug(`[subscribe] Controller subscribed to newly added parameter '${parameterName}' with priority ${priority}`);
     }
 
     // Immediately notify the controller of the current value
@@ -148,7 +203,7 @@ export class ParameterManager {
         [...param.subscribers].filter((sub) => sub.controller !== controller)
       );
       if (param.subscribers.size < initialSize) {
-        console.debug(`[unsubscribe] Controller unsubscribed from '${parameterName}'`);
+        //console.debug(`[unsubscribe] Controller unsubscribed from '${parameterName}'`);
       } else {
         console.warn(`[unsubscribe] Controller was not subscribed to '${parameterName}'`);
       }
@@ -195,7 +250,7 @@ export class ParameterManager {
           param.lastUpdateTimestamp = now;
           param.lastController = sourceController;
 
-          console.debug(`[setRawValue] Updated '${parameterName}' to rawValue=${param.rawValue}, normalizedValue=${param.normalizedValue}`);
+          //console.debug(`[setRawValue] Updated '${parameterName}' to rawValue=${param.rawValue}, normalizedValue=${param.normalizedValue}`);
 
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
@@ -203,7 +258,7 @@ export class ParameterManager {
               if (typeof controller.onParameterChanged === 'function') {
                 // Apply the output transformation before notifying
                 const transformedValue = param.outputTransform(param.rawValue);
-                console.debug(`[setRawValue] Notifying controller of '${parameterName}' with value=${transformedValue}`);
+                //console.debug(`[setRawValue] Notifying controller of '${parameterName}' with value=${transformedValue}`);
                 controller.onParameterChanged(parameterName, transformedValue);
               } else {
                 console.warn(`[setRawValue] Controller does not implement 'onParameterChanged':`, controller);
@@ -211,10 +266,10 @@ export class ParameterManager {
             }
           });
         } else {
-          console.debug(`[setRawValue] No change in rawValue for '${parameterName}'. Update skipped.`);
+          //console.debug(`[setRawValue] No change in rawValue for '${parameterName}'. Update skipped.`);
         }
       } else {
-        console.debug(`[setRawValue] Update for '${parameterName}' ignored due to priority or simultaneous threshold.`);
+        //console.debug(`[setRawValue] Update for '${parameterName}' ignored due to priority or simultaneous threshold.`);
       }
     } else {
       console.warn(`[setRawValue] Parameter '${parameterName}' not found.`);
@@ -280,7 +335,7 @@ export class ParameterManager {
           param.lastUpdateTimestamp = now;
           param.lastController = sourceController;
 
-          console.debug(`[setNormalizedValue] Updated '${parameterName}' to rawValue=${param.rawValue}, normalizedValue=${param.normalizedValue}`);
+          //console.debug(`[setNormalizedValue] Updated '${parameterName}' to rawValue=${param.rawValue}, normalizedValue=${param.normalizedValue}`);
 
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
@@ -288,7 +343,7 @@ export class ParameterManager {
               if (typeof controller.onParameterChanged === 'function') {
                 // Apply the output transformation before notifying
                 const transformedValue = param.outputTransform(param.rawValue);
-                console.debug(`[setNormalizedValue] Notifying controller of '${parameterName}' with value=${transformedValue}`);
+                //console.debug(`[setNormalizedValue] Notifying controller of '${parameterName}' with value=${transformedValue}`);
                 controller.onParameterChanged(parameterName, transformedValue);
               } else {
                 console.warn(`[setNormalizedValue] Controller does not implement 'onParameterChanged':`, controller);
@@ -296,10 +351,10 @@ export class ParameterManager {
             }
           });
         } else {
-          console.debug(`[setNormalizedValue] No change in normalizedValue for '${parameterName}'. Update skipped.`);
+          //console.debug(`[setNormalizedValue] No change in normalizedValue for '${parameterName}'. Update skipped.`);
         }
       } else {
-        console.debug(`[setNormalizedValue] Update for '${parameterName}' ignored due to priority or simultaneous threshold.`);
+        //console.debug(`[setNormalizedValue] Update for '${parameterName}' ignored due to priority or simultaneous threshold.`);
       }
     }
   }
@@ -359,11 +414,38 @@ export class ParameterManager {
       isBidirectional: param.isBidirectional,
       lastPriority: param.lastPriority,
       subscribers: [...param.subscribers],
+      scale: param.scale,
       inputTransform: param.inputTransform,
       outputTransform: param.outputTransform,
     }));
   }
+
+
+/**
+ * Gets the details of a specific parameter by name.
+ * Useful for accessing and debugging individual parameters.
+ * @param {string} paramName - The name of the parameter to retrieve.
+ * @returns {Object|null} - The parameter details or null if not found.
+ */
+getParameter(paramName) {
+  if (this.parameters.has(paramName)) {
+    const param = this.parameters.get(paramName);
+    return {
+      name: paramName,
+      rawValue: param.rawValue,
+      normalizedValue: param.normalizedValue,
+      min: param.min,
+      max: param.max,
+      isBidirectional: param.isBidirectional,
+      lastPriority: param.lastPriority,
+      subscribers: [...param.subscribers],
+      scale: param.scale,
+      inputTransform: param.inputTransform,
+      outputTransform: param.outputTransform,
+    };
+  }
+  return null; // Parameter not found
 }
 
-// Export the Singleton instance
+}// Export the Singleton instance
 export const user1Manager = ParameterManager.getInstance();
