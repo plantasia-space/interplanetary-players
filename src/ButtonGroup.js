@@ -1,3 +1,6 @@
+import { MIDIControllerInstance } from './MIDIController.js';
+import { showUniversalModal } from './interaction.js';
+
 export class ButtonGroup {
     constructor(
         containerSelector,
@@ -45,8 +48,22 @@ export class ButtonGroup {
      */
     init() {
         console.log(`ButtonGroup Init: Setting up dynamic SVGs and events.`);
+        this.adjustForMidiSupport(); // Adjust dropdown for MIDI
         this.loadDynamicSVGs();
         this.bindEvents();
+    }
+    /**
+     * Adjust the dropdown for MIDI support before setting up icons and events.
+     */
+    adjustForMidiSupport() {
+        const midiSupported = 'requestMIDIAccess' in navigator;
+        this.menuItems.forEach(item => {
+            const value = item.getAttribute('data-value');
+            if (value === 'MIDI') {
+                item.style.display = midiSupported ? 'block' : 'none';
+            }
+        });
+        console.log(`MIDI support status: ${midiSupported ? 'Available' : 'Unavailable'}`);
     }
 
     /**
@@ -226,11 +243,68 @@ export class ButtonGroup {
         }
     }
 
-    /**
-     * Handle interaction dropdown selection.
-     */
-    handleInteractionDropdown(selectedValue) {
-        console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
-        // Implement interaction logic here if needed
+
+/**
+ * Handle interaction dropdown selection.
+ */
+handleInteractionDropdown(selectedValue) {
+    console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
+
+    switch (selectedValue) {
+        case 'Jam':
+            console.log('Jam mode activated.');
+            // Default mode, no additional behavior needed
+            break;
+
+        case 'MIDI':
+            console.log('MIDI mode activated.');
+            this.activateMIDI();
+            break;
+
+        case 'Sensors':
+            console.log('Sensors mode activated.');
+            this.activateSensors();
+            break;
+
+        case 'Cosmic LFO':
+            console.log('Cosmic LFO mode activated.');
+            this.activateCosmicLFO();
+            break;
+
+        default:
+            console.warn(`Unknown interaction mode: ${selectedValue}`);
     }
+}
+
+/**
+ * Activate MIDI mode with custom modal messaging.
+ */
+async activateMIDI() {
+    console.log('Activating MIDI...');
+
+    // Attempt to request MIDI access
+    try {
+        await MIDIControllerInstance.onMidiIconClick();
+        console.log('MIDI activated successfully.');
+
+        // Debug before showing modal
+        console.log('Preparing to show success modal for MIDI activation...');
+        showUniversalModal(
+            'MIDI Activated',
+            'MIDI has been successfully activated! You can now use your MIDI devices.',
+            'Okay'
+        );
+    } catch (error) {
+        console.error('Failed to activate MIDI:', error);
+
+        // Debug before showing error modal
+        console.log('Preparing to show failure modal for MIDI activation...');
+        showUniversalModal(
+            'MIDI Activation Failed',
+            'There was an error while trying to activate MIDI. Please check your settings and try again.',
+            'Close'
+        );
+    }
+}
+
 }

@@ -315,22 +315,39 @@
     </div>
   </div>
 
-    <!-- Modal Structure -->
-<!-- Modal -->
+  <!-- Universal Modal -->
+<div class="modal fade" id="universalModal" tabindex="-1" aria-labelledby="universalModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="universalModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Content will be dynamically added here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Okay</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Numeric Keyboard Modal -->
 <div class="modal fade" id="numericKeyboardModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"></h5>
+        <h5 class="modal-title">Numeric Keyboard</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <webaudio-numeric-keyboard></webaudio-numeric-keyboard>
       </div>
-
     </div>
   </div>
 </div>
+
+
 
   <script>
     WebAudioControlsOptions = {

@@ -3,7 +3,7 @@
 import { ParameterManager } from './ParameterManager.js'; // Ensure correct capitalization and path
 import { Constants, TRACK_ID, getPriority } from './Constants.js';
 import lscache from 'lscache'; // Ensure lscache is installed via npm or included in your project
-
+import { showUniversalModal } from './interaction.js';
 /**
  * MIDIController Singleton Class
  * Handles MIDI interactions, including listening to MIDI inputs,
@@ -26,16 +26,67 @@ class MIDIController {
     MIDIController.instance = this;
   }
 
-  /**
-   * Initializes MIDI access and sets up event handlers.
-   */
-  async init() {
-    await this.requestMidiAccess();
-    this.createContextMenu();
-    this.restoreMidiLearn(); // Restore MIDI mappings if preservation is enabled
+async init() {
+  if (!MIDIController.isMidiSupported()) {
+      console.warn("MIDIController: Web MIDI API not supported. Skipping initialization.");
+      return;
   }
 
-  /**
+  console.log("MIDIController: Web MIDI API supported.");
+  // Do not request access until the user interacts with the MIDI icon
+}
+
+
+/**
+ * Checks if MIDI is supported by the browser.
+ * @returns {boolean} True if supported, false otherwise.
+ */
+static isMidiSupported() {
+  return 'requestMIDIAccess' in navigator;
+}
+
+/**
+* Handles user interaction with the MIDI icon or menu.
+*/
+async onMidiIconClick() {
+  if (!this.midiAccess) {
+    console.log("MIDIController: Requesting MIDI access...");
+
+    try {
+      await this.requestMidiAccess();
+
+      // Show success message in the Universal Modal
+      showUniversalModal(
+        'MIDI Status',
+        'MIDI has been activated! You can now use MIDI devices.',
+        'Okay'
+      );
+
+      console.log('MIDIController: MIDI access granted.');
+    } catch (error) {
+      console.error("MIDIController: Failed to access MIDI devices:", error);
+
+      // Show error message in the Universal Modal
+      showUniversalModal(
+        'MIDI Error',
+        'Failed to activate MIDI. Please check your browser settings.',
+        'Dismiss'
+      );
+    }
+  } else {
+    console.log("MIDIController: MIDI already initialized.");
+
+    // Notify the user MIDI is already active
+    showUniversalModal(
+      'MIDI Status',
+      'MIDI is already activated!',
+      'Got it'
+    );
+  }
+}
+
+
+/**
    * Requests MIDI access from the browser.
    */
   async requestMidiAccess() {
