@@ -73,8 +73,8 @@ webaudio-slider {
     transform: translate(-50%, -50%);
     width: 100%; /* Take full width of the window */
     height: 100%; /* Take full height of the window */
-    min-width: 340px; /* Ensure minimum width */
-    min-height: 320px; /* Ensure minimum height */
+    min-width: 220px; /* Ensure minimum width */
+    min-height: 220px; /* Ensure minimum height */
     max-width: 100%; /* Restrict to window width */
     max-height: 100%; /* Restrict to window height */
     background-color: #000; /* Optional for debugging */
