@@ -3,7 +3,7 @@
 import { ParameterManager } from './ParameterManager.js'; // Ensure correct capitalization and path
 import { Constants, TRACK_ID, getPriority } from './Constants.js';
 import lscache from 'lscache'; // Ensure lscache is installed via npm or included in your project
-import { showUniversalModal } from './interaction.js';
+import { showUniversalModal } from './Interaction.js';
 /**
  * MIDIController Singleton Class
  * Handles MIDI interactions, including listening to MIDI inputs,
