@@ -75,8 +75,8 @@ webaudio-slider {
     height: 100%; /* Take full height of the window */
     min-width: 340px; /* Ensure minimum width */
     min-height: 320px; /* Ensure minimum height */
-    max-width: 100vw; /* Restrict to window width */
-    max-height: 100vh; /* Restrict to window height */
+    max-width: 100%; /* Restrict to window width */
+    max-height: 100%; /* Restrict to window height */
     background-color: #000; /* Optional for debugging */
     overflow: hidden;
     box-sizing: border-box; /* Prevent padding/borders affecting size */
@@ -111,17 +111,17 @@ canvas {
 }
 .sub-frame {
     position: relative; /* Necessary for absolute positioning of child elements */
-    top: 4vh;
-    left: 4vw;
-    width: 92vw;
-    height: 92vh;
+    top: 4%;
+    left: 4%;
+    width: 92%;
+    height: 92%;
     border: 1.5px solid var(--color1);
     border-radius: 5px;
     display: flex;
     flex-direction: column; /* Ensures vertical stacking */
     box-sizing: border-box;
     background: none;
-    padding: 1vw 1vw;
+    padding: 1% 1%;
     overflow: visible; /* Ensure the menu is not clipped */
     z-index: 1; /* Keep it above the canvas */
 
