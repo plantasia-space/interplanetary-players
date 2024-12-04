@@ -119,6 +119,7 @@ export function updateKnobsFromTrackData(trackData) {
         knob.setAttribute('max', param.max);
         knob.setAttribute('value', param.initValue);
         knob.setAttribute('is-bidirectional', true);
+        knob.setAttribute('sensitivity', .2);
 
         // Append knob to the container
         container.appendChild(knob);

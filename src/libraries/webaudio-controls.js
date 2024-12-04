@@ -791,19 +791,19 @@ try {
     
       // Determine scroll direction
       let direction = e.deltaY || (e.wheelDelta ? -e.wheelDelta : 0); // Use wheelDelta for fallback
-      direction = Math.sign(direction); // Normalize to -1 or 1
+      direction = Math.sign(-direction); // Normalize to -1 or 1
     
       if (this.log) {
         // Logarithmic mode
         let r = Math.log(this.value / this.min) / Math.log(this.max / this.min);
-        let d = direction * 0.01; // Base delta for logarithmic scaling
+        let d = direction * 0.2; // Base delta for logarithmic scaling
         r += d;
         r = Math.max(0, Math.min(1, r)); // Clamp ratio between 0 and 1
         const newValue = this.min * Math.pow(this.max / this.min, r);
         this.setValue(newValue, true);
       } else {
         // Linear mode
-        let delta = this.step || (this.max - this.min) * 0.05; // Default 5% range step
+        let delta = this.step*30 || (this.max - this.min) * 0.2; // Default 5% range step
         delta *= direction; // Apply direction
         const newValue = +this.value + delta;
         this.setValue(newValue, true);
@@ -1136,8 +1136,7 @@ try {
       this.showLabel = this.hasAttribute("show-label"); // Check for show-label attribute   
       this.setupLabel();
       
-      // Clamp sensitivity between 1 and 127
-      this.sensitivity = Math.min(Math.max(parseInt(this.getAttribute("sensitivity"), 10) || 1, 1), 127);
+      this.sensitivity = this.getAttr("sensitivity", .5);
         // Parse pointer-size as a float, defaulting to 0.2 if not specified or invalid
       const parsedPointerSize = parseFloat(this.getAttribute("pointer-size"));
       this.pointerSize = isNaN(parsedPointerSize) ? 0.2 : parsedPointerSize;
@@ -1669,10 +1668,10 @@ try {
       let deltaRatio;
       if (this.isHorizontal) {
         // Sensitivity: 1 to 127, higher means less change per pixel
-        deltaRatio = (deltaX / 128) * (this.sensitivity / 127);
+        deltaRatio = deltaX  * this.sensitivity ;
       } else {
         // Vertical slider: moving up increases, moving down decreases
-        deltaRatio = (-deltaY / 128) * (this.sensitivity / 127);
+        deltaRatio = -deltaY  * this.sensitivity ;
       }
 
       if (this.log && this._min > 0) {
@@ -1693,9 +1692,9 @@ try {
         // Linear mode
         let deltaValue;
         if (this.isHorizontal) {
-          deltaValue = (deltaX / 128) * this.sensitivity;
+          deltaValue = deltaX  * this.sensitivity;
         } else {
-          deltaValue = (-deltaY / 128) * this.sensitivity;
+          deltaValue = -deltaY  * this.sensitivity;
         }
         let newValue = this.startValue + deltaValue;
 
@@ -3066,6 +3065,7 @@ try {
                 max="30" 
                 step="0.01" 
                 value="0" 
+                sensitivity=".05"
                 colors="#00000000;#00000000;#000000;#000000;#000000" 
                 direction="horz">
             </webaudio-slider>

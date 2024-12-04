@@ -153,7 +153,44 @@
 
 
 
+#gSlider {
+     /* More controlled size */
+     width: calc(3vmin + 3vmax);
+     height: 30vh;
+}
+/* Media Queries Adjustments */
+@media (max-width: 1399.98px) {
+    #gSlider {
+    
+        width: calc(4vmin + 4vmax);
+        height: 30vh;
+    }
+}
 
+/* Media Queries Adjustments */
+@media (max-width: 1199.98px) {
+    #gSlider {
+    
+        width: calc(4vmin + 4vmax);
+        height: 30vh;
+    }
+}
+
+@media (max-width: 991.98px) {
+    #gSlider {
+        
+        width: calc(5vmin + 5vmax);
+        height: 30vh;
+    }
+}
+
+@media (max-width: 575.98px) {
+    #gSlider {
+    
+        width: calc(6vmin + 6vmax);
+        height: 30vh;
+    }
+}
 /* Row Styling */
 .action-gui-row {
     display: flex;
