@@ -1,5 +1,5 @@
 import { MIDIControllerInstance } from './MIDIController.js';
-import { showUniversalModal } from './interaction.js';
+import { showUniversalModal } from './Interaction.js';
 
 export class ButtonGroup {
     constructor(
