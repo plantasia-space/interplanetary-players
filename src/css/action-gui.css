@@ -36,17 +36,20 @@
 .xyz-knobs {
     width: 9vmin;
     height: 9vmin;
+    margin-bottom: 1vh;
 }
 
 .xyz-balance {
     width: 3vmin;
     height: 3vmin;
+    margin-bottom: 1vh;
 }
 
 .xyz-param {
     width: 6vmin;
     height: 2.4vmin;
     font-size: 1.7vmin;
+    margin-bottom: 1vh;
 }
 
 .transport-button,

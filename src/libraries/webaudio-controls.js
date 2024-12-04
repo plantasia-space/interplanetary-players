@@ -1132,12 +1132,16 @@ try {
       this._direction = this.getAttribute("direction") || "horz";
       this.log = parseInt(this.getAttr("log", 0), 10) === 1; // Parse as boolean
       this._colors = this.getAttribute("colors") || "#e00;#333;#fff;#777;#555";
-      this.outline = this.getAttribute("outline") || "none";        
+      this.outline = this.getAttribute("outline") || "none";     
+      this.showLabel = this.hasAttribute("show-label"); // Check for show-label attribute   
       this.setupLabel();
       
       // Clamp sensitivity between 1 and 127
       this.sensitivity = Math.min(Math.max(parseInt(this.getAttribute("sensitivity"), 10) || 1, 1), 127);
-      
+        // Parse pointer-size as a float, defaulting to 0.2 if not specified or invalid
+      const parsedPointerSize = parseFloat(this.getAttribute("pointer-size"));
+      this.pointerSize = isNaN(parsedPointerSize) ? 0.2 : parsedPointerSize;
+
       this.valuetip = this.getAttr("valuetip", opt.valuetip);
       this.tooltip = this.getAttribute("tooltip") || null;
       this.conv = this.getAttribute("conv") || null;
@@ -1175,6 +1179,8 @@ try {
       this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
       this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
       this.elem.addEventListener('wheel', this.wheel, { passive: false });
+      this.elem.addEventListener('dblclick', this.handleDoubleClick.bind(this)); // Double-click listener
+
     }
 
     /**
@@ -1208,8 +1214,8 @@ try {
     setupCanvas() {
       // Get actual size
       let rect = this.elem.getBoundingClientRect();
-      const knobSizeMultiplier = 0.3; 
-
+      const knobSizeMultiplier = this.pointerSize; 
+      
       // Check and set default width and height if they are 0
       if (rect.width === 0) {
         this.elem.style.width = this._direction.toLowerCase() === "vert" ? "50px" : "300px"; // Set default width based on direction
@@ -1366,7 +1372,7 @@ try {
         // Draw equilateral triangular knob/pointer
         ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
         ctx.strokeStyle = this.coltab[3] || '#777'; // Knob border color
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
 
         ctx.beginPath();
         const side = this.knobSize; // Length of each side of the triangle
@@ -1509,7 +1515,15 @@ try {
         }
       }
     }
-
+    handleDoubleClick(e) {
+      if (!this.enable) return;
+    
+      // Reset value to default
+      this.setValue(this.defvalue, true);
+    
+      // Optional: You can add a visual indication or sound effect here if needed
+      console.log(`Slider reset to default value: ${this.defvalue}`);
+    }
     /**
      * Handles wheel events for adjusting the slider value.
      * @param {WheelEvent} e - The wheel event.
@@ -1767,8 +1781,12 @@ try {
      * Sets up the label. Customize this method based on your labeling needs.
      */
     setupLabel() {
-      // Update the label to show the current value or '-∞' if at min
-      this.label.textContent = this._value === this._min ? '-∞' : this.convValue;
+      if (this.showLabel) {
+        this.label.style.display = "block"; // Show label if show-label is set
+        this.label.textContent = this._value === this._min ? '-∞' : this.convValue;
+      } else {
+        this.label.style.display = "none"; // Hide label if show-label is not set
+      }
     }
   });
 } catch (error) {
@@ -2707,18 +2725,28 @@ try {
       }
   
       redraw() {
-        let displayValue = this.value;
+        let displayValue;
+      
         if (this.isLogarithmic) {
           // Define a threshold near the minimum value
           const threshold = this.min + 0.0001 * (this.max - this.min);
+      
           if (this.value <= threshold) {
+            // For values below the threshold, show "-infinite"
             displayValue = '-∞';
+          } else {
+            // Format logarithmic values to two decimal places
+            displayValue = parseFloat(this.value).toFixed(2);
           }
+        } else {
+          // For linear values, format to two decimal places
+          displayValue = parseFloat(this.value).toFixed(2);
         }
       
+        // Assign the formatted value to the element
         this.elem.value = displayValue;
       }
-  
+      
       setupKeyboardInteraction() {
         const keyboardModal = document.getElementById("numericKeyboardModal");
         const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
