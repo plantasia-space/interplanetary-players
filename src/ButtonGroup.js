@@ -59,7 +59,7 @@ export class ButtonGroup {
     
         // Avoid global dropdown interference
         this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
-            new bootstrap.Dropdown(dropdown, { autoClose: 'outside' });
+            new bootstrap.Dropdown(dropdown); // Use default behavior
         });
     }
     /**
@@ -135,16 +135,15 @@ export class ButtonGroup {
         this.menuItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 const newIconPath = item.getAttribute('data-icon');
                 const newValue = item.getAttribute('data-value');
-    
+            
                 if (newIconPath && newValue) {
                     this.icon.setAttribute('data-src', newIconPath);
                     this.icon.setAttribute('aria-label', newValue);
                     this.fetchAndSetSVG(newIconPath, this.icon, true);
                 }
-    
+            
                 this.onSelectionChange(newValue);
             });
         });
@@ -152,7 +151,7 @@ export class ButtonGroup {
         if (this.closeGridBtn) {
             this.closeGridBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
+                //e.stopPropagation();
                 this.hideGrid();
             });
         }

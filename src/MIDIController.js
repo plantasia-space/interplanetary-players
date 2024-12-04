@@ -83,19 +83,19 @@ class MIDIController {
       this.isMIDIActivated = true;
       console.log('MIDIController: MIDI activated successfully.');
 
-      showUniversalModal(
+/*       showUniversalModal(
         'MIDI Activated',
         'MIDI has been successfully activated! You can now use your MIDI devices.',
         'Okay'
-      );
+      ); */
     } catch (error) {
       console.error('MIDIController: Failed to activate MIDI:', error);
 
-      showUniversalModal(
+/*       showUniversalModal(
         'MIDI Activation Failed',
         'There was an error while trying to activate MIDI. Please check your settings and try again.',
         'Close'
-      );
+      ); */
     }
   }
 
@@ -725,9 +725,7 @@ class MIDIController {
         this.closeContextMenu();
       }
     });
-    document.addEventListener('click', (e) => {
-      console.log(`Clicked element:`, e.target);
-  });
+
     // Handle escape key to close the dropdown
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
