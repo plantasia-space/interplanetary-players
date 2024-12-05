@@ -26,6 +26,8 @@ Cats have it with abundance."*/
     --color3: #000000; 
     --color4: #ffffff00; 
     --highlight-color: #02ff02;
+    --mapped-color: #9aff9a;
+
 }
 *{
 margin:0; 
@@ -88,7 +90,11 @@ webaudio-numeric-keyboard {
   box-shadow: 0 0 10px rgba(159, 159, 159, 0.5);
 }
 
-
+/* Highlight automatable elements during MIDI Learn mode 
+.midi-learn-mapped {
+  border: 2px solid var(--mapped-color, rgb(255, 218, 149));
+  box-shadow: 0 0 10px rgba(159, 159, 159, 0.5);
+}*/
 /* Optional: Change cursor to indicate interactivity */
 [data-automatable="true"]:hover {
   cursor: pointer;
@@ -104,14 +110,38 @@ webaudio-numeric-keyboard {
 /* Highlight for dropdown items in MIDI Learn mode */
 .midi-learn-dropdown {
   border: 2px solid var(--highlight-color, orange);
-  background-color: rgba(255, 165, 0, 0.2);
+  background-color: rgba(240, 240, 240, 0.954);
   cursor: pointer;
 }
 
 .midi-learn-dropdown:hover {
-  background-color: rgba(255, 165, 0, 0.4);
+  background-color: rgb(141, 244, 255);
+}
+/* Apply styles to mapped elements only in MIDI Learn mode */
+/* .midi-learn-mode .midi-mapped {
+  border: 2px solid rgb(255, 0, 0);
 }
 
+.midi-learn-mapped {
+  border: 2px solid var(--mapped-color, rgb(255, 218, 149));
+  box-shadow: 0 0 10px rgba(159, 159, 159, 0.5);
+}
+ */
+.midi-indicator {
+  display: none;
+  position: fixed;
+  background-color: var(--highlight-color, orange);
+  color: #000000;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: 'SpaceMono', sans-serif;
+  z-index: 1002;
+}
+
+.midi-learn-mode .midi-indicator {
+  display: block;
+}
 
 
 /* Square Frame: Centered and fixed size */

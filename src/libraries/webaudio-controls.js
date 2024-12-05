@@ -3323,7 +3323,7 @@ class WebAudioControlsWidgetManager {
       )
     );
     console.log("Widgets updated:", this.listOfWidgets);
-
+  
     // Register widgets with MIDIController
     this.listOfWidgets.forEach(widget => {
       if (widget.id) {
