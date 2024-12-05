@@ -1,7 +1,6 @@
 // MIDIController.js
 
-import { ParameterManager } from './ParameterManager.js';
-import { Constants, TRACK_ID, getPriority } from './Constants.js';
+import { Constants, getPriority } from './Constants.js';
 import lscache from 'lscache';
 import { showUniversalModal } from './Interaction.js';
 
@@ -17,20 +16,32 @@ class MIDIController {
     }
 
     this.midiAccess = null;
-    this.listeners = new Set();
-    this.parameterManager = ParameterManager.getInstance();
-    this.midiMappings = new Map(); // parameterName -> { channel, cc }
+
+    // Separate mappings for parameters and widgets
+    this.midiParamMappings = new Map(); // parameterName -> { channel, cc }
+    this.midiWidgetMappings = new Map(); // widgetId -> { channel, cc }
+
+    this.widgetRegistry = new Map(); // widgetId -> widgetInstance
+
     this.isMIDIActivated = false;
 
     this.isMidiLearnActive = false;
     this.currentLearnParam = null;
-    this.currentlyLearningWidget = null;
+    this.currentLearnWidget = null;
 
     // Bind methods to maintain 'this' context
+    this.handleMidiMessage = this.handleMidiMessage.bind(this);
+    this.handleStateChange = this.handleStateChange.bind(this);
     this.handleExitButtonClick = this.handleExitButtonClick.bind(this);
     this.handleEscKey = this.handleEscKey.bind(this);
-    this.createOverlays = this.createOverlays.bind(this);
-    this.removeOverlays = this.removeOverlays.bind(this);
+    this.handleContextMenuLearn = this.handleContextMenuLearn.bind(this);
+    this.handleContextMenuDelete = this.handleContextMenuDelete.bind(this);
+    this.handleContextMenuClose = this.handleContextMenuClose.bind(this);
+    this.highlightParameter = this.highlightParameter.bind(this);
+    this.unhighlightParameter = this.unhighlightParameter.bind(this);
+    this.highlightWidget = this.highlightWidget.bind(this);
+    this.unhighlightWidget = this.unhighlightWidget.bind(this);
+    this.startMidiLearnForWidget = this.startMidiLearnForWidget.bind(this);
 
     this.init();
 
@@ -47,15 +58,16 @@ class MIDIController {
     }
 
     console.log("MIDIController: Web MIDI API supported.");
-    await this.restoreMidiLearn(); // Restore persisted mappings
+    // Restore persisted mappings if you have this method
+    // await this.restoreMidiLearn();
 
-    // Set up the exit button
+    // Set up the exit button for MIDI Learn mode
     const exitButton = document.getElementById('cancel-midi-learn');
     if (exitButton) {
       exitButton.addEventListener('click', this.handleExitButtonClick);
     }
 
-    // Set up event listeners for the Bootstrap dropdown
+    // Set up event listeners for the context menu options
     this.setupDropdownEventListeners();
   }
 
@@ -82,20 +94,8 @@ class MIDIController {
       await this.requestMidiAccess();
       this.isMIDIActivated = true;
       console.log('MIDIController: MIDI activated successfully.');
-
-/*       showUniversalModal(
-        'MIDI Activated',
-        'MIDI has been successfully activated! You can now use your MIDI devices.',
-        'Okay'
-      ); */
     } catch (error) {
       console.error('MIDIController: Failed to activate MIDI:', error);
-
-/*       showUniversalModal(
-        'MIDI Activation Failed',
-        'There was an error while trying to activate MIDI. Please check your settings and try again.',
-        'Close'
-      ); */
     }
   }
 
@@ -126,7 +126,7 @@ class MIDIController {
         this.enableInputs();
 
         // Listen for MIDI device connections/disconnections
-        this.midiAccess.onstatechange = this.handleStateChange.bind(this);
+        this.midiAccess.onstatechange = this.handleStateChange;
       } catch (error) {
         console.error("MIDIController: Failed to access MIDI devices:", error);
         throw error; // Propagate error to activateMIDI
@@ -143,7 +143,7 @@ class MIDIController {
   enableInputs() {
     const inputs = this.midiAccess.inputs.values();
     for (let input of inputs) {
-      input.onmidimessage = this.handleMidiMessage.bind(this);
+      input.onmidimessage = this.handleMidiMessage;
       console.log(`MIDIController: Enabled MIDI input: ${input.name}`);
     }
   }
@@ -157,7 +157,7 @@ class MIDIController {
     console.log(`MIDIController: Port ${port.name} ${port.state}.`);
     if (port.type === 'input') {
       if (port.state === 'connected') {
-        port.onmidimessage = this.handleMidiMessage.bind(this);
+        port.onmidimessage = this.handleMidiMessage;
         console.log(`MIDIController: Connected to MIDI input: ${port.name}`);
       } else if (port.state === 'disconnected') {
         port.onmidimessage = null;
@@ -167,71 +167,204 @@ class MIDIController {
   }
 
   /**
-   * Handles incoming MIDI messages and dispatches them to listeners.
-   * If in MIDI Learn mode, maps the incoming CC to the selected parameter.
+   * Handles incoming MIDI messages and dispatches them to widgets or parameters.
+   * If in MIDI Learn mode, maps the incoming CC to the selected parameter or widget.
    * @param {MIDIMessageEvent} event 
    */
   handleMidiMessage(event) {
     const [status, data1, data2] = event.data;
     const channel = status & 0x0F;
     const messageType = status & 0xF0;
-
-    // Ignore system messages and certain control messages
-    if ((status & 0xF0) === 0xF0 || ((status & 0xF0) === 0xB0 && data1 >= 120)) {
-      return;
-    }
-
-    if (this.isMidiLearnActive && this.currentLearnParam) {
-      if (messageType === 0xB0) { // Control Change (CC)
-        console.log(`MIDIController: Mapping ${this.currentLearnParam} to MIDI Channel ${channel + 1}, CC ${data1}`);
-        this.setMidiMapping(this.currentLearnParam, channel, data1);
-        this.isMidiLearnActive = false;
-
-        // Provide feedback to the user
-        showUniversalModal(
-          'MIDI Mapping Successful',
-          `Mapped '${this.currentLearnParam}' to MIDI Channel ${channel + 1}, CC ${data1}.`,
-          'Great!'
-        );
-
+  
+    // Process only Control Change (CC) messages
+    if (messageType !== 0xB0) return;
+  
+    if (this.isMidiLearnActive) {
+      // Determine if currently learning a parameter or a widget
+      if (this.currentLearnParam) {
+        // Mapping a parameter
+        console.log(`MIDIController: Mapping parameter '${this.currentLearnParam}' to MIDI Channel ${channel + 1}, CC ${data1}`);
+        this.setMidiParamMapping(this.currentLearnParam, channel, data1);
+  
         // Remove highlight from the parameter
         this.unhighlightParameter(this.currentLearnParam);
-
         this.currentLearnParam = null;
-
-        return;
+      } else if (this.currentLearnWidget) {
+        // Mapping a widget
+        const widgetId = this.currentLearnWidget.id;
+        console.log(`MIDIController: Mapping widget '${widgetId}' to MIDI Channel ${channel + 1}, CC ${data1}`);
+        this.setMidiWidgetMapping(widgetId, channel, data1);
+  
+        // Remove highlight from the widget
+        this.unhighlightWidget(widgetId);
+        this.currentLearnWidget = null;
       }
-    }
-
-    // Process MIDI messages if already mapped
-    this.midiMappings.forEach((mapping, param) => {
+  
+      // Exit MIDI Learn mode
+      this.exitMidiLearnMode();
+  
+      // Optionally, remove the modal if it's unnecessary
+      // showUniversalModal(
+      //   'MIDI Mapping Successful',
+      //   `Mapping completed successfully.`,
+      //   'Great!'
+      // );
+  
+      return; // Stop processing further
+    }  
+    // First, check if the MIDI message is mapped to a widget
+    this.midiWidgetMappings.forEach((mapping, widgetId) => {
       if (mapping.channel === channel && mapping.cc === data1) {
-        console.log(`MIDIController: Controlling '${param}' with value ${data2}`);
-        this.updateParameter(param, data2);
+        const widget = this.widgetRegistry.get(widgetId);
+        if (widget && typeof widget.processMidiEvent === "function") {
+          widget.processMidiEvent(data2); // Update widget with MIDI value
+          console.log(`MIDIController: Widget '${widgetId}' updated via MIDI CC ${data1} with value ${data2}`);
+        }
       }
     });
 
-    // Dispatch to listeners
-    this.listeners.forEach(listener => {
-      if (typeof listener.processMidiEvent === 'function') {
-        listener.processMidiEvent(event);
+    // Next, check if the MIDI message is mapped to a parameter
+    this.midiParamMappings.forEach((mapping, param) => {
+      if (mapping.channel === channel && mapping.cc === data1) {
+        this.updateParameter(param, data2);
       }
     });
   }
 
   /**
    * Updates a parameter based on incoming MIDI data.
-   * @param {string} param - The parameter to update.
+   * @param {string} widgetId - The widget's unique ID.
    * @param {number} midiValue - The MIDI CC value (0-127).
    */
-  updateParameter(param, midiValue) {
-    const normalizedValue = midiValue / 127; // Normalize to [0, 1]
+  updateParameter(identifier, midiValue) {
+    const element = this.widgetRegistry.get(identifier);
+    if (element) {
+      if (element.tagName.toLowerCase() === 'a' && element.classList.contains('dropdown-item')) {
+        // Handle dropdown menu item
+        console.log(`MIDIController: Triggering action for dropdown item '${identifier}'`);
+        element.click(); // Simulate a click
+      } else {
+        // Handle widgets
+        const widget = element;
+        const normalizedValue = midiValue / 127; // Normalize to [0, 1]
+        widget.value = widget.min + normalizedValue * (widget.max - widget.min);
+        if (typeof widget.redraw === 'function') {
+          widget.redraw(); // Ensure the widget updates its display
+        }
+        console.log(`MIDIController: Updated widget '${identifier}' to value ${widget.value}`);
+      }
+    } else {
+      console.warn(`MIDIController: Element '${identifier}' not found.`);
+    }
+  }
+  /**
+   * Registers a widget for MIDI control.
+   * @param {string} id - The widget's unique ID.
+   * @param {Object} widget - The widget instance.
+   */
+  registerWidget(id, widget) {
+    if (!id || !widget) {
+      console.warn("MIDIController: Cannot register widget without ID or instance.");
+      return;
+    }
+    this.widgetRegistry.set(id, widget);
+    console.log(`MIDIController: Registered widget '${id}'.`);
+  }
 
-    // Use the ParameterManager to set the normalized value
-    const priority = getPriority("MIDI"); // Assuming you have a priority system
-    this.parameterManager.setNormalizedValue(param, normalizedValue, this, priority);
+  /**
+   * Sets a MIDI mapping for a parameter.
+   * @param {string} param - The parameter name.
+   * @param {number} channel - MIDI channel (0-15).
+   * @param {number} cc - MIDI Control Change number (0-127).
+   */
+  setMidiParamMapping(param, channel, cc) {
+    if (!param) {
+      console.warn("MIDIController: Parameter name is required for mapping.");
+      return;
+    }
 
-    console.log(`MIDIController: Updated parameter '${param}' to normalized value ${normalizedValue}`);
+    this.midiParamMappings.set(param, { channel, cc });
+    console.log(`MIDIController: Mapped parameter '${param}' to MIDI Channel ${channel + 1}, CC ${cc}.`);
+
+    // Add 'midi-mapped' class to the parameter element for visual indication
+    const paramElement = document.querySelector(`[data-group="${param}"]`);
+    if (paramElement) {
+      paramElement.classList.add('midi-mapped');
+    }
+  }
+
+  /**
+   * Sets a MIDI mapping for a widget.
+   * @param {string} widgetId - The widget's unique ID.
+   * @param {number} channel - MIDI channel (0-15).
+   * @param {number} cc - MIDI Control Change number (0-127).
+   */
+  setMidiWidgetMapping(widgetId, channel, cc) {
+    if (!widgetId) {
+      console.warn("MIDIController: Widget ID is required for mapping.");
+      return;
+    }
+
+    this.midiWidgetMappings.set(widgetId, { channel, cc });
+    console.log(`MIDIController: Mapped widget '${widgetId}' to MIDI Channel ${channel + 1}, CC ${cc}.`);
+
+    // Add 'midi-mapped' class to the widget element for visual indication
+    const widgetElement = document.getElementById(widgetId);
+    if (widgetElement) {
+      widgetElement.classList.add('midi-mapped');
+    }
+  }
+
+  /**
+   * Clears the MIDI mapping for a specific parameter or widget.
+   * @param {string} identifier - The parameter name or widget ID.
+   */
+  clearMidiMapping(identifier) {
+    let cleared = false;
+
+    // Check if identifier is a parameter
+    if (this.midiParamMappings.has(identifier)) {
+      this.midiParamMappings.delete(identifier);
+      cleared = true;
+
+      // Remove 'midi-mapped' class from the parameter element
+      const paramElement = document.querySelector(`[data-group="${identifier}"]`);
+      if (paramElement) {
+        paramElement.classList.remove('midi-mapped');
+      }
+
+      console.log(`MIDIController: Cleared MIDI mapping for parameter '${identifier}'.`);
+    }
+
+    // Check if identifier is a widget
+    if (this.midiWidgetMappings.has(identifier)) {
+      this.midiWidgetMappings.delete(identifier);
+      cleared = true;
+
+      // Remove 'midi-mapped' class from the widget element
+      const widgetElement = document.getElementById(identifier);
+      if (widgetElement) {
+        widgetElement.classList.remove('midi-mapped');
+      }
+
+      console.log(`MIDIController: Cleared MIDI mapping for widget '${identifier}'.`);
+    }
+
+    if (cleared) {
+      // Notify the user
+      showUniversalModal(
+        'MIDI Mapping Cleared',
+        `Cleared MIDI mapping for '${identifier}'.`,
+        'Okay'
+      );
+    } else {
+      console.warn(`MIDIController: No MIDI mapping found for '${identifier}'.`);
+      showUniversalModal(
+        'MIDI Mapping Not Found',
+        `No MIDI mapping exists for '${identifier}'.`,
+        'Okay'
+      );
+    }
   }
 
   /**
@@ -246,12 +379,13 @@ class MIDIController {
 
     this.isMidiLearnActive = true;
     this.currentLearnParam = null;
+    this.currentLearnWidget = null;
+
+    // Create overlays for automatable widgets and dropdown items
+    this.createOverlays();
 
     // Add class to body for CSS control
     document.body.classList.add('midi-learn-mode');
-
-    // Create overlays for automatable elements
-    this.createOverlays();
 
     // Show the exit button
     const exitButton = document.getElementById('cancel-midi-learn');
@@ -264,260 +398,138 @@ class MIDIController {
   }
 
   /**
-   * Handles the "Cancel MIDI Learn" button click.
-   */
-  handleExitButtonClick() {
-    this.exitMidiLearnMode();
-  }
-
-  /**
-   * Handles the Esc key press to exit MIDI Learn mode.
-   * @param {KeyboardEvent} e 
-   */
-  handleEscKey(e) {
-    if (e.key === 'Escape' && this.isMidiLearnActive) {
-      this.exitMidiLearnMode();
-    }
-  }
-
-  /**
-   * Exits MIDI Learn mode by removing overlays and hiding the exit button.
-   */
-  exitMidiLearnMode() {
-    this.isMidiLearnActive = false;
-    this.currentLearnParam = null;
-    this.currentlyLearningWidget = null;
-
-    // Remove MIDI Learn mode class from body
-    document.body.classList.remove('midi-learn-mode');
-
-    // Remove overlays
-    this.removeOverlays();
-
-    // Hide the exit button
-    const exitButton = document.getElementById('cancel-midi-learn');
-    if (exitButton) {
-      exitButton.style.display = 'none';
-    }
-
-    // Remove Esc key listener
-    document.removeEventListener('keydown', this.handleEscKey);
-
-    console.log('MIDIController: Exited MIDI Learn mode.');
-  }
-
-  /**
    * Creates overlays over automatable elements during MIDI Learn mode.
    */
   createOverlays() {
-    // Select only widgets, excluding dropdown menu items
-    const automatableElements = document.querySelectorAll('[data-automatable="true"]:not(.dropdown-menu .dropdown-item)');
-    // Alternatively, if you've added a specific class like 'midi-widget', use that:
-    // const automatableElements = document.querySelectorAll('.midi-widget');
+    // Handle widgets (sliders, knobs, buttons)
+    const widgets = document.querySelectorAll('[data-automatable="true"]');
+    widgets.forEach(widget => {
+      const id = widget.id;
+      if (!id) {
+        console.warn("MIDIController: Widget missing 'id' attribute:", widget);
+        return;
+      }
 
-    automatableElements.forEach(element => {
-      // Set pointer-events: none on the automatable element to disable it
-      element.style.pointerEvents = 'none';
-
-      // Create overlay div
       const overlay = document.createElement('div');
       overlay.classList.add('widget-overlay');
-      overlay.dataset.group = element.getAttribute('data-group');
+      overlay.dataset.widgetId = id;
 
-      // Position overlay over the automatable element
-      const rect = element.getBoundingClientRect();
-      overlay.style.position = 'fixed'; // Changed to fixed
+      const rect = widget.getBoundingClientRect();
+      overlay.style.position = 'fixed';
       overlay.style.top = `${rect.top}px`;
       overlay.style.left = `${rect.left}px`;
       overlay.style.width = `${rect.width}px`;
       overlay.style.height = `${rect.height}px`;
       overlay.style.pointerEvents = 'auto';
-      overlay.style.backgroundColor = 'rgba(0,0,0,0)'; // Transparent
-      overlay.style.zIndex = '1000'; // Ensure it's above other elements
+      overlay.style.zIndex = '1000';
+      overlay.style.background = 'rgba(255, 255, 255, 0.1)'; // Optional: Semi-transparent overlay
 
-      // Add highlighting effect
-      overlay.classList.add('midi-learn-highlight');
-
-      // Attach event listener to overlay
       overlay.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation(); // Prevent any other listeners from firing
-        this.openContextMenu(e, element);
+          e.preventDefault();
+          e.stopPropagation(); // prevent event bubbling
+          this.openContextMenu(e, widget);
       });
-
-      // Append overlay to the body
       document.body.appendChild(overlay);
     });
-    console.log('MIDIController: Created overlays for automatable elements.');
-  }
+
+    // Handle drop-down items (menu items)
+      // Handle drop-down items (menu items)
+  const dropdownItems = document.querySelectorAll('[data-midi-controllable="true"]');
+  dropdownItems.forEach(item => {
+    item.classList.add('midi-learn-dropdown');
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // prevent event bubbling
+      this.openContextMenu(e, item);
+    });
+
+    // Register the item with MIDIController
+    const identifier = item.id || item.getAttribute('data-value');
+    if (identifier) {
+      this.registerWidget(identifier, item);
+    } else {
+      console.warn('MIDIController: Drop-down item missing id or data-value attribute.');
+    }
+  });
+
+  console.log('MIDIController: Created overlays for automatable widgets and dropdown items.');
+}
 
   /**
    * Removes overlays created during MIDI Learn mode.
    */
   removeOverlays() {
-    const automatableElements = document.querySelectorAll('[data-automatable="true"]:not(.dropdown-menu .dropdown-item)');
-    // Alternatively, if you've used a specific class:
-    // const automatableElements = document.querySelectorAll('.midi-widget');
-
-    automatableElements.forEach(element => {
-      // Reset pointer-events to auto
-      element.style.pointerEvents = 'auto';
-    });
-
+    // Remove widget overlays
     const overlays = document.querySelectorAll('.widget-overlay');
     overlays.forEach(overlay => {
       overlay.parentNode.removeChild(overlay);
     });
-    console.log('MIDIController: Removed overlays from automatable elements.');
+
+    // Remove 'midi-learn-dropdown' class and listeners from dropdown items
+    const dropdownItems = document.querySelectorAll('[data-midi-controllable="true"]');
+    dropdownItems.forEach(item => {
+      item.classList.remove('midi-learn-dropdown');
+      item.removeEventListener('click', this.openContextMenu);
+    });
+
+    console.log('MIDIController: Removed overlays from automatable widgets and dropdown items.');
   }
 
   /**
-   * Opens the MIDI Context Menu (Bootstrap Dropdown) for the specified widget at the event's location.
-   * @param {MouseEvent|TouchEvent} e - The event triggering the context menu.
-   * @param {HTMLElement} widget - The widget requesting MIDI Learn.
+   * Initiates MIDI learning mode for a specific widget.
+   * @param {HTMLElement} widget 
    */
-  openContextMenu(e, widget) {
-    const contextMenu = document.getElementById("midi-context-menu");
-    if (!contextMenu) {
-        console.error("MIDIController: Context menu not found.");
-        return;
+  startMidiLearnForWidget(widget) {
+    if (!widget.id) {
+      console.warn("MIDIController: Widget missing 'id' attribute.");
+      return;
     }
 
-    // Stop event propagation
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation(); // Prevents any additional listeners on the same element
+    this.currentLearnWidget = widget;
+    this.isMidiLearnActive = true;
 
-    // Determine position
-    let pageX, pageY;
-    if (e.type.startsWith('touch')) {
-        const touch = e.touches[0] || e.changedTouches[0];
-        pageX = touch.pageX;
-        pageY = touch.pageY;
-    } else {
-        pageX = e.pageX;
-        pageY = e.pageY;
-    }
+    console.log(`MIDIController: MIDI Learn mode activated for widget '${widget.id}'.`);
 
-    // Position the context menu
-    contextMenu.style.left = `${pageX}px`;
-    contextMenu.style.top = `${pageY}px`;
-    contextMenu.style.display = 'block';
-    contextMenu.classList.add('show');
+    // Highlight the widget for user feedback
+    this.highlightWidget(widget.id);
 
-    // Ensure current widget is set
-    this.currentlyLearningWidget = widget;
-
-    console.log(`MIDIController: Context menu opened for widget '${widget.id || widget.getAttribute('data-group')}'.`);
-}
-
-  /**
-   * Closes the MIDI Context Menu (Bootstrap Dropdown).
-   */
-  closeContextMenu() {
-    const contextMenu = document.getElementById("midi-context-menu");
-    if (contextMenu) {
-      contextMenu.classList.remove("show"); // Remove Bootstrap's show class
-      contextMenu.style.display = 'none'; // Hide the dropdown
-
-      // Re-enable pointer events on the overlay
-      const widget = this.currentlyLearningWidget;
-      if (widget) {
-        const overlay = Array.from(document.querySelectorAll('.widget-overlay')).find(
-          ov => ov.dataset.group === widget.getAttribute('data-group')
-        );
-        if (overlay) {
-          overlay.style.pointerEvents = 'auto';
-        }
+    // Provide visual feedback to the user
+    showUniversalModal(
+      'MIDI Learn',
+      `Perform a MIDI action (e.g., move a knob) to map it to '${widget.id}'.`,
+      'Cancel'
+    ).then(() => {
+      if (this.isMidiLearnActive) {
+        // User canceled MIDI Learn mode
+        this.isMidiLearnActive = false;
+        this.unhighlightWidget(widget.id);
+        this.currentLearnWidget = null;
+        console.log('MIDIController: MIDI Learn mode canceled by user.');
       }
+    });
+  }
 
-      console.log("MIDIController: Context menu closed.");
-      this.currentlyLearningWidget = null;
+  /**
+   * Highlights a specific widget in the UI to indicate it's being mapped.
+   * @param {string} widgetId - The widget's unique ID.
+   */
+  highlightWidget(widgetId) {
+    const element = document.getElementById(widgetId);
+    if (element) {
+      element.classList.add('midi-learn-highlight');
+      console.log(`MIDIController: Highlighted widget '${widgetId}' for MIDI Learn.`);
     }
   }
 
   /**
-   * Handles the "Learn" action from the Bootstrap dropdown.
+   * Removes the highlight from a specific widget in the UI.
+   * @param {string} widgetId - The widget's unique ID.
    */
-  handleContextMenuLearn() {
-    if (this.currentlyLearningWidget) {
-      this.startMidiLearn();
-      this.closeContextMenu();
-    } else {
-      console.warn("MIDIController: No widget selected for MIDI Learn.");
-    }
-  }
-
-  /**
-   * Handles the "Delete" action from the Bootstrap dropdown.
-   */
-  handleContextMenuDelete() {
-    if (this.currentlyLearningWidget) {
-      const paramName = this.currentlyLearningWidget.getAttribute('data-group');
-      if (paramName) {
-        this.clearMidiMapping(paramName);
-      } else {
-        console.warn("MIDIController: Selected widget does not have a valid 'data-group' attribute.");
-        showUniversalModal(
-          'Invalid Parameter',
-          'The selected widget does not have a valid parameter to delete.',
-          'Okay'
-        );
-      }
-      this.closeContextMenu();
-    } else {
-      console.warn("MIDIController: No widget selected to delete MIDI mapping.");
-    }
-  }
-
-  /**
-   * Handles the "Close" action from the Bootstrap dropdown.
-   */
-  handleContextMenuClose() {
-    this.closeContextMenu();
-    console.log("MIDIController: Context menu closed without exiting MIDI Learn mode.");
-  }
-
-  /**
-   * Initiates MIDI learning mode for the currently selected widget.
-   */
-  startMidiLearn() {
-    if (this.currentlyLearningWidget) {
-      const paramName = this.currentlyLearningWidget.getAttribute('data-group');
-      if (!paramName) {
-        console.warn("MIDIController: Selected widget does not have a valid 'data-group' attribute.");
-        showUniversalModal(
-          'Invalid Parameter',
-          'The selected widget does not have a valid parameter to map.',
-          'Okay'
-        );
-        return;
-      }
-
-      this.currentLearnParam = paramName;
-      this.isMidiLearnActive = true;
-      console.log(`MIDIController: MIDI Learn mode activated for parameter '${paramName}'.`);
-
-      // Highlight the specific parameter further if needed
-      this.highlightParameter(paramName);
-
-      // Provide visual feedback to the user
-      showUniversalModal(
-        'MIDI Learn',
-        `Perform a MIDI action (e.g., move a knob) to map it to '${paramName}'.`,
-        'Cancel'
-      ).then(() => {
-        if (this.isMidiLearnActive) {
-          // User canceled MIDI Learn mode
-          this.isMidiLearnActive = false;
-          this.currentLearnParam = null;
-          this.unhighlightParameter(paramName);
-          console.log('MIDIController: MIDI Learn mode canceled by user.');
-        }
-      });
-    } else {
-      console.warn("MIDIController: No widget is currently selected for MIDI Learn.");
+  unhighlightWidget(widgetId) {
+    const element = document.getElementById(widgetId);
+    if (element) {
+      element.classList.remove('midi-learn-highlight');
+      console.log(`MIDIController: Removed highlight from widget '${widgetId}'.`);
     }
   }
 
@@ -546,192 +558,262 @@ class MIDIController {
   }
 
   /**
-   * Sets a MIDI mapping for a specific parameter.
-   * @param {string} param - The parameter to map.
-   * @param {number} channel - MIDI channel (0-15).
-   * @param {number} cc - MIDI Control Change number (0-127).
+   * Handles the "Cancel MIDI Learn" button click.
    */
-  setMidiMapping(param, channel, cc) {
-    if (!param) {
-      console.warn("MIDIController: Parameter name is required for mapping.");
-      return;
-    }
-
-    this.midiMappings.set(param, { channel, cc });
-    console.log(`MIDIController: Mapped '${param}' to MIDI Channel ${channel + 1}, CC ${cc}.`);
-
-    // Add 'midi-mapped' class to the element
-    const element = document.querySelector(`[data-group="${param}"]`);
-    if (element) {
-      element.classList.add('midi-mapped');
-    }
-
-    // Persist the mappings
-    this.preserveMidiLearn();
+  handleExitButtonClick() {
+    this.exitMidiLearnMode();
   }
 
   /**
-   * Clears the MIDI mapping for a specific parameter.
-   * @param {string} param 
+   * Handles the Esc key press to exit MIDI Learn mode.
+   * @param {KeyboardEvent} e 
    */
-  clearMidiMapping(param) {
-    if (this.midiMappings.delete(param)) {
-      console.log(`MIDIController: Cleared MIDI mapping for parameter '${param}'.`);
-      // Remove 'midi-mapped' class from the element
-      const element = document.querySelector(`[data-group="${param}"]`);
-      if (element) {
-        element.classList.remove('midi-mapped');
+  handleEscKey(e) {
+    if (e.key === 'Escape' && this.isMidiLearnActive) {
+      this.exitMidiLearnMode();
+    }
+  }
+
+  /**
+   * Exits MIDI Learn mode by removing overlays and hiding the exit button.
+   */
+  exitMidiLearnMode() {
+    this.isMidiLearnActive = false;
+    this.currentLearnParam = null;
+    this.currentLearnWidget = null;
+  
+    // Remove MIDI Learn mode class from body
+    document.body.classList.remove('midi-learn-mode');
+  
+    // Remove overlays
+    this.removeOverlays();
+  
+    // Hide the exit button
+    const exitButton = document.getElementById('cancel-midi-learn');
+    if (exitButton) {
+      exitButton.style.display = 'none';
+    }
+  
+    // Remove Esc key listener
+    document.removeEventListener('keydown', this.handleEscKey);
+  
+    console.log('MIDIController: Exited MIDI Learn mode.');
+  }
+  /**
+   * Handles the "Learn" action from the context menu.
+   * Initiates MIDI Learn mode for the selected parameter or widget.
+   * @param {Event} event 
+   */
+  handleContextMenuLearn(event) {
+    console.log('handleContextMenuLearn called');
+    // Prevent default behavior and stop propagation
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.currentlyLearningWidget) {
+      const widgetId = this.currentlyLearningWidget.id;
+      if (!widgetId) {
+        console.warn("MIDIController: Selected widget does not have a valid 'id' attribute.");
+        return;
       }
 
-      // Notify the user
+      // Initiate MIDI Learn for the widget
+      this.startMidiLearnForWidget(this.currentlyLearningWidget);
+    } else if (this.currentLearnParam) {
+      // Initiate MIDI Learn for the parameter
+      this.isMidiLearnActive = true;
+      console.log(`MIDIController: MIDI Learn mode activated for parameter '${this.currentLearnParam}'.`);
+
+      // Highlight the parameter for user feedback
+      this.highlightParameter(this.currentLearnParam);
+
+      // Provide visual feedback to the user
       showUniversalModal(
-        'MIDI Mapping Cleared',
-        `Cleared MIDI mapping for parameter '${param}'.`,
-        'Okay'
-      );
-
-      // Persist the cleared mappings
-      this.preserveMidiLearn();
-    } else {
-      console.warn(`MIDIController: No MIDI mapping found for parameter '${param}'.`);
-      showUniversalModal(
-        'MIDI Mapping Not Found',
-        `No MIDI mapping exists for parameter '${param}'.`,
-        'Okay'
-      );
+        'MIDI Learn',
+        `Perform a MIDI action (e.g., move a knob) to map it to '${this.currentLearnParam}'.`,
+        'Cancel'
+      ).then(() => {
+        if (this.isMidiLearnActive) {
+          // User canceled MIDI Learn mode
+          this.isMidiLearnActive = false;
+          this.unhighlightParameter(this.currentLearnParam);
+          this.currentLearnParam = null;
+          console.log('MIDIController: MIDI Learn mode canceled by user.');
+        }
+      });
     }
+
+    // Close the context menu
+    this.closeContextMenu();
   }
 
   /**
-   * Sends a MIDI Control Change message.
-   * @param {number} channel - MIDI channel (0-15).
-   * @param {number} cc - Control Change number (0-127).
-   * @param {number} value - Control Change value (0-127).
+   * Handles the "Delete" action from the context menu.
+   * @param {Event} event 
    */
-  sendMidiCC(channel, cc, value) {
-    if (!this.midiAccess) {
-      console.warn("MIDIController: MIDI access not initialized.");
-      return;
-    }
+  handleContextMenuDelete(event) {
+    console.log('handleContextMenuDelete called');
+    // Prevent default behavior and stop propagation
+    event.preventDefault();
+    event.stopPropagation();
 
-    for (let output of this.midiAccess.outputs.values()) {
-      output.send([0xB0 | (channel & 0x0F), cc & 0x7F, value & 0x7F]);
-      console.log(`MIDIController: Sent CC ${cc} with value ${value} on Channel ${channel + 1} to output '${output.name}'.`);
-    }
-  }
-
-  /**
-   * Subscribes to parameter changes and sends MIDI CC messages if bidirectional.
-   * @param {string} parameterName 
-   */
-  subscribeToParameter(parameterName) {
-    if (!this.parameterManager.parameters.has(parameterName)) {
-      console.warn(`MIDIController: Parameter '${parameterName}' does not exist.`);
-      return;
-    }
-
-    const param = this.parameterManager.parameters.get(parameterName);
-    if (!param.isBidirectional) {
-      console.warn(`MIDIController: Parameter '${parameterName}' is not bidirectional.`);
-      return;
-    }
-
-    // Subscribe to parameter changes with priority from Constants.js
-    const priority = getPriority("MIDI"); // Priority 1 as per Constants.js
-    this.parameterManager.subscribe(this, parameterName, priority);
-
-    console.log(`MIDIController: Subscribed to bidirectional updates for parameter '${parameterName}'.`);
-  }
-
-  /**
-   * Persists MIDI Learn mappings using lscache.
-   */
-  preserveMidiLearn() {
-    if (Constants.preserveMidiLearn) {
-      const mappingsArray = Array.from(this.midiMappings.entries());
-      lscache.set('midiMappings', mappingsArray, Constants.CACHE_EXPIRY_MINUTES);
-      console.log("MIDIController: Preserved MIDI Learn mappings.");
-    }
-  }
-
-  /**
-   * Restores MIDI Learn mappings from storage (e.g., localStorage).
-   */
-  async restoreMidiLearn() {
-    if (Constants.preserveMidiLearn) {
-      const mappingsArray = lscache.get('midiMappings');
-      if (mappingsArray && Array.isArray(mappingsArray)) {
-        this.midiMappings = new Map(mappingsArray);
-        console.log("MIDIController: Restored MIDI Learn mappings from cache.");
-
-        // Apply 'midi-mapped' class to mapped elements
-        this.midiMappings.forEach((mapping, param) => {
-          const element = document.querySelector(`[data-group="${param}"]`);
-          if (element) {
-            element.classList.add('midi-mapped');
-          }
-        });
+    if (this.currentlyLearningWidget) {
+      const widgetId = this.currentlyLearningWidget.id;
+      if (widgetId) {
+        this.clearMidiMapping(widgetId);
       } else {
-        console.warn("MIDIController: No MIDI Learn mappings found in cache.");
+        console.warn("MIDIController: Selected widget does not have a valid 'id' attribute.");
+        showUniversalModal(
+          'Invalid Widget',
+          'The selected widget does not have a valid identifier to delete.',
+          'Okay'
+        );
       }
+      this.closeContextMenu();
+    } else if (this.currentLearnParam) {
+      this.clearMidiMapping(this.currentLearnParam);
+      this.closeContextMenu();
+    } else {
+      console.warn("MIDIController: No widget or parameter selected to delete MIDI mapping.");
     }
   }
 
   /**
-   * Sets up event listeners for the Bootstrap dropdown menu items.
+   * Handles the "Close" action from the context menu.
+   * @param {Event} event 
+   */
+  handleContextMenuClose(event) {
+    console.log('handleContextMenuClose called');
+    // Prevent default behavior and stop propagation
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.closeContextMenu();
+    console.log("MIDIController: Context menu closed without exiting MIDI Learn mode.");
+  }
+
+  /**
+   * Opens the MIDI Context Menu for the specified widget or parameter at the event's location.
+   * @param {MouseEvent|TouchEvent} e - The event triggering the context menu.
+   * @param {HTMLElement} element - The widget or dropdown item requesting MIDI Learn.
+   */
+  openContextMenu(event, element) {
+    const contextMenu = document.getElementById('midi-context-menu');
+    if (!contextMenu) {
+      console.error('MIDIController: Context menu not found.');
+      return;
+    }
+  
+    let paramName = null;
+  
+    if (element.hasAttribute('data-automatable')) {
+      const widgetId = element.id;
+      if (!widgetId) {
+        console.warn("MIDIController: Widget missing 'id' attribute.");
+        return;
+      }
+      paramName = widgetId;
+      this.currentlyLearningWidget = element;
+    } else if (element.hasAttribute('data-midi-controllable')) {
+      const itemId = element.id;
+      if (itemId) {
+        paramName = itemId;
+        this.currentlyLearningWidget = element;
+      } else {
+        console.warn('MIDIController: Drop-down item missing id attribute.');
+        return;
+      }
+    } else {
+      console.warn('MIDIController: Unknown element type:', element);
+      return;
+    }
+
+    this.currentLearnParam = paramName;
+
+    // Position and show the context menu
+    const rect = element.getBoundingClientRect();
+    contextMenu.style.left = `${rect.left}px`;
+    contextMenu.style.top = `${rect.bottom}px`;
+    contextMenu.style.display = 'block';
+    contextMenu.classList.add('show');
+    contextMenu.style.zIndex = '1001'; // Ensure context menu is above overlays
+
+    // Disable pointer events on the overlay
+    const overlay = Array.from(document.querySelectorAll('.widget-overlay')).find(
+      ov => ov.dataset.widgetId === element.id
+    );
+    if (overlay) {
+      overlay.style.pointerEvents = 'none';
+    }
+
+    this.currentlyLearningWidget = element;
+    console.log(`MIDIController: Opened context menu for parameter '${paramName}'.`);
+  }
+
+  /**
+   * Closes the MIDI Context Menu.
+   */
+  closeContextMenu() {
+    const contextMenu = document.getElementById("midi-context-menu");
+    if (contextMenu) {
+      contextMenu.classList.remove("show"); // Remove Bootstrap's show class
+      contextMenu.style.display = 'none'; // Hide the dropdown
+
+      // Re-enable pointer events on the overlay
+      const widget = this.currentlyLearningWidget;
+      if (widget) {
+        const overlay = Array.from(document.querySelectorAll('.widget-overlay')).find(
+          ov => ov.dataset.widgetId === widget.id
+        );
+        if (overlay) {
+          overlay.style.pointerEvents = 'auto';
+        }
+      }
+
+      console.log("MIDIController: Context menu closed.");
+      this.currentlyLearningWidget = null;
+    }
+  }
+
+  /**
+   * Sets up event listeners for the context menu options.
    */
   setupDropdownEventListeners() {
     const contextMenuLearn = document.getElementById("midi-context-learn");
     const contextMenuDelete = document.getElementById("midi-context-delete");
     const contextMenuClose = document.getElementById("midi-context-close");
-
+  
     if (contextMenuLearn) {
-      contextMenuLearn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.handleContextMenuLearn(); // Starts MIDI Learn mode
-      });
-      contextMenuLearn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        this.handleContextMenuLearn();
-      });
+      contextMenuLearn.addEventListener("click", this.handleContextMenuLearn);
+      contextMenuLearn.addEventListener("touchstart", this.handleContextMenuLearn);
     }
-
+  
     if (contextMenuDelete) {
-      contextMenuDelete.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.handleContextMenuDelete(); // Deletes the MIDI mapping
-      });
-      contextMenuDelete.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        this.handleContextMenuDelete();
-      });
+      contextMenuDelete.addEventListener("click", this.handleContextMenuDelete);
+      contextMenuDelete.addEventListener("touchstart", this.handleContextMenuDelete);
     }
-
+  
     if (contextMenuClose) {
-      contextMenuClose.addEventListener("click", (e) => {
-        e.preventDefault();
-        this.handleContextMenuClose(); // Closes the context menu
-      });
-      contextMenuClose.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        this.handleContextMenuClose();
-      });
+      contextMenuClose.addEventListener("click", this.handleContextMenuClose);
+      contextMenuClose.addEventListener("touchstart", this.handleContextMenuClose);
     }
-
-    // Handle closing the dropdown when clicking outside
+  
+    // Handle closing the context menu when clicking outside
     document.addEventListener('click', (e) => {
       const contextMenu = document.getElementById("midi-context-menu");
-      if (contextMenu && !contextMenu.contains(e.target)) {
+      if (contextMenu && contextMenu.style.display === 'block' && !contextMenu.contains(e.target)) {
         this.closeContextMenu();
       }
     });
 
-    // Handle escape key to close the dropdown
+    // Handle escape key to close the context menu
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         this.closeContextMenu();
       }
     });
+
+    console.log("MIDIController: Set up context menu event listeners.");
   }
 }
 

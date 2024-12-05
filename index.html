@@ -38,25 +38,25 @@
         </button>
         <ul class="dropdown-menu" aria-labelledby="informationMenuButton">
           <li>
-            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Control Monitor">
+            <a class="dropdown-item" href="#" data-midi-controllable="true"  id="control-monitor" data-value="Control Monitor">
               <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon">
               Control Monitor
             </a>
           </li>
           <li>
-            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Track">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" id="track-item" data-value="Track">
               <img src="/assets/icons/track.svg" alt="Track" class="menu-item-icon">
               Track
             </a>
           </li>
           <li>
-            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Interplanetary Player">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" id="interplanetary-player-item" data-value="Interplanetary Player">
               <img src="/assets/icons/interplanetary-player.svg" alt="Interplanetary Player" class="menu-item-icon">
               Interplanetary Player
             </a>
           </li>
           <li>
-            <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Sound Engine">
+            <a class="dropdown-item" href="#" data-midi-controllable="true" id="sound-engine-item" data-value="Sound Engine">
               <img src="/assets/icons/sound_engine.svg" alt="Sound Engine" class="menu-item-icon">
               Sound Engine
             </a>
@@ -80,13 +80,13 @@
     </button>
       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreMenuButton" style="right: 0;">
         <li>
-          <a class="dropdown-item" href="#" data-value="Share">
+          <a class="dropdown-item" href="#" id="share-item" data-value="Share">
             <img src="/assets/icons/share.svg" alt="Share" class="menu-item-icon">
             Share
           </a>
         </li>
         <li>
-          <a class="dropdown-item" href="#" data-value="Fullscreen">
+          <a class="dropdown-item" href="#" id="fullscreen-item"  data-value="Fullscreen">
             <img src="/assets/icons/fullscreen.svg" alt="Fullscreen" class="menu-item-icon">
             Fullscreen
           </a>
@@ -136,7 +136,7 @@
             <webaudio-slider 
             id="gSlider" 
             tracking="rel" 
-            root-param="body-level" 
+            root-param="body-level"
             is-bidirectional="true"   
             colors="#00000000;#00000000;var(--color2);var(--color1)" 
             value="0"         
@@ -177,35 +177,35 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="transportMenuButton">
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Play" data-icon="/assets/icons/play_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="play-item"  data-value="Play" data-icon="/assets/icons/play_circle.svg">
                           <img src="/assets/icons/play_circle.svg" alt="Play" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Play
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Pause" data-icon="/assets/icons/pause_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="pause-item" data-value="Pause" data-icon="/assets/icons/pause_circle.svg">
                           <img src="/assets/icons/pause_circle.svg" alt="Pause" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Pause
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Stop" data-icon="/assets/icons/stop_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="stop-item" data-value="Stop" data-icon="/assets/icons/stop_circle.svg">
                           <img src="/assets/icons/stop_circle.svg" alt="Stop" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Stop
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Rec" data-icon="/assets/icons/rec_circle.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="rec-item" data-value="Rec" data-icon="/assets/icons/rec_circle.svg">
                           <img src="/assets/icons/rec_circle.svg" alt="Rec" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Rec
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Playback" data-icon="/assets/icons/playback.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="playback-item" data-value="Playback" data-icon="/assets/icons/playback.svg">
                           <img src="/assets/icons/playback.svg" alt="Playback" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Playback
@@ -268,7 +268,6 @@
               <div class="col-1 d-flex justify-content-center">
                 <!-- Interaction Button Group -->
                  <!-- Add this button somewhere accessible in your UI -->
-                <button id="cancel-midi-learn" style="display: none;">Cancel MIDI Learn</button>
 
                 <div class="button-group-container" data-group="interaction-dropdown">
                   <div class="dropup-center dropup">
@@ -278,21 +277,21 @@
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="interactionMenuButton">
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="Jam" data-icon="/assets/icons/jam.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true"  id="jam-item" data-value="Jam" data-icon="/assets/icons/jam.svg">
                           <img src="/assets/icons/jam.svg" alt="Jam" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           Jam
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="MIDI" data-icon="/assets/icons/midi.svg">
+                        <a class="dropdown-item" href="#" data-midi-controllable="true"  id="midi-item" data-value="MIDI" data-icon="/assets/icons/midi.svg">
                           <img src="/assets/icons/midi.svg" alt="MIDI" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
                           MIDI
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="Sensors"
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="sensors-item"  data-value="Sensors"
                           data-icon="/assets/icons/motion-sensor.svg">
                           <img src="/assets/icons/motion-sensor.svg" alt="Sensors" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
@@ -300,7 +299,7 @@
                         </a>
                       </li>
                       <li>
-                        <a class="dropdown-item" href="#" data-midi-controllable="true"  data-value="Cosmic LFO"
+                        <a class="dropdown-item" href="#" data-midi-controllable="true" id="cosmic-lfo-item"  data-value="Cosmic LFO"
                           data-icon="/assets/icons/cosmic-lfo.svg">
                           <img src="/assets/icons/cosmic-lfo.svg" alt="Cosmic LFO" class="menu-item-icon"
                             style="width: 16px; height: 16px; margin-right: 8px;">
@@ -319,11 +318,16 @@
     </div>
   </div>
 <!-- MIDI Context Menu Dropdown -->
-<div id="midi-context-menu" class="dropdown-menu" data-bs-auto-close="outside" style="display: none;">
-  <a class="dropdown-item" href="#" id="midi-context-learn">Learn</a>
-  <a class="dropdown-item" href="#" id="midi-context-delete">Delete Mapping</a>
-  <a class="dropdown-item" href="#" id="midi-context-close">Close</a>
+<!-- Context Menu -->
+<div id="midi-context-menu" class="dropdown-menu" style="position: absolute;">
+  <a id="midi-context-learn" class="dropdown-item" href="#">Learn</a>
+  <a id="midi-context-delete" class="dropdown-item" href="#">Delete</a>
+  <a id="midi-context-close" class="dropdown-item" href="#">Close</a>
 </div>
+
+<!-- Cancel MIDI Learn Button -->
+<button id="cancel-midi-learn" style="display: none;">Cancel MIDI Learn</button>
+
 <a class="dropdown-item" href="#" data-midi-controllable="true" data-value="Control Monitor">
   <img src="/assets/icons/control_monitor.svg" alt="Control Monitor" class="menu-item-icon">
   Control Monitor

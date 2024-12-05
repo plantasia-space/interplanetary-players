@@ -25,7 +25,7 @@ Cats have it with abundance."*/
     --color2: rgb(0, 0, 0);  /* Hover and active color */
     --color3: #000000; 
     --color4: #ffffff00; 
-
+    --highlight-color: #02ff02;
 }
 *{
 margin:0; 
@@ -70,18 +70,24 @@ webaudio-numeric-keyboard {
 
 /* Overlay element */
 .widget-overlay {
-  position: fixed; /* Changed from absolute to fixed */
-  z-index: 1000; /* Ensure overlays have a defined stacking order */
+  background-color: rgba(0, 0, 0, 0); /* Fully transparent */
   pointer-events: auto;
-  background-color: transparent;
-  cursor: pointer;
+  border: 2px solid var(--highlight-color, orange); /* Optional border for debugging */
 }
+
+/* Initially hide the context menu */
+#midi-context-menu {
+  display: none;
+  /* Additional styling as needed */
+}
+
 
 /* Highlight automatable elements during MIDI Learn mode */
 .midi-learn-highlight {
-  border: 2px solid #ffffff;
+  border: 2px solid var(--highlight-color, orange);
   box-shadow: 0 0 10px rgba(159, 159, 159, 0.5);
 }
+
 
 /* Optional: Change cursor to indicate interactivity */
 [data-automatable="true"]:hover {
@@ -90,7 +96,20 @@ webaudio-numeric-keyboard {
 
 /* Ensure the Bootstrap dropdown menu appears above overlays */
 #midi-context-menu.show {
+  display: block;
+
   z-index: 1050; /* Higher than overlays */
+}
+
+/* Highlight for dropdown items in MIDI Learn mode */
+.midi-learn-dropdown {
+  border: 2px solid var(--highlight-color, orange);
+  background-color: rgba(255, 165, 0, 0.2);
+  cursor: pointer;
+}
+
+.midi-learn-dropdown:hover {
+  background-color: rgba(255, 165, 0, 0.4);
 }
 
 
@@ -196,3 +215,76 @@ button, .btn {
     appearance: none; /* Normalize button appearance across browsers */
   }
   
+
+  /* Toast Container */
+#toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px; /* Add spacing between stacked toasts */
+  pointer-events: none; /* Ensure it doesn’t block interactions */
+}
+
+/* Toast Styling */
+.toast {
+  font-family: 'Inter Display', sans-serif;
+  position: relative;
+  background-color: #000000;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 0.5rem;
+  opacity: 0.9;
+  animation: fade-in 0.3s ease;
+  pointer-events: auto; /* Allow interaction with the close button */
+}
+
+/* Animations for Toasts */
+@keyframes fade-in {
+  from {
+      opacity: 0;
+      transform: translateY(10px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes fade-out {
+  from {
+      opacity: 1;
+  }
+  to {
+      opacity: 0;
+  }
+}
+
+.toast-success {
+  background-color: #28a745;
+}
+
+.toast-error {
+  background-color: #dc3545;
+}
+
+.toast-info {
+  background-color: #17a2b8;
+}
+
+/* Close button for persistent toast */
+.toast button {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}

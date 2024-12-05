@@ -39,6 +39,7 @@ export class ButtonGroup {
         if (this.collapseElement) {
             this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
         }
+        this.midiController = MIDIControllerInstance;
 
         this.init();
     }
@@ -61,7 +62,21 @@ export class ButtonGroup {
         this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
             new bootstrap.Dropdown(dropdown); // Use default behavior
         });
+        this.registerMenuItemsWithMIDIController();
+
     }
+    registerMenuItemsWithMIDIController() {
+        this.menuItems.forEach(item => {
+          const itemId = item.id || item.getAttribute('data-value');
+          if (itemId) {
+            this.midiController.registerWidget(itemId, item);
+          } else {
+            console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
+          }
+        });
+      }
+
+      
     /**
      * Adjust the dropdown for MIDI support before setting up icons and events.
      */
