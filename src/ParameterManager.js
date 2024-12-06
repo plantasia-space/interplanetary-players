@@ -174,7 +174,7 @@ emitScaleUpdate(name, scale) {
       param.subscribers.add({ controller, priority });
       //console.debug(`[subscribe] Controller subscribed to '${parameterName}' with priority ${priority}`);
     } else {
-      console.warn(`Parameter '${parameterName}' does not exist. Adding with default values.`);
+     // console.warn(`Parameter '${parameterName}' does not exist. Adding with default values.`);
       // Initialize with default normalized value 0
       this.addParameter(parameterName, 0, 0, 1, false);
       const param = this.parameters.get(parameterName);

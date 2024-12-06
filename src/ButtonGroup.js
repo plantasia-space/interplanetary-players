@@ -14,7 +14,6 @@ export class ButtonGroup {
         audioPlayer,
         dataManager
     ) {
-        console.log(`Initializing ButtonGroup for selector: "${containerSelector}"`);
         this.audioPlayer = audioPlayer;
         this.dataManager = dataManager || null;
 
@@ -282,6 +281,15 @@ handleInteractionDropdown(selectedValue) {
     }
   }
 
+        activateCosmicLFO() {
+                console.log("IAM A LFO"); 
+        }
+
+        activateSensors() {
+            console.log("IAM A LFO"); 
+    }
+
+
     /**
      * Adjust the dropdown for MIDI support before setting up icons and events.
      */
@@ -292,7 +300,7 @@ handleInteractionDropdown(selectedValue) {
                 item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
             }
         });
-        console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED}`);
+  //      console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED}`);
     }
 
   

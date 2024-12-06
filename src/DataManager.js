@@ -124,7 +124,7 @@ export class DataManager {
             }
         });
         
-        console.log(`[DataManager] Placeholders updated for target: ${target}`);
+       // console.log(`[DataManager] Placeholders updated for target: ${target}`);
     }
     /**
      * Limpia todos los placeholders.

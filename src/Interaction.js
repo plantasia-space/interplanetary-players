@@ -29,7 +29,6 @@ export function setupInteractions(dataManager, audioPlayer) {
   const buttonGroups = [];
   document.querySelectorAll('.button-group-container').forEach(group => {
       const groupType = group.getAttribute('data-group');
-      console.log(`Initializing ButtonGroup for group type: ${groupType}`);
 
       const buttonGroup = new ButtonGroup(
           `.button-group-container[data-group="${groupType}"]`,
@@ -60,7 +59,6 @@ function registerMenuItemsWithMIDIController(buttonGroups) {
           const itemId = item.id || item.getAttribute('data-value');
           if (itemId) {
               midiController.registerWidget(itemId, item);
-              console.log(`Registered dropdown item with MIDIController: ${itemId}`);
           } else {
               console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
           }

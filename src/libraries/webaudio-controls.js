@@ -760,10 +760,7 @@ try {
      * @param {number} newValue - The new value of the parameter.
      */
     onParameterChanged(parameterName, newValue) {
-      console.log("getIt1");
       if (this.rootParam === parameterName) {
-        console.log("getIt2");
-
         if (this.isBidirectional) {
           this._setValue(newValue); // Avoid triggering another update to ParameterManager
           this.redraw();
@@ -2846,7 +2843,7 @@ validateValue(value) {
 
         if (this.rootParam === parameterName) {
           this.isLogarithmic = scale === "logarithmic";
-          console.debug(`[WebAudioParam] Scale of '${parameterName}' updated to: ${scale}`);
+         // console.debug(`[WebAudioParam] Scale of '${parameterName}' updated to: ${scale}`);
           this.redraw();
         }
       }
@@ -2855,7 +2852,7 @@ validateValue(value) {
         if (this.rootParam === parameterName) {
           this.min = min;
           this.max = max;
-          console.debug(`[WebAudioParam] Range of '${parameterName}' updated to min=${min}, max=${max}`);
+         // console.debug(`[WebAudioParam] Range of '${parameterName}' updated to min=${min}, max=${max}`);
           this.redraw();
         }
       }

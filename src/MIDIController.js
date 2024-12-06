@@ -1,6 +1,6 @@
 // MIDIController.js
 
-import { Constants, getPriority } from './Constants.js';
+import { Constants, getPriority, MIDI_SUPPORTED } from './Constants.js';
 import lscache from 'lscache';
 import { showUniversalModal } from './Interaction.js';
 import { ButtonGroup } from './ButtonGroup.js';
@@ -53,7 +53,7 @@ class MIDIController {
 
 
   async init() {
-    if (!MIDIController.isMidiSupported()) {
+    if (!MIDI_SUPPORTED) {
       console.warn("MIDIController: Web MIDI API not supported. Skipping initialization.");
       return;
     }
@@ -70,14 +70,6 @@ class MIDIController {
 
     // Set up event listeners for the context menu options
     this.setupDropdownEventListeners();
-  }
-
-  /**
-   * Checks if MIDI is supported by the browser.
-   * @returns {boolean} True if supported, false otherwise.
-   */
-  static isMidiSupported() {
-    return 'requestMIDIAccess' in navigator;
   }
 
   /**
@@ -104,7 +96,7 @@ class MIDIController {
    * Handles user interaction with the MIDI icon or menu.
    * If MIDI is not activated, activates it. Otherwise, enters MIDI Learn mode.
    */
-  async onMidiIconClick() {
+/*   async onMidiIconClick() {
     if (!this.isMIDIActivated) {
       console.log("MIDIController: Requesting MIDI access...");
       await this.activateMIDI();
@@ -113,7 +105,7 @@ class MIDIController {
       this.enableMidiLearn();
     }
   }
-
+ */
   /**
    * Requests MIDI access from the browser.
    */
@@ -207,7 +199,7 @@ class MIDIController {
 
             // Dropdown Item Handling
             if (widget.classList.contains('dropdown-item')) {
-                this.handleDropdownItem(widget);
+                 widget.click();
             } 
             // WebAudioSwitch Handling
             else if (widget instanceof HTMLElement && widget.tagName === 'WEBAUDIO-SWITCH') {
@@ -215,7 +207,7 @@ class MIDIController {
             } 
             // Standard Widget Handling (e.g., sliders)
             else {
-                this.updateStandardWidget(widget, data2);
+                this.updateWebAudioWidget(widget, data2);
             }
         }
     });
@@ -233,7 +225,7 @@ class MIDIController {
  * @param {HTMLElement} widget - The widget element.
  * @param {number} value - The MIDI value (0-127).
  */
-updateStandardWidget(widget, value) {
+updateWebAudioWidget(widget, value) {
   const normalizedValue = value / 127;
 
   // Use _min and _max if available, otherwise fall back to min and max
@@ -248,47 +240,9 @@ updateStandardWidget(widget, value) {
   // Calculate the new value based on normalization
   widget.value = min + normalizedValue * (max - min);
 
-  // Redraw the widget if a redraw method is available
-/*   if (typeof widget.redraw === 'function') {
-      widget.redraw();
-  } */
-
-/*   console.log(`Updated widget '${widget.id}' to value ${widget.value}`);
- */}
-
-/**
- * Finds the ButtonGroup for a given widget.
- * @param {HTMLElement} widget - The widget element.
- * @returns {ButtonGroup|null} - The ButtonGroup instance or null if not found.
- */
-findButtonGroup(widget) {
-    const container = widget.closest('.button-group-container');
-    if (!container) return null;
-
-    // Ensure ButtonGroup.instances is defined before accessing it
-    if (!ButtonGroup.instances) {
-        console.error('ButtonGroup.instances is undefined. Ensure ButtonGroup is initialized correctly.');
-        return null;
-    }
-
-    // Use the static instances array to find the matching ButtonGroup
-    return ButtonGroup.instances.find(group => group.container === container) || null;
 }
 
-/**
- * Handles dropdown items triggered by MIDI.
- * @param {HTMLElement} widget - The dropdown item element.
- */
-handleDropdownItem(widget) {
-    const buttonGroup = this.findButtonGroup(widget);
-    if (buttonGroup) {
-        const value = widget.getAttribute('data-value');
-        buttonGroup.onSelectionChange(value); // Call the ButtonGroup handler
-        console.log(`MIDIController: Triggered dropdown item '${widget.id}' with value '${value}'`);
-    } else {
-        console.warn(`No ButtonGroup found for dropdown item '${widget.id}'.`);
-    }
-}
+
 
 /**
  * Triggers WebAudioSwitch actions or invokes dropdown item actions.
@@ -393,7 +347,6 @@ triggerWebAudioSwitch(widget, value) {
       return;
     }
     this.widgetRegistry.set(id, widget);
-    console.log(`MIDIController: Registered widget '${id}'.`);
   }
 
   /**
@@ -402,7 +355,7 @@ triggerWebAudioSwitch(widget, value) {
    * @param {number} channel - MIDI channel (0-15).
    * @param {number} cc - MIDI Control Change number (0-127).
    */
-  setMidiParamMapping(param, channel, cc) {
+/*   setMidiParamMapping(param, channel, cc) {
     if (!param) {
       console.warn("MIDIController: Parameter name is required for mapping.");
       return;
@@ -416,7 +369,7 @@ triggerWebAudioSwitch(widget, value) {
     if (paramElement) {
       paramElement.classList.add('midi-mapped');
     }
-  }
+  } */
 
   /**
    * Sets a MIDI mapping for a widget.
@@ -583,6 +536,12 @@ triggerWebAudioSwitch(widget, value) {
   
       // Bind the event handler
       item.dropdownItemClickHandler = (e) => {
+        if (!this.isMidiLearnModeActive) {
+            console.warn('MIDIController: Ignored click outside MIDI Learn mode.');
+            return; // Ignore if not in MIDI Learn mode
+        }
+    
+
         e.preventDefault();
         e.stopPropagation();
   
@@ -604,27 +563,36 @@ triggerWebAudioSwitch(widget, value) {
    * Removes overlays created during MIDI Learn mode.
    */
   removeOverlays() {
+    console.log('MIDIController: Executing removeOverlays');
+
     // Remove widget overlays
     const overlays = document.querySelectorAll('.widget-overlay');
     overlays.forEach(overlay => {
-      overlay.parentNode.removeChild(overlay);
+        overlay.parentNode.removeChild(overlay);
     });
-  
+
     // Restore dropdown items
     const dropdownItems = document.querySelectorAll('[data-midi-controllable="true"]');
     dropdownItems.forEach(item => {
-      item.classList.remove('midi-learn-dropdown');
-      item.removeEventListener('click', item.dropdownItemClickHandler);
-  
-      // Restore original click handler
-      if (item.originalClickHandler) {
-        item.onclick = item.originalClickHandler;
-        delete item.originalClickHandler;
-      }
+        item.classList.remove('midi-learn-dropdown');
+
+        // Remove custom event listener
+        if (item.dropdownItemClickHandler) {
+            item.removeEventListener('click', item.dropdownItemClickHandler);
+            delete item.dropdownItemClickHandler;
+        }
+
+        // Restore original click handler
+        if (item.originalClickHandler) {
+            item.onclick = item.originalClickHandler;
+            delete item.originalClickHandler;
+        }
+
+        console.log(`Restored dropdown item: ${item.id || '[unnamed item]'}`);
     });
-  
-    console.log('MIDIController: Removed overlays from automatable widgets and dropdown items.');
-  }
+
+    console.log('MIDIController: Removed overlays and restored dropdown items.');
+}
 
   /**
    * Initiates MIDI learning mode for a specific widget.
@@ -717,50 +685,54 @@ triggerWebAudioSwitch(widget, value) {
    * Exits MIDI Learn mode by removing overlays and hiding the exit button.
    */
   exitMidiLearnMode() {
+    console.log('MIDIController: Exiting MIDI Learn mode.');
+
+    // Update the mode state
     this.isMidiLearnModeActive = false;
     this.currentLearnParam = null;
     this.currentLearnWidget = null;
-  
-    // Remove MIDI Learn mode class from body
+
+    // Remove mode-specific body class
     document.body.classList.remove('midi-learn-mode');
-  
+    // Close context menu if open
+    this.closeContextMenu();
     // Remove overlays
     this.removeOverlays();
-  
-    // Remove 'midi-learn-highlight' class from all elements
+
+    // Remove all highlights
     const highlightedElements = document.querySelectorAll('.midi-learn-highlight');
     highlightedElements.forEach(element => {
-      element.classList.remove('midi-learn-highlight');
+        element.classList.remove('midi-learn-highlight');
     });
-  
+
     // Hide the exit button
     const exitButton = document.getElementById('cancel-midi-learn');
     if (exitButton) {
-      exitButton.style.display = 'none';
+        exitButton.style.display = 'none';
     }
-  
-    // Remove on-screen messages
+
+    // Close context menu if open
+    this.closeContextMenu();
+
+    // Remove lingering messages
     const toastContainer = document.getElementById('toast-container');
     if (toastContainer) {
-      toastContainer.innerHTML = '';
+        toastContainer.innerHTML = '';
     }
-  
-    // Close any open context menus
-    this.closeContextMenu();
-  
+
     // Remove Esc key listener
     document.removeEventListener('keydown', this.handleEscKey);
-  
-    // Reset MIDI Learn Icon to Default State
-    const midiIcon = document.getElementById('midi-learn-icon'); // Ensure the icon has this ID
+
+    // Reset the MIDI Learn icon
+    const midiIcon = document.getElementById('midi-learn-icon');
     if (midiIcon) {
-      midiIcon.classList.remove('active'); // Remove any active classes
-      midiIcon.classList.add('default'); // Add default class if necessary
-      midiIcon.setAttribute('aria-label', 'Jam Mode'); // Update ARIA labels or tooltips
+        midiIcon.classList.remove('active');
+        midiIcon.classList.add('default');
+        midiIcon.setAttribute('aria-label', 'Jam Mode');
     }
-  
-    console.log('MIDIController: Exited MIDI Learn mode.');
-  }
+
+    console.log('MIDIController: Fully exited MIDI Learn mode.');
+}
   
   /**
    * Handles the "Learn" action from the context menu.
@@ -957,7 +929,7 @@ triggerWebAudioSwitch(widget, value) {
   /**
    * Sets up event listeners for the context menu options.
    */
-  setupDropdownEventListeners() {
+   setupDropdownEventListeners() {
     const contextMenuLearn = document.getElementById("midi-context-learn");
     const contextMenuDelete = document.getElementById("midi-context-delete");
     const contextMenuClose = document.getElementById("midi-context-close");
@@ -993,7 +965,7 @@ triggerWebAudioSwitch(widget, value) {
     });
 
     console.log("MIDIController: Set up context menu event listeners.");
-  }
+  } 
 
 
 }
