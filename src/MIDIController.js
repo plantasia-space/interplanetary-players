@@ -58,7 +58,7 @@ class MIDIController {
       return;
     }
 
-    console.log("MIDIController: Web MIDI API supported.");
+    notifications.showToast("MIDIController: Web MIDI API supported.");
     // Restore persisted mappings if you have this method
     // await this.restoreMidiLearn();
 
@@ -78,7 +78,7 @@ class MIDIController {
    */
   async activateMIDI() {
     if (this.isMIDIActivated) {
-      console.log('MIDIController: MIDI is already activated.');
+      notifications.showToast('MIDIController: MIDI is already activated.');
       return; // Skip activation if already activated
     }
 
@@ -86,9 +86,9 @@ class MIDIController {
     try {
       await this.requestMidiAccess();
       this.isMIDIActivated = true;
-      console.log('MIDIController: MIDI activated successfully.');
+      notifications.showToast('MIDIController: MIDI activated successfully.');
     } catch (error) {
-      console.error('MIDIController: Failed to activate MIDI:', error);
+      notifications.showToast('MIDIController: Failed to activate MIDI:', error);
     }
   }
 
@@ -454,10 +454,10 @@ triggerWebAudioSwitch(widget, value) {
    */
   enableMidiLearn() {
     if (!this.isMIDIActivated) {
-      console.warn('MIDIController: MIDI is not activated. Cannot enter MIDI Learn mode.');
+      notifications.showToast('MIDIController: MIDI is not activated. Cannot enter MIDI Learn mode.');
       return;
     }
-    console.log('MIDIController: Entering MIDI Learn mode...');
+    notifications.showToast('MIDIController: Entering MIDI Learn mode...');
   
     this.isMidiLearnModeActive = true;
     this.currentLearnParam = null;
