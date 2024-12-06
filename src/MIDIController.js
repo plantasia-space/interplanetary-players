@@ -91,28 +91,8 @@ class MIDIController {
     }
 }
 
-  /**
-   * Handles user interaction with the MIDI icon or menu.
-   * If MIDI is not activated, activates it. Otherwise, enters MIDI Learn mode.
-   */
-/*   async onMidiIconClick() {
-    if (!this.isMIDIActivated) {
-      console.log("MIDIController: Requesting MIDI access...");
-      await this.activateMIDI();
-    } else {
-      console.log("MIDIController: Entering MIDI Learn mode.");
-      this.enableMidiLearn();
-    }
-  }
- */
-  /**
-   * Requests MIDI access from the browser.
-   */
 /**
- * Requests MIDI access from the browser.
- */
-/**
- * Requests MIDI access from the browser with improved handling.
+ * Requests MIDI access from the browser with improved handling and debugging.
  */
 async requestMidiAccess() {
   if (!('requestMIDIAccess' in navigator)) {
@@ -123,10 +103,16 @@ async requestMidiAccess() {
   try {
     // Request MIDI access with SysEx disabled
     this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-    notifications.showToast('MIDI access granted. Initializing inputs...', 'success');
-    
+    notifications.showToast('MIDI access granted. Checking inputs...', 'success');
+
     // Handle state changes (device connection/disconnection)
     this.midiAccess.onstatechange = this.handleStateChange.bind(this);
+
+    // Wait a brief moment to ensure inputs are populated
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Log initial state of inputs for debugging
+    console.log('Initial MIDI Inputs:', Array.from(this.midiAccess.inputs.values()));
 
     // Enable available MIDI inputs
     this.enableInputs();
@@ -138,7 +124,7 @@ async requestMidiAccess() {
 }
 
 /**
- * Enables MIDI message handling for all available inputs.
+ * Enables MIDI message handling for all connected inputs.
  */
 enableInputs() {
   if (!this.midiAccess) {
@@ -146,21 +132,21 @@ enableInputs() {
     return;
   }
 
-  // Get iterable MIDI inputs
-  const inputs = this.midiAccess.inputs.values();
-  const inputList = Array.from(inputs);
+  const inputs = Array.from(this.midiAccess.inputs.values());
+  const connectedInputs = inputs.filter((input) => input.state === 'connected');
 
-  // Check if there are any MIDI inputs available
-  if (inputList.length === 0) {
-    notifications.showToast('No MIDI inputs found. Please connect a MIDI device.', 'warning');
+  // Check if there are any connected MIDI inputs
+  if (connectedInputs.length === 0) {
+    notifications.showToast('No connected MIDI inputs available. Please connect a MIDI device.', 'warning');
+    console.log('No connected MIDI inputs found:', inputs);
     return;
   }
 
-  // Iterate over each input and set the message handler
-  inputList.forEach((input) => {
+  // Enable message handling for each connected input
+  connectedInputs.forEach((input) => {
     input.onmidimessage = this.handleMidiMessage.bind(this);
     notifications.showToast(`Enabled MIDI input: ${input.name}`, 'info');
-    console.log(`Connected MIDI input: ${input.name}`);
+    console.log(`Connected and enabled MIDI input: ${input.name}`);
   });
 }
 
@@ -175,9 +161,11 @@ handleStateChange(event) {
   if (port.type === 'input') {
     if (port.state === 'connected') {
       port.onmidimessage = this.handleMidiMessage.bind(this);
+      notifications.showToast(`Connected to MIDI input: ${port.name}`, 'success');
       console.log(`Connected to MIDI input: ${port.name}`);
     } else if (port.state === 'disconnected') {
       port.onmidimessage = null;
+      notifications.showToast(`Disconnected from MIDI input: ${port.name}`, 'warning');
       console.log(`Disconnected from MIDI input: ${port.name}`);
     }
   }
