@@ -2,6 +2,7 @@
 
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
+import { MIDI_SUPPORTED} from './constants.js'; 
 
 /**
  * Setup interactions for dynamic placeholder updates.
@@ -44,7 +45,7 @@ export function setupInteractions(dataManager, audioPlayer) {
   });
 
   // Register dropdown items with MIDIController for MIDI interactions
-  registerMenuItemsWithMIDIController(buttonGroups);
+  if (MIDI_SUPPORTED) registerMenuItemsWithMIDIController(buttonGroups);
 }
 
 /**

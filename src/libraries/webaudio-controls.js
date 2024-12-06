@@ -34,7 +34,7 @@
  *
  * */
  import { MIDIControllerInstance } from './../MIDIController.js';
- import { Constants, TRACK_ID, getPriority } from './../Constants.js';
+ import { getPriority, MIDI_SUPPORTED } from './../Constants.js';
  import { user1Manager } from './../Main.js';
 
  
@@ -3302,62 +3302,44 @@ try {
 
 class WebAudioControlsWidgetManager {
   constructor() {
-    console.log("Initializing WebAudioControlsWidgetManager...");
     this.listOfWidgets = Array.from(
-      document.querySelectorAll(
-        "webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard"
-      )
+      document.querySelectorAll("webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard")
     );
     this._trackId = null; // Initialize trackId
 
-    // Link with MIDIControllerInstance
-    this.midiController = MIDIControllerInstance;
+    // Conditionally link with MIDIControllerInstance if MIDI is supported
+    this.midiController = MIDI_SUPPORTED ? MIDIControllerInstance : null;
 
     this.updateWidgets();
   }
 
   updateWidgets() {
-    this.listOfWidgets = Array.from(
-      document.querySelectorAll(
-        "webaudio-knob, webaudio-slider, webaudio-switch, webaudio-param, webaudio-keyboard"
-      )
-    );
-    console.log("Widgets updated:", this.listOfWidgets);
-  
-    // Register widgets with MIDIController
-    this.listOfWidgets.forEach(widget => {
-      if (widget.id) {
-        this.midiController.registerWidget(widget.id, widget);
-      } else {
-        console.warn("Widget missing 'id' attribute:", widget);
-      }
-    });
+    // Conditionally register widgets with MIDIController if it's initialized
+    if (this.midiController) {
+      this.listOfWidgets.forEach(widget => {
+        if (widget.id) {
+          this.midiController.registerWidget(widget.id, widget);
+        }
+      });
+    }
   }
 
   addWidget(widget) {
-    if (typeof widget !== "object") {
-      console.error("Invalid widget passed to addWidget:", widget);
+    if (typeof widget !== "object" || !widget.id) {
+      console.error("Invalid or unidentified widget passed to addWidget:", widget);
       return;
     }
 
     this.listOfWidgets.push(widget);
-    console.log(`Widget added: ${widget.id}`);
-    console.log("After addWidget call, listOfWidgets:", this.listOfWidgets);
-
-    // Register the widget with MIDIController
-    if (widget.id) {
+    if (this.midiController) {
       this.midiController.registerWidget(widget.id, widget);
-    } else {
-      console.warn("Widget missing 'id' attribute:", widget);
     }
   }
 }
 
-// Instantiate and attach the manager if MIDI is enabled
-if (window.UseWebAudioControlsMidi || opt.useMidi) {
-  window.webAudioControlsWidgetManager =
-    window.webAudioControlsMidiManager = new WebAudioControlsWidgetManager();
-  console.log("WebAudioControlsWidgetManager instantiated.");
+// Instantiate and attach the manager if MIDI is supported
+if (MIDI_SUPPORTED) {
+  window.webAudioControlsWidgetManager = new WebAudioControlsWidgetManager();
 }
 
  }

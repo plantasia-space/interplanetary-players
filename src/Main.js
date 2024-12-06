@@ -26,7 +26,6 @@ const audioPlayer = new AudioPlayer(); // Instantiate AudioPlayer
 const user1Manager = new ParameterManager();
 
 let animationRunning = false;
-let midiDumpEnabled = false; // Variable to toggle MIDI dump on/off
 
 
 // Initialize Application

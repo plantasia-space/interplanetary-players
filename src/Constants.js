@@ -1,3 +1,5 @@
+// src/constants.js
+
 import lscache from 'lscache';
 
 export const Constants = {
@@ -5,6 +7,7 @@ export const Constants = {
     TRACK_ID: null, // Current track ID
     CACHE_EXPIRY_MINUTES: 10, // Cache expiry time in minutes
     TRACK_DATA: null, // Current track data
+
     /**
      * Sets and caches track data for the specified trackId.
      * @param {string} trackId - The track ID.
@@ -19,7 +22,6 @@ export const Constants = {
         console.log(`[CACHE] Cached track data for trackId: ${trackId}`, trackData);
     },
 
-    
     /**
      * Retrieves cached track data for the specified trackId.
      * @param {string} trackId - The track ID.
@@ -58,6 +60,7 @@ export const TRACK_ID = Constants.TRACK_ID;
 
 // Define a priority map for controller types
 export const PRIORITY_MAP = {
+    "MIDI": 1,
     "webaudio-knob": 2,
     "webaudio-slider": 3,
     "webaudio-switch": 4,
@@ -70,7 +73,6 @@ export const PRIORITY_MAP = {
     "cosmic-lfo-A": 11,
     "cosmic-lfo-B": 12,
     "cosmic-lfo-C": 13,
-    "MIDI": 1,
 
     // MIDI controllers will have dynamic priorities
 };
@@ -86,3 +88,10 @@ export const DEFAULT_PRIORITY = 100; // Fallback priority for undefined types
 export function getPriority(controllerType) {
     return PRIORITY_MAP[controllerType] || DEFAULT_PRIORITY;
 }
+
+/**
+ * **Global MIDI Support Flag**
+ * Determines if the browser supports the Web MIDI API.
+ * This flag can be used across the application to conditionally execute MIDI-related code.
+ */
+export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;

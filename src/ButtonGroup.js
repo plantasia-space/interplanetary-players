@@ -1,5 +1,6 @@
 import { MIDIControllerInstance } from './MIDIController.js';
 import { showUniversalModal } from './Interaction.js';
+import { MIDI_SUPPORTED} from './constants.js'; 
 
 export class ButtonGroup {
     static instances = []; // Holds all ButtonGroup instances
@@ -64,34 +65,9 @@ export class ButtonGroup {
         this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
             new bootstrap.Dropdown(dropdown); // Use default behavior
         });
-      //  this.registerMenuItemsWithMIDIController();
 
     }
-/*     registerMenuItemsWithMIDIController() {
-        this.menuItems.forEach(item => {
-            const itemId = item.id || item.getAttribute('data-value');
-            if (itemId && item.dataset.midiControllable === "true") {
-                this.midiController.registerWidget(itemId, item);
-            } else {
-                console.warn(`Menu item '${item}' is not MIDI-controllable.`);
-            }
-        });
-    } */
 
-      
-    /**
-     * Adjust the dropdown for MIDI support before setting up icons and events.
-     */
-    adjustForMidiSupport() {
-        const midiSupported = 'requestMIDIAccess' in navigator;
-        this.menuItems.forEach(item => {
-            const value = item.getAttribute('data-value');
-            if (value === 'MIDI') {
-                item.style.display = midiSupported ? 'block' : 'none';
-            }
-        });
-        console.log(`MIDI support status: ${midiSupported ? 'Available' : 'Unavailable'}`);
-    }
 
     /**
      * Load dynamic SVGs for the main button and dropdown menu items.
@@ -306,7 +282,29 @@ handleInteractionDropdown(selectedValue) {
     }
   }
 
+    /**
+     * Adjust the dropdown for MIDI support before setting up icons and events.
+     */
+    adjustForMidiSupport() {
+        this.menuItems.forEach(item => {
+            const value = item.getAttribute('data-value');
+            if (value === 'MIDI') {
+                item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
+            }
+        });
+        console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED}`);
+    }
 
   
 
 }
+
+
+
+
+
+
+
+
+
+
