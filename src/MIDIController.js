@@ -110,30 +110,37 @@ class MIDIController {
    */
   async requestMidiAccess() {
     if ('requestMIDIAccess' in navigator) {
-        try {
-            this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-            notifications.showToast('MIDI access granted. Enabling inputs...', 'success');
-
-            // Log available inputs
-            const inputs = [...this.midiAccess.inputs.values()];
-            if (inputs.length === 0) {
-                notifications.showToast('No MIDI inputs found.', 'warning');
-            } else {
-                inputs.forEach((input, index) => {
-                    notifications.showToast(`MIDI Input ${index + 1}: ${input.name}`, 'info');
-                });
-            }
-
-            this.enableInputs();
-            this.midiAccess.onstatechange = this.handleStateChange;
-        } catch (error) {
-            notifications.showToast(`Failed to access MIDI: ${error.message}`, 'error');
-            throw error;
-        }
-    } else {
-        notifications.showToast('Web MIDI API not supported in this environment.', 'error');
-        throw new Error('Web MIDI API not supported');
-    }
+      try {
+          this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+          
+          // Defensive check for iterable inputs
+          if (!this.midiAccess.inputs[Symbol.iterator]) {
+              console.warn("MIDI inputs are not iterable. Converting to Map manually.");
+              this.midiAccess.inputs = new Map(this.midiAccess.inputs.entries());
+          }
+  
+          notifications.showToast('MIDI access granted. Enabling inputs...', 'success');
+  
+          // Use Array.from for iteration
+          const inputs = Array.from(this.midiAccess.inputs.values());
+          if (inputs.length === 0) {
+              notifications.showToast('No MIDI inputs found.', 'warning');
+          } else {
+              inputs.forEach((input, index) => {
+                  notifications.showToast(`MIDI Input ${index + 1}: ${input.name}`, 'info');
+              });
+          }
+  
+          this.enableInputs();
+          this.midiAccess.onstatechange = this.handleStateChange;
+      } catch (error) {
+          notifications.showToast(`Failed to access MIDI: ${error.message}`, 'error');
+          throw error;
+      }
+  } else {
+      notifications.showToast('Web MIDI API not supported in this environment.', 'error');
+      throw new Error('Web MIDI API not supported');
+  }
 }
 
   /**
@@ -145,7 +152,7 @@ class MIDIController {
         return;
     }
 
-    const inputs = [...this.midiAccess.inputs.values()];
+    const inputs = Array.from(this.midiAccess.inputs.values());    
     inputs.forEach((input) => {
         input.onmidimessage = this.handleMidiMessage;
         notifications.showToast(`Enabled MIDI input: ${input.name}`, 'info');
