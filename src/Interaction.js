@@ -1,6 +1,7 @@
 // Interaction.js
 
 import { ButtonGroup } from './ButtonGroup.js';
+import { MIDIControllerInstance } from './MIDIController.js';
 
 /**
  * Setup interactions for dynamic placeholder updates.
@@ -8,32 +9,64 @@ import { ButtonGroup } from './ButtonGroup.js';
  * @param {AudioPlayer} audioPlayer - The shared AudioPlayer instance.
  */
 export function setupInteractions(dataManager, audioPlayer) {
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
-        return;
-    }
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', event => {
-            event.preventDefault(); // Prevent default link behavior
-            const action = item.getAttribute('data-value'); // Get action value
-            //handleMoreDropdown(action); // Call the handler
-        });
-    });
-    // Initialize all button groups
-    document.querySelectorAll('.button-group-container').forEach(group => {
-        const groupType = group.getAttribute('data-group');
+  if (typeof bootstrap === 'undefined') {
+      console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
+      return;
+  }
 
-        new ButtonGroup(
-            `.button-group-container[data-group="${groupType}"]`,
-            'ul.dropdown-menu',
-            'button.dropdown-toggle',
-            'a.dropdown-item',
-            '.button-icon',
-            audioPlayer,    // Pass shared AudioPlayer
-            dataManager     // Pass shared DataManager
-        );
-    });
+  // Bind event listeners to dropdown items for manual interactions
+  document.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', event => {
+          event.preventDefault(); // Prevent default link behavior
+          const action = item.getAttribute('data-value'); // Get action value
+          console.log(`Dropdown action triggered: ${action}`);
+          // Additional functionality for dropdown actions can be added here
+      });
+  });
 
+  // Initialize all button groups
+  const buttonGroups = [];
+  document.querySelectorAll('.button-group-container').forEach(group => {
+      const groupType = group.getAttribute('data-group');
+      console.log(`Initializing ButtonGroup for group type: ${groupType}`);
+
+      const buttonGroup = new ButtonGroup(
+          `.button-group-container[data-group="${groupType}"]`,
+          'ul.dropdown-menu',
+          'button.dropdown-toggle',
+          'a.dropdown-item',
+          '.button-icon',
+          audioPlayer,    // Pass shared AudioPlayer
+          dataManager     // Pass shared DataManager
+      );
+
+      buttonGroups.push(buttonGroup);
+  });
+
+  // Register dropdown items with MIDIController for MIDI interactions
+  registerMenuItemsWithMIDIController(buttonGroups);
+}
+
+/**
+* Registers all dropdown items in the initialized ButtonGroups with MIDIController.
+* @param {Array} buttonGroups - List of initialized ButtonGroup instances.
+*/
+function registerMenuItemsWithMIDIController(buttonGroups) {
+  const midiController = MIDIControllerInstance;
+
+  buttonGroups.forEach(buttonGroup => {
+      buttonGroup.menuItems.forEach(item => {
+          const itemId = item.id || item.getAttribute('data-value');
+          if (itemId) {
+              midiController.registerWidget(itemId, item);
+              console.log(`Registered dropdown item with MIDIController: ${itemId}`);
+          } else {
+              console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
+          }
+      });
+  });
+
+  console.log('All dropdown items registered with MIDIController.');
 }
 
 /**

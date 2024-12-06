@@ -3,6 +3,8 @@
 import { Constants, getPriority } from './Constants.js';
 import lscache from 'lscache';
 import { showUniversalModal } from './Interaction.js';
+import { ButtonGroup } from './ButtonGroup.js';
+import { notifications } from './Main.js';
 
 /**
  * MIDIController Singleton Class
@@ -170,77 +172,135 @@ class MIDIController {
    * If in MIDI Learn mode, maps the incoming CC to the selected parameter or widget.
    * @param {MIDIMessageEvent} event 
    */
+
   handleMidiMessage(event) {
     const [status, data1, data2] = event.data;
     const channel = status & 0x0F;
     const messageType = status & 0xF0;
-  
+
     // Process only Control Change (CC) messages
     if (messageType !== 0xB0) return;
-  
+
+    // MIDI Learn Mode: Map MIDI input to a widget
     if (this.isMidiLearnModeActive && this.currentLearnWidget) {
-      // Mapping a widget or menu item
-      const widgetId = this.currentLearnWidget.id || this.currentLearnWidget.getAttribute('data-value');
-      console.log(`MIDIController: Mapping widget '${widgetId}' to MIDI Channel ${channel + 1}, CC ${data1}`);
-      this.setMidiWidgetMapping(widgetId, channel, data1);
-  
-      // Update visual feedback
-      this.unhighlightWidget(widgetId);
-      this.markAsMapped(widgetId, data1, channel);  
-      // Display confirmation toast
-      this.showToast(`Assigned CC ${data1} to '${widgetId}'.`, 'success');
-  
-      // Reset currentLearnWidget for next mapping
-      this.currentLearnWidget = null;
-  
-      // Keep MIDI Learn mode active for further mappings
-      // Remove the call to exitMidiLearnMode()
-      // this.exitMidiLearnMode();
-  
-      return; // Stop processing further
+        const widgetId = this.currentLearnWidget.id || this.currentLearnWidget.getAttribute('data-value');
+        console.log(`Mapping widget '${widgetId}' to MIDI Channel ${channel + 1}, CC ${data1}`);
+        this.setMidiWidgetMapping(widgetId, channel, data1);
+
+        // Update feedback and reset learning
+        this.unhighlightWidget(widgetId);
+        this.markAsMapped(widgetId, data1, channel);
+        notifications.showToast(`Assigned CC ${data1} to '${widgetId}'.`, 'success');
+        this.currentLearnWidget = null;
+        return; // Exit after mapping
     }
 
     // Process mapped widgets
     this.midiWidgetMappings.forEach((mapping, widgetId) => {
-      if (mapping.channel === channel && mapping.cc === data1) {
-        const widget = this.widgetRegistry.get(widgetId);
-        if (widget) {
-          if (widget.tagName.toLowerCase() === 'a' && widget.classList.contains('dropdown-item')) {
-            // Handle dropdown menu item
-            console.log(`MIDIController: Triggering action for dropdown item '${widgetId}'`);
+        if (mapping.channel === channel && mapping.cc === data1) {
+            const widget = this.widgetRegistry.get(widgetId);
 
-            // Directly invoke the action without simulating a click
-            if (typeof widget.onclick === 'function') {
-              widget.onclick(); // Invoke the existing click handler directly
-            } else {
-              console.warn(`MIDIController: No onclick handler defined for dropdown item '${widgetId}'.`);
+            if (!widget) {
+                console.warn(`Widget '${widgetId}' not found.`);
+                return;
             }
-          } else {
-            // Handle widgets (including sliders)
-            const normalizedValue = data2 / 127; // Normalize to [0, 1]
-            const min = widget._min !== undefined ? widget._min : widget.min;
-            const max = widget._max !== undefined ? widget._max : widget.max;
-            widget.value = min + normalizedValue * (max - min);
 
-            if (typeof widget.redraw === 'function') {
-              widget.redraw(); // Ensure the widget updates its display
+            // Dropdown Item Handling
+            if (widget.classList.contains('dropdown-item')) {
+                this.handleDropdownItem(widget);
+            } 
+            // WebAudioSwitch Handling
+            else if (widget instanceof HTMLElement && widget.tagName === 'WEBAUDIO-SWITCH') {
+                this.triggerWebAudioSwitch(widget, data2);
+            } 
+            // Standard Widget Handling (e.g., sliders)
+            else {
+                this.updateStandardWidget(widget, data2);
             }
-            console.log(`MIDIController: Updated widget '${widgetId}' to value ${widget.value}`);
-          }
-        } else {
-          console.warn(`MIDIController: Element '${widgetId}' not found.`);
         }
-      }
     });
 
-    // Next, check if the MIDI message is mapped to a parameter
+    // Update Parameters
     this.midiParamMappings.forEach((mapping, param) => {
-      if (mapping.channel === channel && mapping.cc === data1) {
-        this.updateParameter(param, data2);
-      }
+        if (mapping.channel === channel && mapping.cc === data1) {
+            this.updateParameter(param, data2);
+        }
     });
-  }
+}
 
+/**
+ * Updates standard widgets like sliders.
+ * @param {HTMLElement} widget - The widget element.
+ * @param {number} value - The MIDI value (0-127).
+ */
+updateStandardWidget(widget, value) {
+    const normalizedValue = value / 127;
+    widget.value = normalizedValue * (widget.max - widget.min) + widget.min;
+
+    if (typeof widget.redraw === 'function') widget.redraw();
+    console.log(`Updated widget '${widget.id}' to value ${widget.value}`);
+}
+
+/**
+ * Finds the ButtonGroup for a given widget.
+ * @param {HTMLElement} widget - The widget element.
+ * @returns {ButtonGroup|null} - The ButtonGroup instance or null if not found.
+ */
+findButtonGroup(widget) {
+    const container = widget.closest('.button-group-container');
+    if (!container) return null;
+
+    // Ensure ButtonGroup.instances is defined before accessing it
+    if (!ButtonGroup.instances) {
+        console.error('ButtonGroup.instances is undefined. Ensure ButtonGroup is initialized correctly.');
+        return null;
+    }
+
+    // Use the static instances array to find the matching ButtonGroup
+    return ButtonGroup.instances.find(group => group.container === container) || null;
+}
+
+/**
+ * Handles dropdown items triggered by MIDI.
+ * @param {HTMLElement} widget - The dropdown item element.
+ */
+handleDropdownItem(widget) {
+    const buttonGroup = this.findButtonGroup(widget);
+    if (buttonGroup) {
+        const value = widget.getAttribute('data-value');
+        buttonGroup.onSelectionChange(value); // Call the ButtonGroup handler
+        console.log(`MIDIController: Triggered dropdown item '${widget.id}' with value '${value}'`);
+    } else {
+        console.warn(`No ButtonGroup found for dropdown item '${widget.id}'.`);
+    }
+}
+
+/**
+ * Triggers WebAudioSwitch actions or invokes dropdown item actions.
+ * @param {HTMLElement} widget - The widget element.
+ * @param {number} value - The MIDI value (0-127).
+ */
+triggerWebAudioSwitch(widget, value) {
+    if (widget.tagName.toLowerCase() === 'a' && widget.classList.contains('dropdown-item')) {
+        console.log(`MIDIController: Triggering dropdown item '${widget.id}'`);
+        if (typeof widget.onclick === 'function') {
+            widget.onclick(); // Invoke dropdown action
+        } else {
+            console.warn(`Dropdown item '${widget.id}' has no onclick handler.`);
+        }
+    } else if (widget.type === 'toggle') {
+        widget.setState(value > 0 ? 1 : 0, true); // Fire events
+    } else if (widget.type === 'kick') {
+        widget.triggerKick(); // Simulate kick
+    } else if (widget.type === 'sequential') {
+        const delta = value > 64 ? 1 : -1;
+        widget.cycleState(delta); // Cycle state
+    } else if (widget.type === 'radio') {
+        widget.activateRadio(); // Activate radio
+    } else {
+        widget.setValue(value / 127, true); // Update knobs or sliders
+    }
+}
   markAsMapped(elementId, midiCC, midiChannel) {
     const element = document.getElementById(elementId) || document.querySelector(`[data-value="${elementId}"]`);
     if (element) {
@@ -408,10 +468,10 @@ class MIDIController {
   
     if (cleared) {
       // Notify the user
-      this.showToast(`Cleared MIDI mapping for '${identifier}'.`, 'success');
+      notifications.showToast(`Cleared MIDI mapping for '${identifier}'.`, 'success');
     } else {
       console.warn(`MIDIController: No MIDI mapping found for '${identifier}'.`);
-      this.showToast(`No MIDI mapping exists for '${identifier}'.`, 'error');
+      notifications.showToast(`No MIDI mapping exists for '${identifier}'.`, 'error');
     }
   }
 
@@ -445,7 +505,7 @@ class MIDIController {
     document.addEventListener('keydown', this.handleEscKey);
   
     // Display a toast message indicating MIDI Learn mode is active
-    this.showToast('MIDI Learn mode activated. Click on a control to assign MIDI.', 'info');
+    notifications.showToast('MIDI Learn mode activated. Click on a control to assign MIDI.', 'info');
   }
 
   /**
@@ -564,7 +624,7 @@ class MIDIController {
     this.highlightWidget(widget.id);
   
     // Display a toast message instead of a modal
-    this.showToast(`Perform a MIDI action to assign it to '${widget.id}'.`, 'info');
+    notifications.showToast(`Perform a MIDI action to assign it to '${widget.id}'.`, 'info');
   }
 
   /**
@@ -798,9 +858,8 @@ class MIDIController {
     this.isMidiLearnModeActive = true;
   
     // Display toast message
-    this.showToast(`Perform a MIDI action to assign it to '${id}'.`, 'info');
+    notifications.showToast(`Perform a MIDI action to assign it to '${id}'.`, 'info');
   }
-
 
   closeContextMenu() {
     const contextMenu = document.getElementById("midi-context-menu");
@@ -860,7 +919,7 @@ class MIDIController {
     contextMenu.style.top = `${rect.bottom}px`;
     contextMenu.style.display = 'block';
     contextMenu.classList.add('show');
-    contextMenu.style.zIndex = '1001'; // Ensure context menu is above overlays
+    contextMenu.style.zIndex = '1050'; // Ensure context menu is above overlays and Bootstrap dropdowns
   
     // Disable pointer events on the overlay
     const overlay = Array.from(document.querySelectorAll('.widget-overlay')).find(
@@ -915,71 +974,6 @@ class MIDIController {
     console.log("MIDIController: Set up context menu event listeners.");
   }
 
-  showToast(message, type = 'info', duration = 3000) {
-    // Create or select the toast container
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-      toastContainer = document.createElement('div');
-      toastContainer.id = 'toast-container';
-      toastContainer.style.position = 'fixed';
-      toastContainer.style.bottom = '20px';
-      toastContainer.style.right = '20px';
-      toastContainer.style.zIndex = '1003';
-      toastContainer.style.display = 'flex';
-      toastContainer.style.flexDirection = 'column';
-      toastContainer.style.alignItems = 'flex-end';
-      document.body.appendChild(toastContainer);
-    }
-  
-    // Create the toast element
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-
-    // Apply basic styles for toast (can be enhanced with CSS)
-    toast.style.minWidth = '200px';
-    toast.style.marginTop = '10px';
-    toast.style.padding = '10px 20px';
-    toast.style.borderRadius = '5px';
-    toast.style.color = '#fff';
-    toast.style.backgroundColor = this.getToastColor(type);
-    toast.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.5s ease';
-
-    toastContainer.appendChild(toast);
-
-    // Trigger reflow to enable transition
-    void toast.offsetWidth;
-    toast.style.opacity = '1';
-  
-    // Remove the toast after the specified duration
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.addEventListener('transitionend', () => {
-        if (toast.parentNode === toastContainer) { // Check if still present
-          toastContainer.removeChild(toast);
-        }
-      });
-    }, duration);
-  }
-
-  /**
-   * Returns the background color based on the toast type.
-   * @param {string} type - The type of the toast ('info', 'success', 'error').
-   * @returns {string} The corresponding color.
-   */
-  getToastColor(type) {
-    switch(type) {
-      case 'success':
-        return '#28a745'; // Green
-      case 'error':
-        return '#dc3545'; // Red
-      case 'info':
-      default:
-        return '#17a2b8'; // Blue
-    }
-  }
 
 }
 

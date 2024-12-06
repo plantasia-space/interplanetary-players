@@ -10,6 +10,8 @@ import { AudioPlayer } from './AudioPlayer.js'; // Import AudioPlayer
 import { ButtonGroup } from './ButtonGroup.js';
 import { ParameterManager } from './ParameterManager.js';
 import { logarithmic, exponential } from './Transformations.js';
+import notifications from './AppNotifications.js'; // Import the singleton instance
+
 
 // Initialize the scene
 const canvas3D = document.getElementById('canvas3D');
@@ -219,8 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
 
-  
 
 });
 
-export { user1Manager };
+export { notifications, user1Manager };

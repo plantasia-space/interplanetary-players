@@ -2,6 +2,8 @@ import { MIDIControllerInstance } from './MIDIController.js';
 import { showUniversalModal } from './Interaction.js';
 
 export class ButtonGroup {
+    static instances = []; // Holds all ButtonGroup instances
+
     constructor(
         containerSelector,
         dropdownSelector,
@@ -62,19 +64,19 @@ export class ButtonGroup {
         this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
             new bootstrap.Dropdown(dropdown); // Use default behavior
         });
-        this.registerMenuItemsWithMIDIController();
+      //  this.registerMenuItemsWithMIDIController();
 
     }
-    registerMenuItemsWithMIDIController() {
+/*     registerMenuItemsWithMIDIController() {
         this.menuItems.forEach(item => {
-          const itemId = item.id || item.getAttribute('data-value');
-          if (itemId) {
-            this.midiController.registerWidget(itemId, item);
-          } else {
-            console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
-          }
+            const itemId = item.id || item.getAttribute('data-value');
+            if (itemId && item.dataset.midiControllable === "true") {
+                this.midiController.registerWidget(itemId, item);
+            } else {
+                console.warn(`Menu item '${item}' is not MIDI-controllable.`);
+            }
         });
-      }
+    } */
 
       
     /**

@@ -2,16 +2,16 @@
 /* Orbit Regular (Body Text - Regular) */
 @font-face {
     font-family: 'Orbit';
-    src: url('/public/assets/fonts/Orbit-latin-regular.woff2') format('woff2'),
-         url('/public/assets/fonts/Orbit-latin-regular.ttf') format('truetype');
+    src: url('/assets/fonts/Orbit-latin-regular.woff2') format('woff2'),
+         url('/assets/fonts/Orbit-latin-regular.ttf') format('truetype');
     font-weight: 400; /* Regular */
     font-style: normal;
 }
 /* Space Mono Regular (Body Text - Regular) */
 @font-face {
     font-family: 'SpaceMono';
-    src: url('/public/assets/fonts/SpaceMono-Regular.woff2') format('woff2'),
-         url('/public/assets/fonts/SpaceMono-Regular.ttf') format('truetype');
+    src: url('/assets/fonts/SpaceMono-Regular.woff2') format('woff2'),
+         url('/assets/fonts/SpaceMono-Regular.ttf') format('truetype');
     font-weight: 400; /* Regular */
     font-style: normal;
 }
