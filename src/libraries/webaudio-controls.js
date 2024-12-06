@@ -721,17 +721,6 @@ try {
       if (this._value !== this.oldvalue) {
         this.fireflag = true;
         this.oldvalue = this._value;
-        if (this.conv) {
-          const x = this._value;
-          this.convValue = eval(this.conv);
-          if (typeof this.convValue === "function")
-            this.convValue = this.convValue(x);
-        }
-        else
-          this.convValue = this._value;
-        if (typeof this.convValue === "number") {
-          this.convValue = this.convValue.toFixed(this.digits);
-        }
         this.redraw();
         this.showtip(0);
         return 1;
@@ -771,9 +760,14 @@ try {
      * @param {number} newValue - The new value of the parameter.
      */
     onParameterChanged(parameterName, newValue) {
+      console.log("getIt1");
       if (this.rootParam === parameterName) {
-        if (this.isBidirectional && this._value !== newValue) {
-          this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
+        console.log("getIt2");
+
+        if (this.isBidirectional) {
+          this._setValue(newValue); // Avoid triggering another update to ParameterManager
+          this.redraw();
+
         }
       }
     }
@@ -2444,8 +2438,7 @@ try {
        * Triggers a kick (momentary press).
        */
       triggerKick() {
-        this.setState(1, true);
-        // The reset is handled in setState with a timeout
+        user1Manager.setToMiddle(this.rootParam);
       }
   
       /**

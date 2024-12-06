@@ -190,7 +190,7 @@ class MIDIController {
         // Update feedback and reset learning
         this.unhighlightWidget(widgetId);
         this.markAsMapped(widgetId, data1, channel);
-        notifications.showToast(`Assigned CC ${data1} to '${widgetId}'.`, 'success');
+        //notifications.showToast(`Assigned CC ${data1} to '${widgetId}'.`, 'success');
         this.currentLearnWidget = null;
         return; // Exit after mapping
     }
@@ -234,12 +234,27 @@ class MIDIController {
  * @param {number} value - The MIDI value (0-127).
  */
 updateStandardWidget(widget, value) {
-    const normalizedValue = value / 127;
-    widget.value = normalizedValue * (widget.max - widget.min) + widget.min;
+  const normalizedValue = value / 127;
 
-    if (typeof widget.redraw === 'function') widget.redraw();
-    console.log(`Updated widget '${widget.id}' to value ${widget.value}`);
-}
+  // Use _min and _max if available, otherwise fall back to min and max
+  const min = widget._min !== undefined ? widget._min : widget.min;
+  const max = widget._max !== undefined ? widget._max : widget.max;
+
+  if (min === undefined || max === undefined) {
+      console.warn(`Widget '${widget.id}' is missing min/max values.`);
+      return;
+  }
+
+  // Calculate the new value based on normalization
+  widget.value = min + normalizedValue * (max - min);
+
+  // Redraw the widget if a redraw method is available
+/*   if (typeof widget.redraw === 'function') {
+      widget.redraw();
+  } */
+
+/*   console.log(`Updated widget '${widget.id}' to value ${widget.value}`);
+ */}
 
 /**
  * Finds the ButtonGroup for a given widget.
@@ -300,6 +315,12 @@ triggerWebAudioSwitch(widget, value) {
     } else {
         widget.setValue(value / 127, true); // Update knobs or sliders
     }
+
+      // Redraw the widget if a redraw method is available
+    widget.redraw();
+
+
+
 }
   markAsMapped(elementId, midiCC, midiChannel) {
     const element = document.getElementById(elementId) || document.querySelector(`[data-value="${elementId}"]`);

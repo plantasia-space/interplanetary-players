@@ -327,7 +327,11 @@ emitScaleUpdate(name, scale) {
 
         const clampedRawValue = Math.min(param.max, Math.max(param.min, transformedRawValue)); // Clamp rawValue to the range
         const updatedNormalizedValue = this.normalize(clampedRawValue, param.min, param.max);
-
+        console.debug(
+          `[setNormalizedValue] rootParam: '${parameterName}', source: ${sourceController?.constructor.name}, ` +
+          `rawValue: ${param.rawValue}, normalizedValue: ${param.normalizedValue}, isBidirectional: ${param.isBidirectional}`
+      );
+      
         if (param.rawValue !== clampedRawValue || param.normalizedValue !== normalizedValue) {
           param.rawValue = clampedRawValue;
           param.normalizedValue = updatedNormalizedValue;
@@ -336,20 +340,23 @@ emitScaleUpdate(name, scale) {
           param.lastController = sourceController;
 
           //console.debug(`[setNormalizedValue] Updated '${parameterName}' to rawValue=${param.rawValue}, normalizedValue=${param.normalizedValue}`);
+          console.log("getIt0");
 
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
+            console.debug(`[Notification Check] Controller: ${controller.constructor.name}, Source: ${sourceController?.constructor.name}`);
             if (controller !== sourceController || param.isBidirectional) {
-              if (typeof controller.onParameterChanged === 'function') {
-                // Apply the output transformation before notifying
-                const transformedValue = param.outputTransform(param.rawValue);
-                //console.debug(`[setNormalizedValue] Notifying controller of '${parameterName}' with value=${transformedValue}`);
-                controller.onParameterChanged(parameterName, transformedValue);
-              } else {
-                console.warn(`[setNormalizedValue] Controller does not implement 'onParameterChanged':`, controller);
-              }
+                console.debug(`[Notify Subscriber] Notifying '${controller.constructor.name}' for '${parameterName}' with value=${param.rawValue}`);
+                if (typeof controller.onParameterChanged === 'function') {
+                    const transformedValue = param.outputTransform(param.rawValue);
+                    controller.onParameterChanged(parameterName, transformedValue);
+                } else {
+                    console.warn(`[Notification Warning] Controller does not implement 'onParameterChanged':`, controller);
+                }
+            } else {
+                console.debug(`[Notification Skipped] SourceController matches and parameter is not bidirectional.`);
             }
-          });
+        });
         } else {
           //console.debug(`[setNormalizedValue] No change in normalizedValue for '${parameterName}'. Update skipped.`);
         }
@@ -358,6 +365,34 @@ emitScaleUpdate(name, scale) {
       }
     }
   }
+  // The new straightforward setToMiddle function
+  /**
+   * Sets the parameter to the middle (normalized value of 0.5) directly,
+   * without any priority or simultaneous logic.
+   * @param {string} parameterName - The parameter name.
+   * @param {object|null} sourceController - The controller making the change (optional).
+   */
+  setToMiddle(parameterName) {
+    const param = this.parameters.get(parameterName);
+    if (!param) {
+      console.warn(`[setToMiddle] Parameter '${parameterName}' does not exist.`);
+      return;
+    }
+
+    // Calculate the middle in raw terms
+    const rawMid = (param.min + param.max) / 2;
+    param.rawValue = rawMid;
+    param.normalizedValue = 0.5;
+
+    // Directly notify all subscribers (no checks)
+    param.subscribers.forEach(({ controller }) => {
+      if (typeof controller.onParameterChanged === 'function') {
+        const transformedValue = param.outputTransform(param.rawValue);
+        controller.onParameterChanged(parameterName, transformedValue);
+      }
+    });
+  }
+
 
   /**
    * Retrieves the current raw value of a parameter.
