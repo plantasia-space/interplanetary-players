@@ -204,24 +204,6 @@ handleStateChange(event) {
 }
 
   /**
-   * Handles MIDI device connection and disconnection.
-   * @param {MIDIConnectionEvent} event 
-   */
-  handleStateChange(event) {
-    const port = event.port;
-    console.log(`MIDIController: Port ${port.name} ${port.state}.`);
-    if (port.type === 'input') {
-      if (port.state === 'connected') {
-        port.onmidimessage = this.handleMidiMessage;
-        console.log(`MIDIController: Connected to MIDI input: ${port.name}`);
-      } else if (port.state === 'disconnected') {
-        port.onmidimessage = null;
-        console.log(`MIDIController: Disconnected from MIDI input: ${port.name}`);
-      }
-    }
-  }
-
-  /**
    * Handles incoming MIDI messages and dispatches them to widgets or parameters.
    * If in MIDI Learn mode, maps the incoming CC to the selected parameter or widget.
    * @param {MIDIMessageEvent} event 
