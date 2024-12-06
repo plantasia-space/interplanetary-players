@@ -78,19 +78,18 @@ class MIDIController {
    */
   async activateMIDI() {
     if (this.isMIDIActivated) {
-      notifications.showToast('MIDIController: MIDI is already activated.');
-      return; // Skip activation if already activated
+        notifications.showToast('MIDI is already activated.', 'info');
+        return;
     }
 
-    console.log('MIDIController: Activating MIDI...');
     try {
-      await this.requestMidiAccess();
-      this.isMIDIActivated = true;
-      notifications.showToast('MIDIController: MIDI activated successfully.');
+        await this.requestMidiAccess();
+        this.isMIDIActivated = true;
+        notifications.showToast('MIDI activated successfully!', 'success');
     } catch (error) {
-      notifications.showToast('MIDIController: Failed to activate MIDI:', error);
+        notifications.showToast(`MIDI activation failed: ${error.message}`, 'error');
     }
-  }
+}
 
   /**
    * Handles user interaction with the MIDI icon or menu.
@@ -110,36 +109,52 @@ class MIDIController {
    * Requests MIDI access from the browser.
    */
   async requestMidiAccess() {
-    if (navigator.requestMIDIAccess) {
-      try {
-        this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-        console.log("MIDIController: MIDI access granted.");
+    if ('requestMIDIAccess' in navigator) {
+        try {
+            this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+            notifications.showToast('MIDI access granted. Enabling inputs...', 'success');
 
-        // Set up MIDI message handling for existing inputs
-        this.enableInputs();
+            // Log available inputs
+            const inputs = [...this.midiAccess.inputs.values()];
+            if (inputs.length === 0) {
+                notifications.showToast('No MIDI inputs found.', 'warning');
+            } else {
+                inputs.forEach((input, index) => {
+                    notifications.showToast(`MIDI Input ${index + 1}: ${input.name}`, 'info');
+                });
+            }
 
-        // Listen for MIDI device connections/disconnections
-        this.midiAccess.onstatechange = this.handleStateChange;
-      } catch (error) {
-        console.error("MIDIController: Failed to access MIDI devices:", error);
-        throw error; // Propagate error to activateMIDI
-      }
+            this.enableInputs();
+            this.midiAccess.onstatechange = this.handleStateChange;
+        } catch (error) {
+            notifications.showToast(`Failed to access MIDI: ${error.message}`, 'error');
+            throw error;
+        }
     } else {
-      console.error("MIDIController: Web MIDI API not supported in this browser.");
-      throw new Error('Web MIDI API not supported');
+        notifications.showToast('Web MIDI API not supported in this environment.', 'error');
+        throw new Error('Web MIDI API not supported');
     }
-  }
+}
 
   /**
    * Enables MIDI message handling for all available inputs.
    */
   enableInputs() {
-    const inputs = this.midiAccess.inputs.values();
-    for (let input of inputs) {
-      input.onmidimessage = this.handleMidiMessage;
-      console.log(`MIDIController: Enabled MIDI input: ${input.name}`);
+    if (!this.midiAccess) {
+        notifications.showToast('MIDI access is not initialized. Cannot enable inputs.', 'error');
+        return;
     }
-  }
+
+    const inputs = [...this.midiAccess.inputs.values()];
+    inputs.forEach((input) => {
+        input.onmidimessage = this.handleMidiMessage;
+        notifications.showToast(`Enabled MIDI input: ${input.name}`, 'info');
+    });
+
+    if (inputs.length === 0) {
+        notifications.showToast('No MIDI inputs available to enable.', 'warning');
+    }
+}
 
   /**
    * Handles MIDI device connection and disconnection.

@@ -1,6 +1,7 @@
 import { MIDIControllerInstance } from './MIDIController.js';
 import { showUniversalModal } from './Interaction.js';
 import { MIDI_SUPPORTED} from './Constants.js'; 
+import { notifications } from './Main.js';
 
 export class ButtonGroup {
     static instances = []; // Holds all ButtonGroup instances
@@ -260,9 +261,13 @@ handleInteractionDropdown(selectedValue) {
         break;
   
       case 'MIDI':
-        console.log('MIDI mode activated.');
+        notifications.showToast('MIDI mode Pressed.');
         MIDIControllerInstance.activateMIDI().then(() => {
+            notifications.showToast('MIDI activateMIDI ready.');
+
           MIDIControllerInstance.enableMidiLearn();
+          notifications.showToast('MIDI ENABLED?.');
+
         });
         break;
   
