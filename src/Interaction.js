@@ -2,7 +2,7 @@
 
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED} from './constants.js'; 
+import { MIDI_SUPPORTED} from './Constants.js'; 
 
 /**
  * Setup interactions for dynamic placeholder updates.
