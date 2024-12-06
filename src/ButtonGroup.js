@@ -1,6 +1,6 @@
 import { MIDIControllerInstance } from './MIDIController.js';
 import { showUniversalModal } from './Interaction.js';
-import { MIDI_SUPPORTED} from './constants.js'; 
+import { MIDI_SUPPORTED} from './Constants.js'; 
 
 export class ButtonGroup {
     static instances = []; // Holds all ButtonGroup instances
