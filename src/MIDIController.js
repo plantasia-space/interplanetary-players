@@ -168,41 +168,6 @@ handleStateChange(event) {
   }
 }
 
-/**
- * Handles incoming MIDI messages.
- * @param {MIDIMessageEvent} event
- */
-handleMidiMessage(event) {
-  const [status, data1, data2] = event.data;
-  const channel = status & 0x0f;
-  const messageType = status & 0xf0;
-
-  console.log(`Received MIDI message: channel=${channel}, type=${messageType}, data=[${data1}, ${data2}]`);
-
-  // Add your logic for handling specific messages
-  // Example: Use the MIDI input to control parameters or widgets
-}
-
-  /**
-   * Enables MIDI message handling for all available inputs.
-   */
-  enableInputs() {
-    if (!this.midiAccess) {
-        notifications.showToast('MIDI access is not initialized. Cannot enable inputs.', 'error');
-        return;
-    }
-
-    const inputs = Array.from(this.midiAccess.inputs.values());    
-    inputs.forEach((input) => {
-        input.onmidimessage = this.handleMidiMessage;
-        notifications.showToast(`Enabled MIDI input: ${input.name}`, 'info');
-    });
-
-    if (inputs.length === 0) {
-        notifications.showToast('No MIDI inputs available to enable.', 'warning');
-    }
-}
-
   /**
    * Handles incoming MIDI messages and dispatches them to widgets or parameters.
    * If in MIDI Learn mode, maps the incoming CC to the selected parameter or widget.
