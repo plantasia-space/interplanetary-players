@@ -1,7 +1,6 @@
 /* Define size variables for responsiveness */
 :root {
-    --size-lower-buttons: clamp(4vmin, 4vmin, 40vmin); /* General lower buttons */
-    --size-lower-buttons-side: clamp(5vmin, 8vmin, 50vmin); /* Side buttons (Play, cosmic-lfo) */
+    --size-knobs: calc(5vmin + 2vmax); 
     --bs-border-radius: 0.2rem;
 }
 
@@ -34,8 +33,8 @@
 
 /* Default (Extra-large screens: xl ≥1200px) */
 .xyz-knobs {
-    width: 9vmin;
-    height: 9vmin;
+    width: var(--size-knobs);
+    height: var(--size-knobs);
     margin-bottom: 1vh;
 }
 
@@ -64,8 +63,8 @@
 /* Large screens (lg: ≥992px and <1200px) */
 @media (max-width: 1199.98px) {
     .xyz-knobs {
-        width: 11vmin;
-        height: 11vmin;
+        width: calc(var(--size-knobs) + 2vmin);
+        height: calc(var(--size-knobs) + 2vmin);
     }
 
     .xyz-balance {
@@ -89,8 +88,8 @@
 /* Small screens (sm: ≥576px and <992px) */
 @media (max-width: 991.98px) {
     .xyz-knobs {
-        width: 13vmin;
-        height: 13vmin;
+        width: calc(var(--size-knobs) + 4vmin);
+        height: calc(var(--size-knobs) + 4vmin);
     }
 
     .xyz-balance {
@@ -114,8 +113,8 @@
 /* Extra small screens (xs: <576px) */
 @media (max-width: 575.98px) {
     .xyz-knobs {
-        width: 15vmin;
-        height: 15vmin;
+        width: calc(var(--size-knobs) + 6vmin);
+        height: calc(var(--size-knobs) + 6vmin);
     }
 
     .xyz-balance {
