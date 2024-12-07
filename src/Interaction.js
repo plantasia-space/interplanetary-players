@@ -20,8 +20,6 @@ export function setupInteractions(dataManager, audioPlayer) {
       item.addEventListener('click', event => {
           event.preventDefault(); // Prevent default link behavior
           const action = item.getAttribute('data-value'); // Get action value
-          console.log(`Dropdown action triggered: ${action}`);
-          // Additional functionality for dropdown actions can be added here
       });
   });
 
@@ -39,21 +37,20 @@ export function setupInteractions(dataManager, audioPlayer) {
           audioPlayer,    // Pass shared AudioPlayer
           dataManager     // Pass shared DataManager
       );
-
       buttonGroups.push(buttonGroup);
+      
   });
 
   // Register dropdown items with MIDIController for MIDI interactions
   if (MIDI_SUPPORTED) registerMenuItemsWithMIDIController(buttonGroups);
 }
-
 /**
 * Registers all dropdown items in the initialized ButtonGroups with MIDIController.
 * @param {Array} buttonGroups - List of initialized ButtonGroup instances.
 */
 function registerMenuItemsWithMIDIController(buttonGroups) {
   const midiController = MIDIControllerInstance;
-
+  // Register each button group menu item
   buttonGroups.forEach(buttonGroup => {
       buttonGroup.menuItems.forEach(item => {
           const itemId = item.id || item.getAttribute('data-value');
@@ -64,10 +61,7 @@ function registerMenuItemsWithMIDIController(buttonGroups) {
           }
       });
   });
-
-  console.log('All dropdown items registered with MIDIController.');
 }
-
 /**
  * Displays a universal modal using Bootstrap and returns a promise that resolves when the modal is closed.
  * @param {string} title - The title of the modal.
@@ -179,12 +173,10 @@ export function applyColorsFromTrackData(trackData) {
     // Update CSS variables for colors
     if (color1) {
         document.documentElement.style.setProperty('--color1', color1);
-        console.log(`[COLORS] Set --color1 to ${color1}`);
     }
 
     if (color2) {
         document.documentElement.style.setProperty('--color2', color2);
-        console.log(`[COLORS] Set --color2 to ${color2}`);
     }
 
     // Update all knobs, sliders, and switches
@@ -253,7 +245,6 @@ export function updateKnobsFromTrackData(trackData) {
         // Append knob to the container
         container.appendChild(knob);
 
-        console.log(`Created ${knob.id}: min=${param.min}, max=${param.max}, value=${param.initValue}`);
     });
 
 

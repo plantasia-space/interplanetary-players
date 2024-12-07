@@ -66,6 +66,37 @@ h1.responsive-title {
     outline: none; /* Remove default outline */
 }
 
+
+/* Default styling for the more button */
+/* .more-button {
+    background-color: transparent;
+    color: var(--color1); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, color 0.3s ease;
+} */
+
+/* Styling for the close button */
+.more-button.close-mode {
+    color: var(--highlight-color); /* Contrast text color */
+    border-radius: 50%; /* Optional: Make it circular for close mode */
+    padding: 0.5em; /* Adjust padding for a more compact look */
+}
+
+/* Styling for removing the dropdown arrow */
+.more-button.close-mode::after {
+    content: none; /* Remove dropdown arrow */
+}
+
+/* Hover and focus effects */
+/* .more-button:hover, .more-button:focus {
+    transform: scale(1.1); 
+    color: var(--color4); 
+    outline: none; 
+} */
+
+
 /* Grid Row */
 .grid-row {
     display: flex;

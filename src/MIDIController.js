@@ -63,7 +63,7 @@ class MIDIController {
     // await this.restoreMidiLearn();
 
     // Set up the exit button for MIDI Learn mode
-    const exitButton = document.getElementById('cancel-midi-learn');
+    const exitButton = document.getElementById('exit-midi-learn');
     if (exitButton) {
       exitButton.addEventListener('click', this.handleExitButtonClick);
     }
@@ -474,15 +474,10 @@ triggerWebAudioSwitch(widget, value) {
   
     // Create overlays for automatable widgets and dropdown items
     this.createOverlays();
-  
+    this.toggleMoreMenuButton(true); // Update button
+
     // Add class to body for CSS control
     document.body.classList.add('midi-learn-mode');
-  
-    // Show the exit button
-    const exitButton = document.getElementById('cancel-midi-learn');
-    if (exitButton) {
-      exitButton.style.display = 'block';
-    }
   
     // Listen for Esc key to exit
     document.addEventListener('keydown', this.handleEscKey);
@@ -597,10 +592,8 @@ triggerWebAudioSwitch(widget, value) {
             delete item.originalClickHandler;
         }
 
-        console.log(`Restored dropdown item: ${item.id || '[unnamed item]'}`);
     });
 
-    console.log('MIDIController: Removed overlays and restored dropdown items.');
 }
 
   /**
@@ -679,7 +672,75 @@ triggerWebAudioSwitch(widget, value) {
   handleExitButtonClick() {
     this.exitMidiLearnMode();
   }
+// Function to toggle the button in MIDI Learn Mode
+toggleMoreMenuButton(isMidiLearnModeActive) {
+  const moreButton = document.getElementById('moreMenuButton');
 
+  if (!moreButton) {
+      console.error('MIDIController: More Menu Button not found.');
+      return;
+  }
+
+  const buttonIcon = moreButton.querySelector('.button-icon');
+  if (!buttonIcon) {
+      console.error('MIDIController: Button icon not found inside More Menu Button.');
+      return;
+  }
+
+  const newIconSrc = isMidiLearnModeActive
+      ? '/assets/icons/close-dinamic.svg'
+      : '/assets/icons/more.svg';
+  const newLabel = isMidiLearnModeActive
+      ? 'Exit MIDI Learn Mode'
+      : 'More options';
+
+  // Update the button attributes
+  moreButton.setAttribute('aria-label', newLabel);
+
+  // Add or remove the 'close-mode' class dynamically
+  if (isMidiLearnModeActive) {
+      moreButton.classList.add('close-mode'); // Apply close styling
+      moreButton.removeAttribute('data-bs-toggle'); // Disable dropdown
+      moreButton.onclick = () => this.exitMidiLearnMode(); // Add exit functionality
+  } else {
+      moreButton.classList.remove('close-mode'); // Revert to default styling
+      moreButton.setAttribute('data-bs-toggle', 'dropdown'); // Enable dropdown
+      moreButton.onclick = null; // Clear custom click handler
+  }
+
+  // Dynamically update the button icon
+  this.fetchAndSetSVG(newIconSrc, buttonIcon, true);
+}
+
+    /**
+     * Fetch and set SVG content.
+     */
+    fetchAndSetSVG(src, element, isInline = true) {
+      if (!isInline) return;
+
+      fetch(src)
+          .then(response => {
+              if (!response.ok) throw new Error(`Failed to load SVG: ${src}`);
+              return response.text();
+          })
+          .then(svgContent => {
+              const parser = new DOMParser();
+              const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+              const svgElement = svgDoc.documentElement;
+
+              if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
+                  svgElement.setAttribute('fill', 'currentColor');
+                  svgElement.setAttribute('role', 'img');
+                  svgElement.classList.add('icon-svg');
+                  element.innerHTML = '';
+                  element.appendChild(svgElement);
+              } else {
+                  console.error(`Invalid SVG content fetched from: ${src}`);
+              }
+          })
+          .catch(error => console.error(`Error loading SVG from ${src}:`, error));
+  }
+  
   /**
    * Handles the Esc key press to exit MIDI Learn mode.
    * @param {KeyboardEvent} e 
@@ -707,6 +768,7 @@ triggerWebAudioSwitch(widget, value) {
     this.closeContextMenu();
     // Remove overlays
     this.removeOverlays();
+    this.toggleMoreMenuButton(false); // Revert button
 
     // Remove all highlights
     const highlightedElements = document.querySelectorAll('.midi-learn-highlight');
@@ -714,11 +776,6 @@ triggerWebAudioSwitch(widget, value) {
         element.classList.remove('midi-learn-highlight');
     });
 
-    // Hide the exit button
-    const exitButton = document.getElementById('cancel-midi-learn');
-    if (exitButton) {
-        exitButton.style.display = 'none';
-    }
 
     // Close context menu if open
     this.closeContextMenu();
@@ -935,46 +992,49 @@ triggerWebAudioSwitch(widget, value) {
     console.log(`MIDIController: Opened context menu for parameter '${paramName}'.`);
   }
 
-  /**
-   * Sets up event listeners for the context menu options.
-   */
-   setupDropdownEventListeners() {
-    const contextMenuLearn = document.getElementById("midi-context-learn");
-    const contextMenuDelete = document.getElementById("midi-context-delete");
-    const contextMenuClose = document.getElementById("midi-context-close");
-  
-    if (contextMenuLearn) {
+/**
+ * Sets up event listeners for the context menu options.
+ */
+setupDropdownEventListeners() {
+  const contextMenuLearn = document.getElementById("midi-context-learn");
+  const contextMenuDelete = document.getElementById("midi-context-delete");
+  const contextMenuClose = document.getElementById("midi-context-close");
+
+  // Options for passive event listeners
+  const passiveOptions = { passive: true };
+
+  if (contextMenuLearn) {
       contextMenuLearn.addEventListener("click", this.handleContextMenuLearn);
-      contextMenuLearn.addEventListener("touchstart", this.handleContextMenuLearn);
-    }
-  
-    if (contextMenuDelete) {
+      contextMenuLearn.addEventListener("touchstart", this.handleContextMenuLearn, passiveOptions);
+  }
+
+  if (contextMenuDelete) {
       contextMenuDelete.addEventListener("click", this.handleContextMenuDelete);
-      contextMenuDelete.addEventListener("touchstart", this.handleContextMenuDelete);
-    }
-  
-    if (contextMenuClose) {
+      contextMenuDelete.addEventListener("touchstart", this.handleContextMenuDelete, passiveOptions);
+  }
+
+  if (contextMenuClose) {
       contextMenuClose.addEventListener("click", this.handleContextMenuClose);
-      contextMenuClose.addEventListener("touchstart", this.handleContextMenuClose);
-    }
-  
-    // Handle closing the context menu when clicking outside
-    document.addEventListener('click', (e) => {
+      contextMenuClose.addEventListener("touchstart", this.handleContextMenuClose, passiveOptions);
+  }
+
+  // Handle closing the context menu when clicking outside
+  document.addEventListener('click', (e) => {
       const contextMenu = document.getElementById("midi-context-menu");
       if (contextMenu && contextMenu.style.display === 'block' && !contextMenu.contains(e.target)) {
-        this.closeContextMenu();
+          this.closeContextMenu();
       }
-    });
+  });
 
-    // Handle escape key to close the context menu
-    document.addEventListener('keydown', (e) => {
+  // Handle escape key to close the context menu
+  document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        this.closeContextMenu();
+          this.closeContextMenu();
       }
-    });
+  });
 
-    console.log("MIDIController: Set up context menu event listeners.");
-  } 
+  console.log("MIDIController: Set up context menu event listeners.");
+}
 
 
 }

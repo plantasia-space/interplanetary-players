@@ -155,7 +155,7 @@ emitScaleUpdate(name, scale) {
       controller.onScaleChanged(name, scale);
     }
   });
-  console.debug(`[ParameterManager] Emitted scale update for '${name}' with scale=${scale}`);
+  //console.debug(`[ParameterManager] Emitted scale update for '${name}' with scale=${scale}`);
 }
   /**
    * Subscribes a controller to a parameter with a specified priority.
@@ -344,9 +344,9 @@ emitScaleUpdate(name, scale) {
 
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
-            console.debug(`[Notification Check] Controller: ${controller.constructor.name}, Source: ${sourceController?.constructor.name}`);
+            //console.debug(`[Notification Check] Controller: ${controller.constructor.name}, Source: ${sourceController?.constructor.name}`);
             if (controller !== sourceController || param.isBidirectional) {
-                console.debug(`[Notify Subscriber] Notifying '${controller.constructor.name}' for '${parameterName}' with value=${param.rawValue}`);
+                //console.debug(`[Notify Subscriber] Notifying '${controller.constructor.name}' for '${parameterName}' with value=${param.rawValue}`);
                 if (typeof controller.onParameterChanged === 'function') {
                     const transformedValue = param.outputTransform(param.rawValue);
                     controller.onParameterChanged(parameterName, transformedValue);
@@ -354,7 +354,7 @@ emitScaleUpdate(name, scale) {
                     console.warn(`[Notification Warning] Controller does not implement 'onParameterChanged':`, controller);
                 }
             } else {
-                console.debug(`[Notification Skipped] SourceController matches and parameter is not bidirectional.`);
+                //console.debug(`[Notification Skipped] SourceController matches and parameter is not bidirectional.`);
             }
         });
         } else {

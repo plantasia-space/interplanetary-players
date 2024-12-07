@@ -4,7 +4,7 @@ import { MIDI_SUPPORTED} from './Constants.js';
 import { notifications } from './Main.js';
 
 export class ButtonGroup {
-    static instances = []; // Holds all ButtonGroup instances
+   // static instances = []; // Holds all ButtonGroup instances
 
     constructor(
         containerSelector,
@@ -154,7 +154,6 @@ export class ButtonGroup {
      * Handle selection change from the dropdown menu.
      */
     onSelectionChange(selectedValue) {
-        console.log(`Button group selection changed to: ${selectedValue}`);
         const groupType = this.container.getAttribute('data-group');
 
         switch (groupType) {
@@ -253,7 +252,6 @@ export class ButtonGroup {
  * Handle interaction dropdown selection.
  */
 handleInteractionDropdown(selectedValue) {
-    console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
   
     switch (selectedValue) {
       case 'Jam':

@@ -38,7 +38,7 @@ async function initializeApp() {
         const urlParams = new URLSearchParams(window.location.search);
         let trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
 
-        console.log(`[APP] Using trackId: ${trackId}`);
+        //console.log(`[APP] Using trackId: ${trackId}`);
 
         // Use DataManager to handle fetch and configuration
         await dataManager.fetchAndUpdateConfig(trackId);
@@ -49,7 +49,7 @@ async function initializeApp() {
             throw new Error('Failed to fetch track data.');
         }
 
-        console.log('[APP] TRACK_DATA confirmed:', trackData);
+        //console.log('[APP] TRACK_DATA confirmed:', trackData);
 
         initializeRootParams(user1Manager, trackData);
 
@@ -61,10 +61,9 @@ async function initializeApp() {
         // Populate placeholders
         setupInteractions(dataManager, audioPlayer);
         dataManager.populatePlaceholders('monitorInfo');
-        console.log("setted parameters", user1Manager.listParameters());
         // Load the model and display it in the scene
         await loadAndDisplayModel(scene, trackData);
-        console.log('[APP] Model loaded successfully.');
+        //console.log('[APP] Model loaded successfully.');
     } catch (error) {
         console.error('[APP] Error during application initialization:', error);
     }
@@ -97,8 +96,6 @@ function initializeRootParams(parameterManager, trackData) {
       },
     };
     
-    console.log("1", logarithmic.inverse);
-    console.log("[paramConfigs:", paramConfigs);
   
     // Iterate through rootParams and add them to ParameterManager
     rootParams.forEach((paramName) => {
@@ -120,7 +117,7 @@ function initializeRootParams(parameterManager, trackData) {
               inputTransform, // Pass inputTransform
               outputTransform // Pass outputTransform
             );
-            console.debug(`[initializeRootParams] Added/Updated parameter '${paramName}' with transformations.`, config);
+            //console.debug(`[initializeRootParams] Added/Updated parameter '${paramName}' with transformations.`, config);
           } else {
             // If no transformation functions are provided, use defaults
             parameterManager.addParameter(
@@ -131,7 +128,7 @@ function initializeRootParams(parameterManager, trackData) {
               true // Bidirectional = true
               // inputTransform and outputTransform default to linear
             );
-            console.debug(`[initializeRootParams] Added/Updated parameter '${paramName}' without transformations.`, config);
+            //console.debug(`[initializeRootParams] Added/Updated parameter '${paramName}' without transformations.`, config);
           }
         } else {
           console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
