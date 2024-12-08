@@ -473,14 +473,14 @@ try {
       this.sensitivity = this.getAttr("sensitivity", 1);
       this.valuetip = this.getAttr("valuetip", opt.valuetip);
       this.tooltip = this.getAttr("tooltip", null);
-      this.conv = this.getAttr("conv", null);
+/*       this.conv = this.getAttr("conv", null);
       if (this.conv) {
         const x = this._value;
         this.convValue = eval(this.conv);
         if (typeof this.convValue === "function")
           this.convValue = this.convValue(x);
       } else
-        this.convValue = this._value;
+        this.convValue = this._value; */
 
       // Setup canvas dimensions and handle high DPI
       this.setupImage();
@@ -2610,7 +2610,7 @@ try {
           this.updating = false;
         }).bind(this);
   
-        this.elem.onchange = () => {
+/*         this.elem.onchange = () => {
           if(!this.currentLink.target.conv || (this.currentLink.target.conv && this.rconv)){
             let val = this.value = this.elem.value;
             if(this.rconv){
@@ -2625,7 +2625,7 @@ try {
               }
             }
           }
-        }
+        } */
 
 
             // Parameter Manager Integration

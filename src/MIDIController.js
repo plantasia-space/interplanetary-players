@@ -1,16 +1,23 @@
 // MIDIController.js
 
-import { Constants, getPriority, MIDI_SUPPORTED } from './Constants.js';
-import lscache from 'lscache';
-import { showUniversalModal } from './Interaction.js';
-import { ButtonGroup } from './ButtonGroup.js';
-import { notifications } from './Main.js';
+/**
+ * @module MIDIControllers
+ * @description Handles all MIDI controller-related logic.
+ */
 
 /**
+ * 
+ * 
  * MIDIController Singleton Class
  * Handles MIDI interactions, including listening to MIDI inputs,
  * managing MIDI mappings, and facilitating MIDI Learn functionality.
  */
+
+import { Constants, getPriority, MIDI_SUPPORTED } from './Constants.js';
+import lscache from 'lscache';
+import { ButtonGroup } from './ButtonGroup.js';
+import { notifications } from './Main.js';
+
 class MIDIController {
   constructor() {
     if (MIDIController.instance) {
@@ -829,7 +836,7 @@ toggleMoreMenuButton(isMidiLearnModeActive) {
       this.highlightParameter(this.currentLearnParam);
 
       // Provide visual feedback to the user
-      showUniversalModal(
+      notifications.showUniversalModal(
         'MIDI Learn',
         `Perform a MIDI action (e.g., move a knob) to map it to '${this.currentLearnParam}'.`,
         'Cancel'
@@ -864,7 +871,7 @@ toggleMoreMenuButton(isMidiLearnModeActive) {
         this.clearMidiMapping(widgetId);
       } else {
         console.warn("MIDIController: Selected widget does not have a valid 'id' attribute.");
-        showUniversalModal(
+        notifications.showUniversalModal(
           'Invalid Widget',
           'The selected widget does not have a valid identifier to delete.',
           'Okay'

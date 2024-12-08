@@ -1,28 +1,49 @@
+/**
+ * @file DataManager.js
+ * @description Manages data fetching, caching, and placeholder configuration for track information.
+ * @version 1.0.0
+ * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @license MIT
+ * @date 2024-12-07
+ */
+
 import { Constants } from './Constants.js';
 
+/**
+ * Class representing a data manager for handling track data and UI placeholders.
+ */
 export class DataManager {
+    /**
+     * Creates an instance of DataManager.
+     */
     constructor() {
+        // Set cache expiry time from constants or default to 10 minutes
         this.cacheExpiryMinutes = Constants.CACHE_EXPIRY_MINUTES || 10; // Tiempo de expiración de caché
+        // Initialize placeholder configuration as an empty object
         this.placeholderConfig = {}; // Inicializar configuración de placeholders como vacío
     }
 
     /**
-     * Encapsula el fetch y la actualización de los placeholders.
-     * @param {string} trackId - El ID del track.
+     * Fetches track data and updates the placeholder configuration.
+     * @param {string} trackId - The ID of the track to fetch data for.
      */
     async fetchAndUpdateConfig(trackId) {
         console.log(`[DataManager] Starting fetch and update for trackId: ${trackId}`);
 
-        // Obtener los datos del track
-        await this.fetchTrackData(trackId);
+        try {
+            // Fetch track data from the server or cache
+            await this.fetchTrackData(trackId);
 
-        // Configurar placeholderConfig después de obtener los datos
-        this.updatePlaceholderConfig();
-        console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
+            // Update the placeholder configuration based on fetched data
+            this.updatePlaceholderConfig();
+            console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
+        } catch (error) {
+            console.error(`[DataManager] Error fetching and updating config: ${error.message}`);
+        }
     }
 
     /**
-     * Actualiza la configuración de los placeholders usando la data recuperada.
+     * Updates the configuration for UI placeholders using the retrieved track data.
      */
     updatePlaceholderConfig() {
         if (!Constants.TRACK_DATA) {
@@ -32,6 +53,7 @@ export class DataManager {
 
         const { track, soundEngine, interplanetaryPlayer } = Constants.TRACK_DATA;
 
+        // Configure placeholders for different sections: monitorInfo, trackInfo, etc.
         this.placeholderConfig = {
             monitorInfo: {
                 placeholder_1: "Distance:",
@@ -59,11 +81,11 @@ export class DataManager {
                 placeholder_7: "Tags:",
                 placeholder_8: track?.tags || "No Tags",
                 placeholder_9: "Plays count:",
-                placeholder_10: "",
+                placeholder_10: track?.playsCount || "0",
                 placeholder_11: "Shares:",
-                placeholder_12: "",
-                placeholder_13: "",
-                placeholder_14: "",
+                placeholder_12: track?.shares || "0",
+                placeholder_13: "Likes:",
+                placeholder_14: track?.likes || "0",
             },
             interplanetaryPlayerInfo: {
                 placeholder_1: "Scientific Name:",
@@ -103,13 +125,13 @@ export class DataManager {
     }
 
     /**
-     * Poblar los placeholders en la UI.
-     * @param {string} activeInfoType - El tipo de información activa.
+     * Populates the UI placeholders with the configured data.
+     * @param {string} target - The type of information to populate (e.g., 'trackInfo').
      */
     populatePlaceholders(target) {
         if (!target || !this.placeholderConfig[target]) {
             console.error(`[DataManager] Invalid or no active information type provided: ${target}`);
-            this.clearPlaceholders(); // Limpiar si no se encuentra configuración
+            this.clearPlaceholders(); // Clear placeholders if configuration is missing
             return;
         }
         
@@ -117,6 +139,7 @@ export class DataManager {
         Object.entries(config).forEach(([placeholderId, value]) => {
             const element = document.getElementById(placeholderId);
             if (element) {
+                // If the value is a function, execute it to get the content
                 const content = typeof value === 'function' ? value() : value;
                 element.textContent = content;
             } else {
@@ -124,10 +147,12 @@ export class DataManager {
             }
         });
         
-       // console.log(`[DataManager] Placeholders updated for target: ${target}`);
+        // Optionally log the update (commented out to reduce console noise)
+        // console.log(`[DataManager] Placeholders updated for target: ${target}`);
     }
+
     /**
-     * Limpia todos los placeholders.
+     * Clears all UI placeholders by setting their text content to empty strings.
      */
     clearPlaceholders() {
         for (let i = 1; i <= 14; i++) {
@@ -139,10 +164,13 @@ export class DataManager {
     }
 
     /**
-     * Obtiene datos de track del servidor.
-     * @param {string} trackId - El ID del track.
+     * Fetches track data from the server or retrieves it from the cache if available.
+     * @param {string} trackId - The ID of the track to fetch data for.
+     * @returns {Promise<Object>} The track data.
+     * @throws Will throw an error if the fetch fails or the data is invalid.
      */
     async fetchTrackData(trackId) {
+        // Attempt to retrieve cached data
         const cachedData = Constants.getTrackData(trackId);
         if (cachedData) {
             console.log('[DataManager] Track data found in cache:', cachedData);
@@ -150,18 +178,24 @@ export class DataManager {
         }
 
         const BASE_URL = 'https://media.maar.world:443/api';
-        const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`);
-        if (!response.ok) {
-            throw new Error(`[DataManager] Server error: ${response.statusText} (${response.status})`);
-        }
+        try {
+            // Fetch data from the server
+            const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`);
+            if (!response.ok) {
+                throw new Error(`[DataManager] Server error: ${response.statusText} (${response.status})`);
+            }
 
-        const result = await response.json();
-        if (!result.success || !result.data) {
-            throw new Error('[DataManager] Invalid track data from server.');
-        }
+            const result = await response.json();
+            if (!result.success || !result.data) {
+                throw new Error('[DataManager] Invalid track data from server.');
+            }
 
-        Constants.setTrackData(trackId, result.data);
-        return result.data;
+            // Cache the retrieved data for future use
+            Constants.setTrackData(trackId, result.data);
+            return result.data;
+        } catch (error) {
+            console.error(`[DataManager] Failed to fetch track data: ${error.message}`);
+            throw error;
+        }
     }
 }
-

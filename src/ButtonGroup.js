@@ -1,5 +1,4 @@
 import { MIDIControllerInstance } from './MIDIController.js';
-import { showUniversalModal } from './Interaction.js';
 import { MIDI_SUPPORTED} from './Constants.js'; 
 import { notifications } from './Main.js';
 

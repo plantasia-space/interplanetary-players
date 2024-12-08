@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "docs": "jsdoc -c jsdoc.json"
   },
   "devDependencies": {
+    "clean-jsdoc-theme": "^4.3.0",
+    "jsdoc": "^4.0.4",
     "vite": "^5.3.3",
     "vite-plugin-restart": "^0.4.1"
   },
