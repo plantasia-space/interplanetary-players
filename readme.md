@@ -23,5 +23,22 @@ npm run build
 
 # Resources
 
-- [**Wiki**](https://github.com/maar34/interplanetary-players/wiki): Explore guides, FAQs, and additional resources.
-- [**Documentation**](https://github.com/maar34/interplanetary-players-docs): Access the full project documentation.
+# Resources
+
+- <a href="https://maar34.github.io/interplanetary-players-docs/" target="_blank" style="text-decoration:none;">
+  <button style="background-color:#4CAF50; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">
+    Documentation
+  </button>
+  </a>: View the hosted project documentation.
+
+- <a href="https://github.com/maar34/interplanetary-players-docs" target="_blank" style="text-decoration:none;">
+  <button style="background-color:#2196F3; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">
+    Documentation Repository
+  </button>
+  </a>: Access the documentation repository.
+
+- <a href="https://github.com/maar34/interplanetary-players/wiki" target="_blank" style="text-decoration:none;">
+  <button style="background-color:#FF5722; color:white; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">
+    Wiki
+  </button>
+  </a>: Explore guides, FAQs, and additional resources.
