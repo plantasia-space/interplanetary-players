@@ -11,6 +11,7 @@ import { linear, logarithmic } from './Transformations';
 
 /**
  * @class ParameterManager
+ * @memberof CoreModule 
  * @description Singleton class responsible for managing application parameters, including their values, ranges, transformations, and subscriber notifications.
  */
 export class ParameterManager {

@@ -12,6 +12,7 @@ import { Constants } from './Constants.js';
 /**
  * Class representing a data manager for handling track data and UI placeholders.
  * @class
+ * @memberof CoreModule 
  */
 export class DataManager {
     /**

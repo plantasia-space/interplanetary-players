@@ -1,10 +1,10 @@
 /**
  * @file Loaders.js
- * @description Handles the loading and displaying of 3D models using Three.js and GLTFLoader with retry logic.
  * @version 1.0.0
  * @autor 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾
  * @license MIT
  * @date 2024-12-07
+ * @description Handles the loading and displaying of 3D models using Three.js and GLTFLoader with retry logic.
  */
 
 import * as THREE from 'three';
@@ -20,7 +20,7 @@ const MAX_RETRIES = 3;
 /**
  * Attempts to load a GLB model from a specified URL with retry logic.
  * Retries loading up to a maximum number of attempts if failures occur.
- *
+ * @memberof 3DGUI 
  * @async
  * @private
  * @param {string} url - The URL of the GLB model to load.
@@ -58,7 +58,7 @@ async function loadGLBModelWithRetry(url, retries = MAX_RETRIES) {
 
 /**
  * Loads and displays a GLB model within a Three.js scene using provided track data.
- *
+ * @memberof 3DGUI 
  * @async
  * @public
  * @param {THREE.Scene} scene - The Three.js scene to which the model will be added.

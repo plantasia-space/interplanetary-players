@@ -1,38 +1,31 @@
-/* *
- *
- *  WebAudio-Controls is based on:
- *    - webaudio-knob by Eiji Kitamura http://google.com/+agektmr
- *    - webaudio-slider by Ryoya Kawai https://plus.google.com/108242669191458983485/posts
- *    - webaudio-switch by Keisuke Ai http://d.hatena.ne.jp/aike/
- *  Integrated and enhanced by g200kg (Tatsuya Shinyagaito) http://www.g200kg.com/
- *
- *  Copyright 2013 Eiji Kitamura / Ryoya KAWAI / Keisuke Ai / g200kg (Tatsuya Shinyagaito)
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  You may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  Modifications made by Bruna Guarnieri:
- *	•	Knobs (webaudio-knob): Fully styled rotary controls with customizable colors, sizes, and behavior.
- *	•	Sliders (webaudio-slider): Linear sliders with horizontal and vertical orientation options.
- *  • Switches (webaudio-switch): Includes toggle, kick, radio, and sequential types with group handling for radio switches.
- *	•	Keyboard (webaudio-keyboard): Simulates a MIDI keyboard with configurable keys, colors, and MIDI integration.
- *	• Parameters (webaudio-param): Provides numeric input fields with customizable visual styles and MIDI compatibility.
- *  • Draws controls (like sliders and switches) using the <canvas> API for precise visual control.
- *  • Date of modification: 2024-11
- *
- *  NOTICE: This file includes modifications by Bruna Guarnieri and complies with the requirements
- *  of the Apache License 2.0. The original work and its attributions have been retained as required.
- *
- * */
+/**
+ * @external WebAudioControls
+ * @description
+ * WebAudio-Controls is a library that provides customizable audio control elements such as knobs, sliders, switches, keyboards, and parameters.
+ * It integrates and enhances the following external libraries:
+ *   - **webaudio-knob** by Eiji Kitamura [Website](http://google.com/+agektmr)
+ *   - **webaudio-slider** by Ryoya Kawai [Google+ Post](https://plus.google.com/108242669191458983485/posts)
+ *   - **webaudio-switch** by Keisuke Ai [Hatena Blog](http://d.hatena.ne.jp/aike/)
+ * 
+ * Integrated and enhanced by g200kg (Tatsuya Shinyagaito) [Website](http://www.g200kg.com/)
+ * 
+ * **Modifications by Bruna Guarnieri:**
+ * - **Knobs (`webaudio-knob`):** Fully styled rotary controls with customizable colors, sizes, and behavior.
+ * - **Sliders (`webaudio-slider`):** Linear sliders with horizontal and vertical orientation options.
+ * - **Switches (`webaudio-switch`):** Includes toggle, kick, radio, and sequential types with group handling for radio switches.
+ * - **Keyboard (`webaudio-keyboard`):** Simulates a MIDI keyboard with configurable keys, colors, and MIDI integration.
+ * - **Parameters (`webaudio-param`):** Provides numeric input fields with customizable visual styles and MIDI compatibility.
+ * - **Rendering:** Draws controls (like sliders and switches) using the `<canvas>` API for precise visual control.
+ * 
+ * **License:**
+ * Licensed under the Apache License, Version 2.0. See the [LICENSE](http://www.apache.org/licenses/LICENSE-2.0) file for details.
+ * 
+ * **Date of Modification:** November 2024
+ * 
+ * **Notice:** This file includes modifications by Bruna Guarnieri and complies with the requirements of the Apache License 2.0. The original work and its attributions have been retained as required.
+ * 
+ */
+
  import { MIDIControllerInstance } from './../MIDIController.js';
  import { getPriority, MIDI_SUPPORTED } from './../Constants.js';
  import { user1Manager } from './../Main.js';
@@ -116,6 +109,14 @@
   };
   if(window.WebAudioControlsOptions)
     Object.assign(opt,window.WebAudioControlsOptions);
+    /**
+   * @class WebAudioControlsWidget
+   * @memberof 2DGUI
+   * @extends HTMLElement
+   * @description
+   * Custom HTML element that serves as a container for WebAudio control widgets such as knobs, sliders, switches, keyboards, and parameters.
+   * Handles user interactions, rendering, and event dispatching for audio controls.
+   */
   class WebAudioControlsWidget extends HTMLElement{
     constructor(){
       super();
@@ -334,7 +335,21 @@ this.onFocus = () => {
     
 
 }
-
+/**
+ * @class WebAudioKnob
+ * @memberof 2DGUI
+ * @extends WebAudioControlsWidget
+ * @description
+ * Custom element representing a rotary knob control for WebAudio applications. The knob supports 
+ * configurable appearance, interaction, and value mapping. It integrates with the ParameterManager 
+ * for dynamic parameter updates and supports both linear and logarithmic scaling.
+ * 
+ * Features:
+ * - Fully customizable via attributes (e.g., `min`, `max`, `step`, `colors`).
+ * - High-DPI support with dynamic resizing and responsive behavior.
+ * - Integrates with external systems via bidirectional updates.
+ * - Emits standard DOM events (`input`, `change`) for value changes.
+ */
 try {
   customElements.define("webaudio-knob", class WebAudioKnob extends WebAudioControlsWidget {
     constructor() {
@@ -930,7 +945,22 @@ try {
 }
 
 
-
+/**
+ * @class WebAudioSlider
+ * @memberof 2DGUI
+ * @extends WebAudioControlsWidget
+ * @description
+ * Custom HTML element representing a slider control for WebAudio applications. 
+ * The slider supports both horizontal and vertical orientations, customizable 
+ * appearance, and bidirectional integration with the ParameterManager.
+ * 
+ * Features:
+ * - Configurable attributes: `min`, `max`, `step`, `direction`, `colors`.
+ * - High-DPI support with dynamic resizing for responsive layouts.
+ * - Supports logarithmic and linear scaling.
+ * - ARIA attributes for accessibility, including keyboard interaction.
+ * - Emits standard DOM events (`input`, `change`) for value changes.
+ */
 try {
   customElements.define("webaudio-slider", class WebAudioSlider extends WebAudioControlsWidget {
     constructor() {
@@ -1793,8 +1823,23 @@ try {
 }
 
 
-
-
+/**
+ * @class WebAudioSwitch
+ * @memberof 2DGUI
+ * @extends WebAudioControlsWidget
+ * @description
+ * Custom HTML element representing a switch control for WebAudio applications. 
+ * The switch supports multiple types (`toggle`, `kick`, `radio`, `sequential`) 
+ * and integrates with the ParameterManager for dynamic state management.
+ * 
+ * Features:
+ * - Configurable attributes: `type`, `min`, `max`, `step`, `colors`, `group`.
+ * - Supports group behavior for radio switches and sequential cycling.
+ * - High-DPI support with dynamic resizing for responsive layouts.
+ * - Emits standard DOM events (`input`, `change`) for state changes.
+ * - ARIA attributes for accessibility and keyboard interaction.
+ * - Customizable visuals with hexagon or circle shapes depending on type.
+ */
   try {
     // Helper function to draw a hexagon
     function drawHexagon(ctx, x, y, radius, fillStyle, strokeStyle) {
@@ -2485,10 +2530,29 @@ try {
     console.error("webaudio-switch already defined or error in definition:", error);
   }
   
-  
-  
-  
-
+/**
+ * @class WebAudioParam
+ * @memberof 2DGUI
+ * @extends WebAudioControlsWidget
+ * @description
+ * Custom HTML element for handling parameter values in WebAudio contexts.
+ * Designed for seamless integration with the `WebAudioNumericKeyboard` and `ParameterManager`.
+ *
+ * Features:
+ * - **Integration**: Connects to `ParameterManager` for real-time updates and management.
+ * - **User Interaction**: Supports mouse, keyboard, touch, and scroll wheel inputs.
+ * - **Keyboard Interaction**: Triggers `WebAudioNumericKeyboard` for precise numeric input.
+ * - **Dynamic Value Handling**: Supports logarithmic and linear scales.
+ * - **Accessibility**: Includes ARIA attributes for usability.
+ * - **Customizable**: Attributes like `colors`, `fontsize`, `src` for appearance adjustments.
+ * 
+ * Attributes:
+ * - `root-param` - Links to a parameter in the `ParameterManager`.
+ * - `is-bidirectional` - Enables two-way communication with `ParameterManager`.
+ * - `value` - The current value of the parameter.
+ * - `min` & `max` - Parameter range.
+ * - `colors` - Specifies colors for display and background.
+ */
   try {
     customElements.define("webaudio-param", class WebAudioParam extends WebAudioControlsWidget {
       constructor() {
@@ -2935,7 +2999,34 @@ validateValue(value) {
     console.log("webaudio-param already defined");
   }
 
-
+/**
+ * @class WebAudioNumericKeyboard
+ * @memberof 2DGUI
+ * @extends WebAudioControlsWidget
+ * @description
+ * A custom numeric keyboard interface for precise parameter adjustment in WebAudio applications.
+ * Integrates with `WebAudioParam` for seamless user input and supports interpolated value changes.
+ *
+ * Features:
+ * - **Dynamic Input**: Buttons for numeric and symbol input, including backspace, negative, and enter.
+ * - **Interpolation**: Smooth value transitions based on slider-defined durations.
+ * - **Keyboard and Touch Support**: Responds to physical keyboards and touch events.
+ * - **Real-Time Display**: Updates the output display and triggers events during input.
+ * - **Min/Max Constraints**: Validates inputs against defined limits.
+ * - **Accessibility**: Fully accessible with keyboard navigation and ARIA attributes.
+ *
+ * Attributes:
+ * - `value` - The current numeric value.
+ * - `min` & `max` - Define constraints for input values.
+ * - `interpolationDuration` - Time (ms) for interpolating changes.
+ * - `outputElement` - Displays the current value.
+ * - `sliderValueElement` - Displays slider-controlled interpolation duration.
+ *
+ * Events:
+ * - `input` - Fired on any input value change.
+ * - `submit` - Fired on confirmation of input via the "Enter" button.
+ * - `complete` - Fired when interpolation is complete.
+ */
 try {
   customElements.define(
     "webaudio-numeric-keyboard",
@@ -3289,7 +3380,23 @@ try {
   console.error("WebAudioNumericKeyboard already defined:", error);
 }
 
-
+/**
+ * @deprecated WebAudioControlsWidgetManager is now deprecated.
+ * This class was originally used for managing WebAudio widgets and integrating them with MIDI.
+ * However, widget management and parameter handling are now handled externally.
+ * 
+ * This class will be phased out gradually to ensure nothing breaks during the transition.
+ * Direct dependencies or indirect reliance on its functionality should be replaced.
+ * 
+ * Current known dependencies:
+ * - Potential global initialization logic for widgets
+ * - Possible implicit reliance in older parts of the codebase
+ * 
+ * TODO:
+ * - Trace all references to `WebAudioControlsWidgetManager` and `webAudioControlsWidgetManager`.
+ * - Replace direct and indirect dependencies with a more modern approach.
+ * - Fully remove this class once confirmed safe.
+ */
 class WebAudioControlsWidgetManager {
   constructor() {
     this.listOfWidgets = Array.from(

@@ -8,7 +8,10 @@
  * @license MIT
  * @date 2024-12-07
  */
-
+/** 
+ * @memberof 2DGUI 
+ * @class
+ */
 export class AppNotifications {
     /**
      * Creates an instance of AppNotifications.

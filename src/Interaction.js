@@ -8,10 +8,6 @@
  * @license MIT
  * @date 2024-12-07
  */
-/**
- * @group User Inputs
- * @description Handles sensor inputs, MIDI integration, and other user interactions.
- */
 
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
@@ -20,6 +16,7 @@ import { MIDI_SUPPORTED } from './Constants.js';
 /**
  * Sets up interactions for dynamic placeholder updates.
  * Initializes ButtonGroups and registers MIDI controllers if supported.
+ * @memberof CoreModule 
  * @function setupInteractions
  * @param {DataManager} dataManager - The shared DataManager instance.
  * @param {AudioPlayer} audioPlayer - The shared AudioPlayer instance.
@@ -68,6 +65,7 @@ export function setupInteractions(dataManager, audioPlayer) {
 /**
  * Registers all dropdown items in the initialized ButtonGroups with MIDIController.
  * Ensures that MIDI interactions are properly linked to the corresponding UI elements.
+ * @memberof CoreModule 
  * @private
  * @param {Array<ButtonGroup>} buttonGroups - List of initialized ButtonGroup instances.
  * @returns {void}
@@ -92,6 +90,7 @@ function registerMenuItemsWithMIDIController(buttonGroups) {
 /**
  * Applies color configurations to the document based on track data.
  * Updates CSS variables and redraws UI components to reflect new colors.
+ * @memberof CoreModule 
  * @function applyColorsFromTrackData
  * @param {object} trackData - The track data containing color information.
  * @returns {void}
@@ -132,6 +131,7 @@ export function applyColorsFromTrackData(trackData) {
 /**
  * Dynamically creates and updates knobs based on track data.
  * Configures UI components for sound engine parameters.
+ * @memberof CoreModule 
  * @function updateKnobsFromTrackData
  * @param {object} trackData - The track data containing sound engine parameters.
  * @returns {void}

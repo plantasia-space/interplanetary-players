@@ -6,8 +6,39 @@
  * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
+ * @memberof CoreModule 
+ */
+/**
+ * @namespace CoreModule
+ * @description The **CoreModule** serves as the backbone of the application, organizing and executing foundational logic. 
+ * It provides a centralized system for managing interactions, parameter transformations, and application state, 
+ * ensuring seamless operation and integration of various components.
  */
 
+/**
+ * @namespace InputInterface
+ * @description Provides documentation for sensors, MIDI controllers, touch, and other user input mechanisms. 
+ * This namespace focuses on capturing, processing, and responding to user interactions efficiently and intuitively.
+ */
+
+/**
+ * @namespace 2DGUI
+ * @description Handles all 2D graphical user interface elements, including sliders, buttons, knobs, and parameter displays. 
+ * This namespace integrates WebAudioControls for creating custom, reusable components to control audio parameters seamlessly. 
+ * Its focus is on interactive and visually appealing controls optimized for 2D environments.
+ */
+
+/**
+ * @namespace 3DGUI
+ * @description Manages 3D graphical user interface components, including interactive elements within 3D scenes. 
+ * It integrates seamlessly with Three.js to provide immersive user interactions.
+ */
+
+/**
+ * @namespace AudioEngine
+ * @description Encapsulates the core logic for audio processing, synthesis, and playback. 
+ * This namespace manages the Web Audio API and RNBO, sound engines, and audio parameters to create a dynamic sound environment.
+ */
 // -----------------------------
 // Import Statements
 // -----------------------------
@@ -40,7 +71,7 @@ import { ButtonGroup } from './ButtonGroup.js';
 import { ParameterManager } from './ParameterManager.js';
 
 // Mathematical transformations
-import { logarithmic, exponential } from './Transformations.js';
+import { logarithmic } from './Transformations.js';
 
 // Notifications handler
 import notifications from './AppNotifications.js';
@@ -83,6 +114,7 @@ let animationRunning = false;
  * @async
  * @function initializeApp
  * @throws Will log an error if initialization fails.
+ * @memberof CoreModule 
  */
 async function initializeApp() {
     try {
@@ -127,7 +159,7 @@ async function initializeApp() {
 /**
  * Initializes root parameters for the ParameterManager.
  * Dynamically maps parameters to the manager based on track data.
- * 
+ * @memberof CoreModule 
  * @function initializeRootParams
  * @param {ParameterManager} parameterManager - Instance of the ParameterManager to configure.
  * @param {Object} trackData - Data for the current track.
@@ -209,6 +241,7 @@ function initializeRootParams(parameterManager, trackData) {
 /**
  * Adjusts renderer and camera settings on window resize.
  * Ensures the 3D scene adapts to viewport changes.
+ * @memberof 3DGUI 
  */
 window.addEventListener('resize', () => {
     const MIN_SIZE = 340; // Minimum frame size in pixels
@@ -242,6 +275,7 @@ window.addEventListener('resize', () => {
  * Animation loop for the application.
  * Updates controls and renders the scene.
  * @function animate
+ * @memberof 3DGUI 
  */
 function animate() {
     controls.update(); // Update camera controls
@@ -258,6 +292,7 @@ function animate() {
  * Adjusts the menu's position based on window size and button position.
  * Attaches relevant event listeners for alignment updates.
  * @function setupCollapseMenuAlignment
+ * @memberof 2DGUI 
  */
 function setupCollapseMenuAlignment() {
     const infoButton = document.getElementById("informationMenuButton");
@@ -308,6 +343,7 @@ function setupCollapseMenuAlignment() {
 /**
  * Executes when the DOM is fully loaded.
  * Initializes the application and starts the animation loop.
+ * @memberof CoreModule 
  */
 document.addEventListener('DOMContentLoaded', () => {
     console.log("[APP] DOMContentLoaded: Application initialized.");

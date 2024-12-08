@@ -3,7 +3,7 @@
       "allowUnknownTags": true
     },
     "source": {
-      "include": ["src", "package.json", "README.md"],
+      "include": ["src", "package.json", "docs/"],
       "exclude": ["node_modules", "dist"],
       "includePattern": ".js$",
       "excludePattern": "(node_modules|dist)"
@@ -27,16 +27,22 @@
         "includeFilesListInHomepage": true,
         "menu": [
         {
-            "title": "GitHub",
+            "title": "Documentation GitHub",
             "id": "github",
             "link": "https://github.com/maar34/interplanetary-players-docs"
         },
         {
-            "title": "Maar World",
-            "id": "website",
-            "link": "https://maar.world/"
+          "title": "Wiki",
+          "id": "wiki",
+          "link": "https://github.com/maar34/interplanetary-players/wiki"
+        },
+        {
+            "title": "Interplanetary Players Github",
+            "id": "app-github",
+            "link": "https://github.com/maar34/interplanetary-players"
         }
         ],
+        "sections": ["Classes", "Modules", "Namespaces", "Externals", "Global"], 
         "meta": [
         {
             "name": "𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾",

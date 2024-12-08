@@ -12,10 +12,6 @@ import lscache from 'lscache';
  * @date 2024-12-07
  */
 
-/**
- * @group Constants
- * @description Contains constants and methods related to track data management and caching.
- */
 export const Constants = {
     /** 
      * @type {string}
@@ -94,6 +90,7 @@ export const Constants = {
 
 /**
  * @constant
+ * @memberof CoreModule
  * @type {string}
  * @description Default track ID used across the application.
  */
@@ -101,6 +98,7 @@ export const DEFAULT_TRACK_ID = Constants.DEFAULT_TRACK_ID;
 
 /**
  * @constant
+ * @memberof CoreModule
  * @type {string|null}
  * @description Currently active track ID. Initially set to null.
  */
@@ -108,6 +106,7 @@ export const TRACK_ID = Constants.TRACK_ID;
 
 /**
  * @constant
+ * @memberof CoreModule
  * @type {object}
  * @description Defines priority levels for various controller types.
  */
@@ -130,6 +129,7 @@ export const PRIORITY_MAP = {
 
 /**
  * @constant
+ * @memberof CoreModule
  * @type {number}
  * @description Fallback priority value for undefined controller types.
  */
@@ -147,6 +147,7 @@ export function getPriority(controllerType) {
 
 /**
  * @constant
+ * @memberof CoreModule
  * @type {boolean}
  * @description Indicates whether the browser supports the Web MIDI API.
  */

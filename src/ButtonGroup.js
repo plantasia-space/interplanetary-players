@@ -1,15 +1,12 @@
 /**
  * @file ButtonGroup.js
- * @description Manages button groups within the Interplanetary Players application, handling interactions, SVG loading, and event bindings.
  * @version 2.0.0
  * @autor 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾
  * @license MIT
  * @date 2024-12-07
+ * @description Manages button groups within the Interplanetary Players application, handling interactions, SVG loading, and event bindings.
  */
-/**
- * @group User Inputs
- * @description Handles sensor inputs, MIDI integration, and other user interactions.
- */
+
 
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED } from './Constants.js'; 
@@ -17,6 +14,8 @@ import notifications from './AppNotifications.js';
 
 /**
  * Class representing a group of buttons with dropdown menus for various functionalities.
+ * @class
+ * @memberof 2DGUI 
  */
 export class ButtonGroup {
     /**

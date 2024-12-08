@@ -8,10 +8,6 @@
  * @license MIT
  * @date 2024-12-07
  */
-/**
- * @group User Inputs
- * @description Handles sensor inputs, MIDI integration, and other user interactions.
- */
 
 import { Constants, getPriority, MIDI_SUPPORTED } from './Constants.js';
 import lscache from 'lscache';
@@ -22,6 +18,8 @@ import { notifications } from './Main.js';
  * MIDIController Singleton Class
  * Handles MIDI interactions, including listening to MIDI inputs,
  * managing MIDI mappings, and facilitating MIDI Learn functionality.
+ * @class
+ * @memberof InputInterface 
  */
 class MIDIController {
   /**

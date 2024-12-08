@@ -1,10 +1,8 @@
-// src/AudioPlayer.js
-/**
- * @group Audio Engine
- * @description Manages sound generation, processing, and feedback mechanisms.
+
+/** 
+ * @memberof AudioEngine 
+ * @class
  */
-
-
 export class AudioPlayer {
     constructor(audioFilePath) {
 /*         if (!audioFilePath) {
