@@ -3,8 +3,8 @@
 /**
  * @file AppNotifications.js
  * @description Manages application notifications, including toast messages and modals.
- * @version 1.0.1
- * @author 
+ * @version 2.0.0
+ * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
  */
@@ -15,7 +15,7 @@ export class AppNotifications {
      * Initializes the notification container in the DOM.
      */
     constructor() {
-        // Retrieve the notification container element
+        // Retrieve the notification container element by its ID
         this.notificationContainer = document.getElementById('notification-container');
         
         // If the container doesn't exist, create and append it to the body
@@ -36,12 +36,15 @@ export class AppNotifications {
      * @param {number} [duration=3000] - Duration in milliseconds before the toast disappears.
      */
     showToast(message, type = 'info', duration = 3000) {
+        // Create the toast element
         const toast = document.createElement('div');
         toast.className = `notification-toast notification-toast-${type}`;
         toast.textContent = message;
     
+        // Append the toast to the notification container
         this.notificationContainer.appendChild(toast);
     
+        // Set a timeout to remove the toast after the specified duration
         setTimeout(() => {
             if (toast.parentNode === this.notificationContainer) {
                 toast.classList.add('fade-out');
@@ -64,6 +67,7 @@ export class AppNotifications {
      */
     showUniversalModal(title, content, buttonText = "Okay") {
         return new Promise((resolve) => {
+            // Retrieve the universal modal element by its ID
             const modal = document.getElementById('universalModal');
             if (!modal) {
                 console.error('AppNotifications: Universal Modal element not found.');
@@ -71,7 +75,7 @@ export class AppNotifications {
                 return;
             }
         
-            // Update modal content
+            // Update modal content elements
             const modalTitle = modal.querySelector('.modal-title');
             const modalBody = modal.querySelector('.modal-body');
             const modalFooterButton = modal.querySelector('.modal-footer button');
@@ -82,6 +86,7 @@ export class AppNotifications {
                 return;
             }
         
+            // Set the modal's title and content
             modalTitle.textContent = title;
             modalBody.innerHTML = ''; // Clear previous content
             if (typeof content === 'string') {
@@ -90,9 +95,10 @@ export class AppNotifications {
                 modalBody.appendChild(content);
             }
         
+            // Set the text of the primary button
             modalFooterButton.textContent = buttonText;
         
-            // Handle button click
+            // Define the button click handler
             const buttonHandler = () => {
                 modalFooterButton.removeEventListener('click', buttonHandler);
                 const bsModal = bootstrap.Modal.getInstance(modal);
@@ -100,9 +106,10 @@ export class AppNotifications {
                 resolve();
             };
         
+            // Attach the click event listener to the primary button
             modalFooterButton.addEventListener('click', buttonHandler);
         
-            // Show the modal using Bootstrap
+            // Initialize and show the modal using Bootstrap
             const bootstrapModal = new bootstrap.Modal(modal);
             bootstrapModal.show();
             
@@ -117,6 +124,7 @@ export class AppNotifications {
      */
     showParameterSelectionModal(availableParams) {
         return new Promise((resolve) => {
+            // Retrieve the parameter selection modal and its components by their IDs
             const modal = document.getElementById('parameterSelectionModal');
             const parameterList = document.getElementById('parameterList');
             const modalTitle = modal.querySelector('.modal-title');
@@ -127,7 +135,7 @@ export class AppNotifications {
                 return;
             }
         
-            // Clear previous list
+            // Clear any existing list items
             parameterList.innerHTML = '';
         
             // Populate the list with available parameters
@@ -135,19 +143,24 @@ export class AppNotifications {
                 const listItem = document.createElement('li');
                 listItem.classList.add('list-group-item', 'list-group-item-action');
                 listItem.textContent = param;
+
+                // Define the click handler for each list item
                 listItem.addEventListener('click', () => {
                     modalTitle.textContent = `Mapping MIDI to '${param}'`;
                     const bsModal = bootstrap.Modal.getInstance(modal);
                     bsModal.hide();
                     resolve(param);
                 });
+
+                // Append the list item to the parameter list
                 parameterList.appendChild(listItem);
             });
         
-            // Handle modal dismissal
+            // Initialize and show the parameter selection modal using Bootstrap
             const bsModal = new bootstrap.Modal(modal);
             bsModal.show();
         
+            // Handle modal dismissal (e.g., clicking outside or pressing ESC)
             modal.addEventListener('hidden.bs.modal', () => {
                 resolve(null);
             }, { once: true });

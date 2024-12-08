@@ -1,71 +1,100 @@
-// Interaction.js
+// src/Interaction.js
+
+/**
+ * @file Interaction.js
+ * @description Sets up interactions for dynamic placeholder updates, handles MIDI registrations, and applies UI color configurations based on track data.
+ * @version 2.0.0
+ * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @license MIT
+ * @date 2024-12-07
+ */
+/**
+ * @group User Inputs
+ * @description Handles sensor inputs, MIDI integration, and other user interactions.
+ */
 
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED} from './Constants.js'; 
+import { MIDI_SUPPORTED } from './Constants.js'; 
 
 /**
- * Setup interactions for dynamic placeholder updates.
+ * Sets up interactions for dynamic placeholder updates.
+ * Initializes ButtonGroups and registers MIDI controllers if supported.
+ * @function setupInteractions
  * @param {DataManager} dataManager - The shared DataManager instance.
  * @param {AudioPlayer} audioPlayer - The shared AudioPlayer instance.
+ * @returns {void}
+ * @throws Will log an error if Bootstrap is not loaded.
  */
 export function setupInteractions(dataManager, audioPlayer) {
-  if (typeof bootstrap === 'undefined') {
-      console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
-      return;
-  }
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
+        return;
+    }
 
-  // Bind event listeners to dropdown items for manual interactions
-  document.querySelectorAll('.dropdown-item').forEach(item => {
-      item.addEventListener('click', event => {
-          event.preventDefault(); // Prevent default link behavior
-          const action = item.getAttribute('data-value'); // Get action value
-      });
-  });
+    // Bind event listeners to dropdown items for manual interactions
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', event => {
+            event.preventDefault(); // Prevent default link behavior
+            const action = item.getAttribute('data-value'); // Get action value
+            // TODO: Implement action handling based on 'action' value
+            //console.log(`[Interaction] Dropdown item clicked: ${action}`);
+        });
+    });
 
-  // Initialize all button groups
-  const buttonGroups = [];
-  document.querySelectorAll('.button-group-container').forEach(group => {
-      const groupType = group.getAttribute('data-group');
+    // Initialize all button groups
+    const buttonGroups = [];
+    document.querySelectorAll('.button-group-container').forEach(group => {
+        const groupType = group.getAttribute('data-group');
 
-      const buttonGroup = new ButtonGroup(
-          `.button-group-container[data-group="${groupType}"]`,
-          'ul.dropdown-menu',
-          'button.dropdown-toggle',
-          'a.dropdown-item',
-          '.button-icon',
-          audioPlayer,    // Pass shared AudioPlayer
-          dataManager     // Pass shared DataManager
-      );
-      buttonGroups.push(buttonGroup);
-      
-  });
+        const buttonGroup = new ButtonGroup(
+            `.button-group-container[data-group="${groupType}"]`, // containerSelector
+            'ul.dropdown-menu',                                    // dropdownSelector
+            'button.dropdown-toggle',                             // buttonSelector
+            'a.dropdown-item',                                    // menuItemsSelector
+            '.button-icon',                                       // iconSelector
+            audioPlayer,                                          // audioPlayer
+            dataManager                                           // dataManager
+        );
+        buttonGroups.push(buttonGroup);
+    });
 
-  // Register dropdown items with MIDIController for MIDI interactions
-  if (MIDI_SUPPORTED) registerMenuItemsWithMIDIController(buttonGroups);
+    // Register dropdown items with MIDIController for MIDI interactions
+    if (MIDI_SUPPORTED) {
+        registerMenuItemsWithMIDIController(buttonGroups);
+    }
 }
+
 /**
-* Registers all dropdown items in the initialized ButtonGroups with MIDIController.
-* @param {Array} buttonGroups - List of initialized ButtonGroup instances.
-*/
+ * Registers all dropdown items in the initialized ButtonGroups with MIDIController.
+ * Ensures that MIDI interactions are properly linked to the corresponding UI elements.
+ * @private
+ * @param {Array<ButtonGroup>} buttonGroups - List of initialized ButtonGroup instances.
+ * @returns {void}
+ */
 function registerMenuItemsWithMIDIController(buttonGroups) {
-  const midiController = MIDIControllerInstance;
-  // Register each button group menu item
-  buttonGroups.forEach(buttonGroup => {
-      buttonGroup.menuItems.forEach(item => {
-          const itemId = item.id || item.getAttribute('data-value');
-          if (itemId) {
-              midiController.registerWidget(itemId, item);
-          } else {
-              console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
-          }
-      });
-  });
+    const midiController = MIDIControllerInstance;
+
+    // Register each button group menu item
+    buttonGroups.forEach(buttonGroup => {
+        buttonGroup.menuItems.forEach(item => {
+            const itemId = item.id || item.getAttribute('data-value');
+            if (itemId) {
+                midiController.registerWidget(itemId, item);
+                //console.log(`[MIDIController] Registered widget: ${itemId}`);
+            } else {
+                console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
+            }
+        });
+    });
 }
 
 /**
- * Apply colors to the document from track data.
+ * Applies color configurations to the document based on track data.
+ * Updates CSS variables and redraws UI components to reflect new colors.
+ * @function applyColorsFromTrackData
  * @param {object} trackData - The track data containing color information.
+ * @returns {void}
  */
 export function applyColorsFromTrackData(trackData) {
     if (!trackData || !trackData.soundEngine || !trackData.soundEngine.soundEngineColors) {
@@ -78,10 +107,12 @@ export function applyColorsFromTrackData(trackData) {
     // Update CSS variables for colors
     if (color1) {
         document.documentElement.style.setProperty('--color1', color1);
+        //console.log(`[COLORS] Set --color1 to ${color1}`);
     }
 
     if (color2) {
         document.documentElement.style.setProperty('--color2', color2);
+        //console.log(`[COLORS] Set --color2 to ${color2}`);
     }
 
     // Update all knobs, sliders, and switches
@@ -94,11 +125,17 @@ export function applyColorsFromTrackData(trackData) {
         webSwitch.setupCanvas();
         webSwitch.redraw();
     });
+
+    //console.log('[COLORS] Applied colors from track data to UI components.');
 }
 
 /**
- * Dynamically create and update knobs based on track data.
+ * Dynamically creates and updates knobs based on track data.
+ * Configures UI components for sound engine parameters.
+ * @function updateKnobsFromTrackData
  * @param {object} trackData - The track data containing sound engine parameters.
+ * @returns {void}
+ * @throws Will log an error if track data or sound engine information is missing.
  */
 export function updateKnobsFromTrackData(trackData) {
     if (!trackData || !trackData.soundEngine) {
@@ -144,12 +181,14 @@ export function updateKnobsFromTrackData(trackData) {
         knob.setAttribute('max', param.max);
         knob.setAttribute('value', param.initValue);
         knob.setAttribute('is-bidirectional', true);
-        knob.setAttribute('sensitivity', .3);
-        knob.setAttribute("data-automatable", "true");
+        knob.setAttribute('sensitivity', 0.3);
+        knob.setAttribute('data-automatable', 'true');
 
         // Append knob to the container
         container.appendChild(knob);
 
+        //console.log(`[Knob] Created and appended ${paramKey}Knob to ${container.id}`);
     });
 
+    //console.log('[Knobs] Updated knobs from track data.');
 }

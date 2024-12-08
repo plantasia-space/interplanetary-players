@@ -2,7 +2,7 @@
  * @file main.js
  * @description Entry point for initializing the Interplanetary Players application.
  * Handles scene setup, parameter management, interactions, and rendering.
- * @version 1.0.0
+ * @version 2.0.0
  * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
@@ -67,7 +67,7 @@ const dataManager = new DataManager();
 // Instantiate the AudioPlayer for managing audio playback
 const audioPlayer = new AudioPlayer();
 
-// Instantiate the ParameterManager for managing adjustable parameters
+// Instantiate the ParameterManager for managing adjustable parameters for user 1
 const user1Manager = new ParameterManager();
 
 // Flag to control the animation loop
@@ -180,7 +180,7 @@ function initializeRootParams(parameterManager, trackData) {
                         inputTransform, // Input transformation function
                         outputTransform // Output transformation function
                     );
-                    console.debug(`[initializeRootParams] Added parameter '${paramName}' with transformations.`, config);
+                    //console.debug(`[initializeRootParams] Added parameter '${paramName}' with transformations.`, config);
                 } else {
                     // Add parameter without transformation functions, defaulting to linear scale
                     parameterManager.addParameter(
@@ -191,7 +191,7 @@ function initializeRootParams(parameterManager, trackData) {
                         true // Bidirectional parameter
                         // inputTransform and outputTransform default to linear if not provided
                     );
-                    console.debug(`[initializeRootParams] Added parameter '${paramName}' without transformations.`, config);
+                    //console.debug(`[initializeRootParams] Added parameter '${paramName}' without transformations.`, config);
                 }
             } else {
                 console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
@@ -231,7 +231,7 @@ window.addEventListener('resize', () => {
     // Set the pixel ratio for high-DPI screens, capped at 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    console.log('[APP] Renderer and camera updated on resize.');
+    //console.log('[APP] Renderer and camera updated on resize.');
 });
 
 // -----------------------------
@@ -288,7 +288,7 @@ function setupCollapseMenuAlignment() {
         collapseMenu.style.top = `${calculatedTop}px`;
         collapseMenu.style.left = `${calculatedLeft}px`;
 
-        console.debug('[APP] Collapse menu aligned:', { top: calculatedTop, left: calculatedLeft });
+        //console.debug('[APP] Collapse menu aligned:', { top: calculatedTop, left: calculatedLeft });
     };
 
     // Align initially

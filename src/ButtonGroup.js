@@ -1,10 +1,34 @@
+/**
+ * @file ButtonGroup.js
+ * @description Manages button groups within the Interplanetary Players application, handling interactions, SVG loading, and event bindings.
+ * @version 2.0.0
+ * @autor 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾
+ * @license MIT
+ * @date 2024-12-07
+ */
+/**
+ * @group User Inputs
+ * @description Handles sensor inputs, MIDI integration, and other user interactions.
+ */
+
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED} from './Constants.js'; 
-import { notifications } from './Main.js';
+import { MIDI_SUPPORTED } from './Constants.js'; 
+import notifications from './AppNotifications.js';
 
+/**
+ * Class representing a group of buttons with dropdown menus for various functionalities.
+ */
 export class ButtonGroup {
-   // static instances = []; // Holds all ButtonGroup instances
-
+    /**
+     * Creates an instance of ButtonGroup.
+     * @param {string} containerSelector - CSS selector for the button group container.
+     * @param {string} dropdownSelector - CSS selector for the dropdown element within the container.
+     * @param {string} buttonSelector - CSS selector for the main button within the container.
+     * @param {string} menuItemsSelector - CSS selector for the menu items within the dropdown.
+     * @param {string} iconSelector - CSS selector for the icon within the main button.
+     * @param {AudioPlayer} audioPlayer - Instance of AudioPlayer for managing audio controls.
+     * @param {DataManager} [dataManager=null] - Instance of DataManager for managing data (optional).
+     */
     constructor(
         containerSelector,
         dropdownSelector,
@@ -12,12 +36,12 @@ export class ButtonGroup {
         menuItemsSelector,
         iconSelector,
         audioPlayer,
-        dataManager
+        dataManager = null
     ) {
         this.audioPlayer = audioPlayer;
-        this.dataManager = dataManager || null;
+        this.dataManager = dataManager;
 
-        // Select key elements
+        // Select key elements within the container
         this.container = document.querySelector(containerSelector);
         if (!this.container) {
             console.error(`ButtonGroup Error: No element found for selector "${containerSelector}"`);
@@ -27,56 +51,68 @@ export class ButtonGroup {
         this.button = this.container.querySelector(buttonSelector);
         this.menuItems = this.dropdown.querySelectorAll(menuItemsSelector);
         this.icon = this.button.querySelector(iconSelector);
-        this.gridWrapper = document.querySelector('.grid-wrapper'); // Grid wrapper
-        this.gridContent = document.querySelector('.grid-content');
-        this.closeGridBtn = document.querySelector('.close-grid-btn'); // Close button
-        this.collapseElement = document.getElementById('collapseInfoMenu'); // Collapsible menu
+        this.gridWrapper = document.querySelector('.grid-wrapper'); // Grid wrapper element
+        this.gridContent = document.querySelector('.grid-content'); // Grid content element
+        this.closeGridBtn = document.querySelector('.close-grid-btn'); // Close button for the grid
+        this.collapseElement = document.getElementById('collapseInfoMenu'); // Collapsible menu element
 
+        // Validate the presence of essential elements
         if (!this.dropdown || !this.button || !this.menuItems.length || !this.icon) {
-            console.error('ButtonGroup initialization failed: Missing elements.');
+            console.error('ButtonGroup initialization failed: Missing essential elements.');
             return;
         }
 
+        // Initialize Bootstrap Collapse instance if the collapsible menu exists
         this.collapseInstance = null;
         if (this.collapseElement) {
             this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
         }
+
+        // Reference to the MIDIController instance
         this.midiController = MIDIControllerInstance;
 
+        // Initialize the ButtonGroup
         this.init();
     }
 
     /**
-     * Initialize the ButtonGroup by setting up SVGs and event bindings.
+     * Initializes the ButtonGroup by setting up SVGs and event bindings.
+     * @private
      */
     init() {
         console.log(`Initializing dropdowns for "${this.containerSelector}"`);
-    
+
         if (this.collapseInstance) {
             this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
         }
-    
-        this.adjustForMidiSupport();
-        this.loadDynamicSVGs();
-        this.bindEvents();
-    
-        // Avoid global dropdown interference
-        this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
-            new bootstrap.Dropdown(dropdown); // Use default behavior
-        });
 
+        // Adjust the dropdown based on MIDI support
+        this.adjustForMidiSupport();
+
+        // Load dynamic SVGs for the main button and dropdown menu items
+        this.loadDynamicSVGs();
+
+        // Bind event listeners to menu items and buttons
+        this.bindEvents();
+
+        // Initialize Bootstrap Dropdowns to prevent global interference
+        this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
+            new bootstrap.Dropdown(dropdown); // Initialize with default behavior
+        });
     }
 
-
     /**
-     * Load dynamic SVGs for the main button and dropdown menu items.
+     * Loads dynamic SVGs for the main button and dropdown menu items.
+     * @private
      */
     loadDynamicSVGs() {
+        // Load SVG for the main button if a data-src attribute is present
         const src = this.icon.getAttribute('data-src');
         if (src) {
             this.fetchAndSetSVG(src, this.icon, true);
         }
 
+        // Iterate through each menu item to set up their icons
         this.menuItems.forEach(item => {
             const iconImg = item.querySelector('img');
             const src = item.getAttribute('data-icon');
@@ -92,7 +128,11 @@ export class ButtonGroup {
     }
 
     /**
-     * Fetch and set SVG content.
+     * Fetches and sets SVG content into a specified element.
+     * @param {string} src - URL of the SVG file to fetch.
+     * @param {HTMLElement} element - DOM element to insert the fetched SVG into.
+     * @param {boolean} [isInline=true] - Whether to insert the SVG inline.
+     * @private
      */
     fetchAndSetSVG(src, element, isInline = true) {
         if (!isInline) return;
@@ -111,8 +151,8 @@ export class ButtonGroup {
                     svgElement.setAttribute('fill', 'currentColor');
                     svgElement.setAttribute('role', 'img');
                     svgElement.classList.add('icon-svg');
-                    element.innerHTML = '';
-                    element.appendChild(svgElement);
+                    element.innerHTML = ''; // Clear existing content
+                    element.appendChild(svgElement); // Insert the SVG
                 } else {
                     console.error(`Invalid SVG content fetched from: ${src}`);
                 }
@@ -121,9 +161,11 @@ export class ButtonGroup {
     }
 
     /**
-     * Bind events to menu items and the close grid button.
+     * Binds event listeners to menu items and the close grid button.
+     * @private
      */
     bindEvents() {
+        // Bind click events to each menu item
         this.menuItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -131,28 +173,33 @@ export class ButtonGroup {
                 const newValue = item.getAttribute('data-value');
             
                 if (newIconPath && newValue) {
+                    // Update the main button's icon and aria-label
                     this.icon.setAttribute('data-src', newIconPath);
                     this.icon.setAttribute('aria-label', newValue);
                     this.fetchAndSetSVG(newIconPath, this.icon, true);
                 }
             
+                // Handle the selection change based on the new value
                 this.onSelectionChange(newValue);
             });
         });
-    
+
+        // Bind click event to the close grid button if it exists
         if (this.closeGridBtn) {
             this.closeGridBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                //e.stopPropagation();
                 this.hideGrid();
             });
         }
     }
 
     /**
-     * Handle selection change from the dropdown menu.
+     * Handles selection changes from the dropdown menu.
+     * @param {string} selectedValue - The value of the selected menu item.
+     * @private
      */
     onSelectionChange(selectedValue) {
+        // Determine the type of button group based on a data attribute
         const groupType = this.container.getAttribute('data-group');
 
         switch (groupType) {
@@ -171,7 +218,9 @@ export class ButtonGroup {
     }
 
     /**
-     * Handle information dropdown selection.
+     * Handles selections from the information dropdown menu.
+     * @param {string} selectedValue - The selected information type.
+     * @private
      */
     handleInformationDropdown(selectedValue) {
         console.log(`[Information Dropdown] Selected: ${selectedValue}`);
@@ -186,6 +235,7 @@ export class ButtonGroup {
 
         if (target) {
             if (this.dataManager) {
+                // Populate placeholders based on the selected target
                 this.dataManager.populatePlaceholders(target);
                 this.showGrid();
             } else {
@@ -197,7 +247,8 @@ export class ButtonGroup {
     }
 
     /**
-     * Show the grid wrapper and expand the collapsible menu.
+     * Displays the grid wrapper and expands the collapsible menu.
+     * @private
      */
     showGrid() {
         if (this.gridWrapper) {
@@ -212,7 +263,8 @@ export class ButtonGroup {
     }
 
     /**
-     * Hide the grid wrapper and collapse the menu.
+     * Hides the grid wrapper and collapses the menu.
+     * @private
      */
     hideGrid() {
         if (this.gridWrapper) {
@@ -227,7 +279,9 @@ export class ButtonGroup {
     }
 
     /**
-     * Handle transport dropdown selection.
+     * Handles selections from the transport dropdown menu.
+     * @param {string} selectedValue - The selected transport action.
+     * @private
      */
     handleTransportDropdown(selectedValue) {
         console.log(`[Transport Dropdown] Selected: ${selectedValue}`);
@@ -246,54 +300,67 @@ export class ButtonGroup {
         }
     }
 
+    /**
+     * Handles selections from the interaction dropdown menu.
+     * @param {string} selectedValue - The selected interaction mode.
+     * @private
+     */
+    handleInteractionDropdown(selectedValue) {
+        switch (selectedValue) {
+            case 'Jam':
+                console.log('Jam mode activated.');
+                // Implement Jam mode activation logic here
+                break;
 
-/**
- * Handle interaction dropdown selection.
- */
-handleInteractionDropdown(selectedValue) {
-  
-    switch (selectedValue) {
-      case 'Jam':
-        console.log('Jam mode activated.');
-        break;
-  
-      case 'MIDI':
-        notifications.showToast('MIDI mode Pressed.');
-        MIDIControllerInstance.activateMIDI().then(() => {
-            notifications.showToast('MIDI activateMIDI ready.');
+            case 'MIDI':
+                notifications.showToast('MIDI mode Pressed.', 'info', 3000);
+                MIDIControllerInstance.activateMIDI().then(() => {
+                    notifications.showToast('MIDI activateMIDI ready.', 'success', 3000);
+                    MIDIControllerInstance.enableMidiLearn();
+                    notifications.showToast('MIDI ENABLED.', 'success', 3000);
+                }).catch(error => {
+                    console.error('MIDI Activation Error:', error);
+                    notifications.showToast(`MIDI Activation Error: ${error.message}`, 'error', 5000);
+                });
+                break;
 
-          MIDIControllerInstance.enableMidiLearn();
-          notifications.showToast('MIDI ENABLED?.');
+            case 'Sensors':
+                console.log('Sensors mode activated.');
+                this.activateSensors();
+                break;
 
-        });
-        break;
-  
-      case 'Sensors':
-        console.log('Sensors mode activated.');
-        this.activateSensors();
-        break;
-  
-      case 'Cosmic LFO':
-        console.log('Cosmic LFO mode activated.');
-        this.activateCosmicLFO();
-        break;
-  
-      default:
-        console.warn(`Unknown interaction mode: ${selectedValue}`);
-    }
-  }
+            case 'Cosmic LFO':
+                console.log('Cosmic LFO mode activated.');
+                this.activateCosmicLFO();
+                break;
 
-        activateCosmicLFO() {
-                console.log("IAM A LFO"); 
+            default:
+                console.warn(`Unknown interaction mode: ${selectedValue}`);
         }
-
-        activateSensors() {
-            console.log("IAM A LFO"); 
     }
-
 
     /**
-     * Adjust the dropdown for MIDI support before setting up icons and events.
+     * Activates the Cosmic LFO mode.
+     * @private
+     */
+    activateCosmicLFO() {
+        console.log("Cosmic LFO activated.");
+        // Implement Cosmic LFO activation logic here
+    }
+
+    /**
+     * Activates the Sensors mode.
+     * @private
+     */
+    activateSensors() {
+        console.log("Sensors mode activated.");
+        // Implement Sensors activation logic here
+    }
+
+    /**
+     * Adjusts the dropdown menu based on MIDI support.
+     * Hides or shows the MIDI option accordingly.
+     * @private
      */
     adjustForMidiSupport() {
         this.menuItems.forEach(item => {
@@ -302,19 +369,6 @@ handleInteractionDropdown(selectedValue) {
                 item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
             }
         });
-  //      console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED}`);
+        console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
     }
-
-  
-
 }
-
-
-
-
-
-
-
-
-
-

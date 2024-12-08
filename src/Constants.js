@@ -2,16 +2,50 @@
 
 import lscache from 'lscache';
 
+/**
+ * @file constants.js
+ * @description Defines and manages application-wide constants and utility functions.
+ * Handles caching mechanisms and prioritization for various controller types.
+ * @version 2.0.0
+ * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @license MIT
+ * @date 2024-12-07
+ */
+
+/**
+ * @group Constants
+ * @description Contains constants and methods related to track data management and caching.
+ */
 export const Constants = {
-    DEFAULT_TRACK_ID: '6738c0f53af6425d6ef6ba9b', // Default track ID
-    TRACK_ID: null, // Current track ID
-    CACHE_EXPIRY_MINUTES: 10, // Cache expiry time in minutes
-    TRACK_DATA: null, // Current track data
+    /** 
+     * @type {string}
+     * @description Default track ID used when none is specified.
+     */
+    DEFAULT_TRACK_ID: '6738c0f53af6425d6ef6ba9b',
+
+    /** 
+     * @type {string|null}
+     * @description Currently active track ID. Initially set to null.
+     */
+    TRACK_ID: null,
+
+    /** 
+     * @type {number}
+     * @description Duration in minutes after which cached data expires.
+     */
+    CACHE_EXPIRY_MINUTES: 10,
+
+    /** 
+     * @type {object|null}
+     * @description Data associated with the current track. Initially set to null.
+     */
+    TRACK_DATA: null,
 
     /**
      * Sets and caches track data for the specified trackId.
-     * @param {string} trackId - The track ID.
-     * @param {object} trackData - The track data to cache.
+     * @param {string} trackId - The unique identifier for the track.
+     * @param {object} trackData - The data object containing track information.
+     * @throws Will throw an error if `trackId` is not a valid string.
      */
     setTrackData(trackId, trackData) {
         if (!trackId || typeof trackId !== 'string') {
@@ -24,8 +58,9 @@ export const Constants = {
 
     /**
      * Retrieves cached track data for the specified trackId.
-     * @param {string} trackId - The track ID.
-     * @returns {object|null} - Cached track data or null if not found.
+     * @param {string} trackId - The unique identifier for the track.
+     * @returns {object|null} - Returns the cached track data or null if not found.
+     * @throws Will throw an error if `trackId` is not a valid string.
      */
     getTrackData(trackId) {
         if (!trackId || typeof trackId !== 'string') {
@@ -43,7 +78,8 @@ export const Constants = {
 
     /**
      * Clears cached data for the specified trackId.
-     * @param {string} trackId - The track ID.
+     * @param {string} trackId - The unique identifier for the track.
+     * @throws Will throw an error if `trackId` is not a valid string.
      */
     clearTrackData(trackId) {
         if (!trackId || typeof trackId !== 'string') {
@@ -55,10 +91,26 @@ export const Constants = {
 };
 
 // Export individual constants for convenience
+
+/**
+ * @constant
+ * @type {string}
+ * @description Default track ID used across the application.
+ */
 export const DEFAULT_TRACK_ID = Constants.DEFAULT_TRACK_ID;
+
+/**
+ * @constant
+ * @type {string|null}
+ * @description Currently active track ID. Initially set to null.
+ */
 export const TRACK_ID = Constants.TRACK_ID;
 
-// Define a priority map for controller types
+/**
+ * @constant
+ * @type {object}
+ * @description Defines priority levels for various controller types.
+ */
 export const PRIORITY_MAP = {
     "MIDI": 1,
     "webaudio-knob": 2,
@@ -73,25 +125,29 @@ export const PRIORITY_MAP = {
     "cosmic-lfo-A": 11,
     "cosmic-lfo-B": 12,
     "cosmic-lfo-C": 13,
-
-    // MIDI controllers will have dynamic priorities
+    // Additional controller types can be added here with their respective priorities
 };
 
-export const DEFAULT_PRIORITY = 100; // Fallback priority for undefined types
+/**
+ * @constant
+ * @type {number}
+ * @description Fallback priority value for undefined controller types.
+ */
+export const DEFAULT_PRIORITY = 100;
 
 /**
  * Retrieves the priority for a given controller type.
- * Defaults to DEFAULT_PRIORITY if the type is not in the PRIORITY_MAP.
+ * Defaults to `DEFAULT_PRIORITY` if the type is not defined in `PRIORITY_MAP`.
  * @param {string} controllerType - The type of the controller (e.g., 'webaudio-knob').
- * @returns {number} - The priority value.
+ * @returns {number} - The priority value associated with the controller type.
  */
 export function getPriority(controllerType) {
     return PRIORITY_MAP[controllerType] || DEFAULT_PRIORITY;
 }
 
 /**
- * **Global MIDI Support Flag**
- * Determines if the browser supports the Web MIDI API.
- * This flag can be used across the application to conditionally execute MIDI-related code.
+ * @constant
+ * @type {boolean}
+ * @description Indicates whether the browser supports the Web MIDI API.
  */
 export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;

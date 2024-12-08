@@ -2,7 +2,7 @@
  * @file DataManager.js
  * @description Manages data fetching, caching, and placeholder configuration for track information.
  * @version 1.0.0
- * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @author 
  * @license MIT
  * @date 2024-12-07
  */
@@ -11,21 +11,33 @@ import { Constants } from './Constants.js';
 
 /**
  * Class representing a data manager for handling track data and UI placeholders.
+ * @class
  */
 export class DataManager {
     /**
      * Creates an instance of DataManager.
      */
     constructor() {
-        // Set cache expiry time from constants or default to 10 minutes
-        this.cacheExpiryMinutes = Constants.CACHE_EXPIRY_MINUTES || 10; // Tiempo de expiración de caché
-        // Initialize placeholder configuration as an empty object
-        this.placeholderConfig = {}; // Inicializar configuración de placeholders como vacío
+        /**
+         * @type {number}
+         * @description Cache expiry time in minutes, derived from Constants or defaulting to 10 minutes.
+         */
+        this.cacheExpiryMinutes = Constants.CACHE_EXPIRY_MINUTES || 10;
+
+        /**
+         * @type {object}
+         * @description Configuration object for UI placeholders, initialized as empty.
+         */
+        this.placeholderConfig = {};
     }
 
     /**
      * Fetches track data and updates the placeholder configuration.
+     * @async
+     * @public
      * @param {string} trackId - The ID of the track to fetch data for.
+     * @returns {Promise<void>}
+     * @throws Will log an error if fetching or updating fails.
      */
     async fetchAndUpdateConfig(trackId) {
         console.log(`[DataManager] Starting fetch and update for trackId: ${trackId}`);
@@ -44,6 +56,7 @@ export class DataManager {
 
     /**
      * Updates the configuration for UI placeholders using the retrieved track data.
+     * @private
      */
     updatePlaceholderConfig() {
         if (!Constants.TRACK_DATA) {
@@ -126,7 +139,10 @@ export class DataManager {
 
     /**
      * Populates the UI placeholders with the configured data.
+     * @public
      * @param {string} target - The type of information to populate (e.g., 'trackInfo').
+     * @returns {void}
+     * @throws Will log an error if the target is invalid or missing.
      */
     populatePlaceholders(target) {
         if (!target || !this.placeholderConfig[target]) {
@@ -153,6 +169,8 @@ export class DataManager {
 
     /**
      * Clears all UI placeholders by setting their text content to empty strings.
+     * @private
+     * @returns {void}
      */
     clearPlaceholders() {
         for (let i = 1; i <= 14; i++) {
@@ -165,6 +183,8 @@ export class DataManager {
 
     /**
      * Fetches track data from the server or retrieves it from the cache if available.
+     * @async
+     * @public
      * @param {string} trackId - The ID of the track to fetch data for.
      * @returns {Promise<Object>} The track data.
      * @throws Will throw an error if the fetch fails or the data is invalid.
