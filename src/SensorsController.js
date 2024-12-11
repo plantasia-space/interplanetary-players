@@ -1,38 +1,31 @@
 import { ParameterManager } from './ParameterManager.js';
 import { notifications } from './Main.js';
+import * as THREE from 'three';
 
 export class SensorController {
     constructor() {
-        if (SensorController.instance) {
-            return SensorController.instance;
-        }
+        if (SensorController.instance) return SensorController.instance;
 
         this.isSensorActive = false;
-        this.sensorData = {
-            alpha: null,
-            beta: null,
-            gamma: null,
-            quaternion: null,
-        };
-
         this.parameterManager = ParameterManager.getInstance();
         this.debugInterval = null;
+
+        // Quaternion representing device orientation
+        this.quaternion = new THREE.Quaternion();
+
+        // A fixed reference vector. We'll rotate this vector by the quaternion.
+        // Choose whatever axis fits your application best.
+        this.referenceVector = new THREE.Vector3(1,0,0);
 
         SensorController.instance = this;
     }
 
     static isSupported() {
-        return (
-            typeof DeviceMotionEvent !== 'undefined' || 
-            typeof DeviceOrientationEvent !== 'undefined'
-        );
+        return (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined');
     }
 
     async requestPermission() {
-        if (
-            typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function'
-        ) {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 const response = await DeviceMotionEvent.requestPermission();
                 if (response === 'granted') {
@@ -48,7 +41,7 @@ export class SensorController {
                 return false;
             }
         }
-
+        
         notifications.showToast('Sensor access available (no explicit request needed).', 'info');
         return true;
     }
@@ -71,6 +64,7 @@ export class SensorController {
     }
 
     startListening() {
+        // DeviceOrientationEvent gives us alpha, beta, gamma
         if (typeof DeviceOrientationEvent !== 'undefined') {
             window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
         } else if (typeof DeviceMotionEvent !== 'undefined') {
@@ -90,103 +84,57 @@ export class SensorController {
 
     handleDeviceOrientation(event) {
         const { alpha, beta, gamma } = event;
-        this.sensorData.alpha = alpha;
-        this.sensorData.beta = beta;
-        this.sensorData.gamma = gamma;
-        this.sensorData.quaternion = this.eulerToQuaternion(alpha, beta, gamma);
+        
+        // Convert alpha, beta, gamma to quaternion
+        // Typically 'ZXY' order is used for device orientation
+        const euler = new THREE.Euler(
+            beta * THREE.Math.DEG2RAD,
+            alpha * THREE.Math.DEG2RAD,
+            gamma * THREE.Math.DEG2RAD,
+            'ZXY'
+        );
+        this.quaternion.setFromEuler(euler);
 
-        this.mapQuaternionToParameters(this.sensorData.quaternion);
+        this.updateParametersFromQuaternion();
     }
 
     handleDeviceMotion(event) {
         const rotation = event.rotationRate;
         if (rotation) {
-            this.sensorData.alpha = rotation.alpha;
-            this.sensorData.beta = rotation.beta;
-            this.sensorData.gamma = rotation.gamma;
-            this.sensorData.quaternion = this.eulerToQuaternion(rotation.alpha, rotation.beta, rotation.gamma);
-
-            this.mapQuaternionToParameters(this.sensorData.quaternion);
+            const euler = new THREE.Euler(
+                rotation.beta * THREE.Math.DEG2RAD,
+                rotation.alpha * THREE.Math.DEG2RAD,
+                rotation.gamma * THREE.Math.DEG2RAD,
+                'ZXY'
+            );
+            this.quaternion.setFromEuler(euler);
+            this.updateParametersFromQuaternion();
         }
     }
 
-    eulerToQuaternion(alpha, beta, gamma) {
-        const _x = beta * Math.PI / 180;
-        const _y = gamma * Math.PI / 180;
-        const _z = alpha * Math.PI / 180;
+    updateParametersFromQuaternion() {
+        // Apply the quaternion to the reference vector
+        const rotatedVector = this.referenceVector.clone().applyQuaternion(this.quaternion);
 
-        const cX = Math.cos(_x / 2);
-        const cY = Math.cos(_y / 2);
-        const cZ = Math.cos(_z / 2);
-        const sX = Math.sin(_x / 2);
-        const sY = Math.sin(_y / 2);
-        const sZ = Math.sin(_z / 2);
-
-        let w = cX * cY * cZ - sX * sY * sZ;
-        let x = sX * cY * cZ + cX * sY * sZ;
-        let y = cX * sY * cZ - sX * cY * sZ;
-        let z = cX * cY * sZ + sX * sY * cZ;
-
-        // Ensure a consistent quaternion orientation (avoid sign flips)
-        if (w < 0) {
-            w = -w; x = -x; y = -y; z = -z;
-        }
-
-        return [w, x, y, z];
-    }
-
-    /**
-     * Convert quaternion to yaw, pitch, roll.
-     * Yaw (around z), Pitch (around y), Roll (around x).
-     * Ranges of these angles are typically -π to π.
-     *
-     * yaw   = atan2(2(wz + xy), w² + x² - y² - z²)
-     * pitch = asin(2(wy - xz))
-     * roll  = atan2(2(wx + yz), w² - x² - y² + z²)
-     */
-    quaternionToYawPitchRoll([w, x, y, z]) {
-        const sinPitch = 2 * (w * y - x * z);
-        const pitch = Math.abs(sinPitch) >= 1 ? Math.sign(sinPitch) * (Math.PI / 2) : Math.asin(sinPitch);
+        // rotatedVector components are in [-1, 1]. Map them to [0,1].
+        const mapTo01 = v => (v + 1) / 2;
         
-        const yaw = Math.atan2(2 * (w * z + x * y), w * w + x * x - y * y - z * z);
-        const roll = Math.atan2(2 * (w * x + y * z), w * w - x * x - y * y + z * z);
-
-        return { yaw, pitch, roll };
-    }
-
-    /**
-     * Maps quaternion-derived yaw/pitch/roll to x, y, z parameters.
-     * Each angle is in [-π, π]. We'll map to [0,1] by adding π and dividing by 2π.
-     */
-    mapQuaternionToParameters(quaternion) {
-        const { yaw, pitch, roll } = this.quaternionToYawPitchRoll(quaternion);
-
-        // Normalize from (-π, π) to [0, 1]
-        const normalizeAngle = (angle) => (angle + Math.PI) / (2 * Math.PI);
-
-        const xNorm = normalizeAngle(roll);   // or yaw/pitch depending on preference
-        const yNorm = normalizeAngle(pitch);
-        const zNorm = normalizeAngle(yaw);
+        const xNorm = mapTo01(rotatedVector.x);
+        const yNorm = mapTo01(rotatedVector.y);
+        const zNorm = mapTo01(rotatedVector.z);
 
         this.parameterManager.setNormalizedValue('x', xNorm);
         this.parameterManager.setNormalizedValue('y', yNorm);
         this.parameterManager.setNormalizedValue('z', zNorm);
 
-        console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(2)}, y=${yNorm.toFixed(2)}, z=${zNorm.toFixed(2)}`);
+        console.debug(`[SensorController] Updated parameters from quaternion: x=${xNorm.toFixed(2)}, y=${yNorm.toFixed(2)}, z=${zNorm.toFixed(2)}`);
     }
 
     startDebugging() {
         if (this.debugInterval) return;
-
         this.debugInterval = setInterval(() => {
             if (this.isSensorActive) {
-                const { alpha, beta, gamma, quaternion } = this.sensorData;
-                notifications.showToast(
-                    `Sensor Data:
-                    Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°
-                    Quaternion: [${quaternion?.map(v => v.toFixed(2)).join(', ')}]`,
-                    'info'
-                );
+                notifications.showToast('Sensors active and updating parameters.', 'info');
             }
         }, 5000);
     }
