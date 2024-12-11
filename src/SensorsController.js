@@ -4,28 +4,43 @@ import * as THREE from 'three';
 
 export class SensorController {
     constructor() {
-        if (SensorController.instance) return SensorController.instance;
+        if (SensorController.instance) {
+            return SensorController.instance;
+        }
 
         this.isSensorActive = false;
         this.parameterManager = ParameterManager.getInstance();
         this.debugInterval = null;
 
-        // Quaternion representing device orientation
+        // Initialize Three.js Quaternion and Vector3
         this.quaternion = new THREE.Quaternion();
-
-        // A fixed reference vector. We'll rotate this vector by the quaternion.
-        // Choose whatever axis fits your application best.
-        this.referenceVector = new THREE.Vector3(1,0,0);
+        this.referenceVector = new THREE.Vector3(1, 0, 0); // Reference axis to map
+        this.rotatedVector = new THREE.Vector3();
 
         SensorController.instance = this;
     }
 
+    /**
+     * Checks if Device Orientation or Motion is supported.
+     * @returns {boolean}
+     */
     static isSupported() {
-        return (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined');
+        return (
+            typeof DeviceMotionEvent !== 'undefined' || 
+            typeof DeviceOrientationEvent !== 'undefined'
+        );
     }
 
+    /**
+     * Requests permission to access sensors if needed (iOS 13+).
+     * @async
+     * @returns {Promise<boolean>} - True if permission granted, false otherwise.
+     */
     async requestPermission() {
-        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        if (
+            typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function'
+        ) {
             try {
                 const response = await DeviceMotionEvent.requestPermission();
                 if (response === 'granted') {
@@ -41,11 +56,18 @@ export class SensorController {
                 return false;
             }
         }
-        
+
+        // Assume permissions are granted for non-iOS devices
         notifications.showToast('Sensor access available (no explicit request needed).', 'info');
         return true;
     }
 
+    /**
+     * Activates sensor data listening if supported and user grants permission.
+     * @async
+     * @public
+     * @returns {Promise<void>}
+     */
     async activateSensors() {
         if (!SensorController.isSupported()) {
             notifications.showToast('Device sensors not supported by this browser/device.', 'warning');
@@ -63,8 +85,11 @@ export class SensorController {
         notifications.showToast('Sensors activated successfully!', 'success');
     }
 
+    /**
+     * Starts listening to device orientation or motion events.
+     * @private
+     */
     startListening() {
-        // DeviceOrientationEvent gives us alpha, beta, gamma
         if (typeof DeviceOrientationEvent !== 'undefined') {
             window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
         } else if (typeof DeviceMotionEvent !== 'undefined') {
@@ -74,6 +99,10 @@ export class SensorController {
         this.startDebugging();
     }
 
+    /**
+     * Stops listening to sensor events.
+     * @public
+     */
     stopListening() {
         window.removeEventListener('deviceorientation', this.handleDeviceOrientation);
         window.removeEventListener('devicemotion', this.handleDeviceMotion);
@@ -82,63 +111,99 @@ export class SensorController {
         notifications.showToast('Sensors deactivated.', 'info');
     }
 
+    /**
+     * Handles device orientation events.
+     * Converts Euler angles to quaternion and maps to parameters.
+     * @param {DeviceOrientationEvent} event - The orientation event.
+     * @private
+     */
     handleDeviceOrientation(event) {
         const { alpha, beta, gamma } = event;
-        
-        // Convert alpha, beta, gamma to quaternion
-        // Typically 'ZXY' order is used for device orientation
+        this.sensorData.alpha = alpha;
+        this.sensorData.beta = beta;
+        this.sensorData.gamma = gamma;
+
+        // Convert Euler angles to quaternion using Three.js
+        // Three.js uses 'ZXY' order for device orientation by default
         const euler = new THREE.Euler(
-            beta * THREE.Math.DEG2RAD,
-            alpha * THREE.Math.DEG2RAD,
-            gamma * THREE.Math.DEG2RAD,
+            THREE.MathUtils.degToRad(beta || 0),
+            THREE.MathUtils.degToRad(alpha || 0),
+            THREE.MathUtils.degToRad(gamma || 0),
             'ZXY'
         );
         this.quaternion.setFromEuler(euler);
 
-        this.updateParametersFromQuaternion();
+        this.mapQuaternionToParameters(this.quaternion);
     }
 
+    /**
+     * Handles device motion events.
+     * Not typically used for orientation, but included for completeness.
+     * @param {DeviceMotionEvent} event - The motion event.
+     * @private
+     */
     handleDeviceMotion(event) {
-        const rotation = event.rotationRate;
-        if (rotation) {
-            const euler = new THREE.Euler(
-                rotation.beta * THREE.Math.DEG2RAD,
-                rotation.alpha * THREE.Math.DEG2RAD,
-                rotation.gamma * THREE.Math.DEG2RAD,
-                'ZXY'
-            );
-            this.quaternion.setFromEuler(euler);
-            this.updateParametersFromQuaternion();
+        const { rotationRate } = event;
+        if (rotationRate) {
+            const { alpha, beta, gamma } = rotationRate;
+            this.sensorData.alpha = alpha;
+            this.sensorData.beta = beta;
+            this.sensorData.gamma = gamma;
+
+            // Convert rotation rates to quaternion if needed
+            // Typically, deviceorientation is preferred for stable orientation
+            // Here, we'll skip mapping rotation rates directly as they represent angular velocity
         }
     }
 
-    updateParametersFromQuaternion() {
-        // Apply the quaternion to the reference vector
-        const rotatedVector = this.referenceVector.clone().applyQuaternion(this.quaternion);
+    /**
+     * Maps a quaternion to normalized x, y, z parameters by rotating a reference vector.
+     * @param {THREE.Quaternion} q - The quaternion representing orientation.
+     * @private
+     */
+    mapQuaternionToParameters(q) {
+        // Apply quaternion to reference vector
+        this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
 
-        // rotatedVector components are in [-1, 1]. Map them to [0,1].
-        const mapTo01 = v => (v + 1) / 2;
-        
-        const xNorm = mapTo01(rotatedVector.x);
-        const yNorm = mapTo01(rotatedVector.y);
-        const zNorm = mapTo01(rotatedVector.z);
+        // Normalize vector components from [-1, 1] to [0, 1]
+        const mapTo01 = (v) => (v + 1) / 2;
 
+        const xNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.x), 0, 1);
+        const yNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
+        const zNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
+
+        // Update parameters
         this.parameterManager.setNormalizedValue('x', xNorm);
         this.parameterManager.setNormalizedValue('y', yNorm);
         this.parameterManager.setNormalizedValue('z', zNorm);
 
-        console.debug(`[SensorController] Updated parameters from quaternion: x=${xNorm.toFixed(2)}, y=${yNorm.toFixed(2)}, z=${zNorm.toFixed(2)}`);
+        console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
     }
 
+    /**
+     * Starts periodic debugging toasts with sensor data.
+     * @private
+     */
     startDebugging() {
         if (this.debugInterval) return;
+
         this.debugInterval = setInterval(() => {
             if (this.isSensorActive) {
-                notifications.showToast('Sensors active and updating parameters.', 'info');
+                const { alpha, beta, gamma, quaternion } = this.sensorData;
+                notifications.showToast(
+                    `Sensor Data:
+Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°
+Quaternion: [${quaternion?.map(v => v.toFixed(2)).join(', ')}]`,
+                    'info'
+                );
             }
         }, 5000);
     }
 
+    /**
+     * Stops periodic debugging toasts.
+     * @private
+     */
     stopDebugging() {
         if (this.debugInterval) {
             clearInterval(this.debugInterval);
