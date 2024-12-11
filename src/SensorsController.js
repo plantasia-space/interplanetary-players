@@ -21,14 +21,11 @@ export class SensorController {
     }
 
     /**
-     * Checks if Device Orientation or Motion is supported.
+     * Checks if Device Orientation is supported.
      * @returns {boolean}
      */
     static isSupported() {
-        return (
-            typeof DeviceMotionEvent !== 'undefined' || 
-            typeof DeviceOrientationEvent !== 'undefined'
-        );
+        return typeof DeviceOrientationEvent !== 'undefined';
     }
 
     /**
@@ -38,11 +35,11 @@ export class SensorController {
      */
     async requestPermission() {
         if (
-            typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function'
+            typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function'
         ) {
             try {
-                const response = await DeviceMotionEvent.requestPermission();
+                const response = await DeviceOrientationEvent.requestPermission();
                 if (response === 'granted') {
                     notifications.showToast('Sensor access granted.', 'success');
                     return true;
@@ -70,7 +67,7 @@ export class SensorController {
      */
     async activateSensors() {
         if (!SensorController.isSupported()) {
-            notifications.showToast('Device sensors not supported by this browser/device.', 'warning');
+            notifications.showToast('Device orientation not supported by this browser/device.', 'warning');
             return;
         }
 
@@ -86,29 +83,25 @@ export class SensorController {
     }
 
     /**
-     * Starts listening to device orientation or motion events.
+     * Starts listening to device orientation events.
      * @private
      */
     startListening() {
-        if (typeof DeviceOrientationEvent !== 'undefined') {
-            window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
-        } else if (typeof DeviceMotionEvent !== 'undefined') {
-            window.addEventListener('devicemotion', this.handleDeviceMotion.bind(this), true);
-        }
-
+        window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
         this.startDebugging();
+        console.log('SensorController: Started listening to deviceorientation events.');
     }
 
     /**
-     * Stops listening to sensor events.
+     * Stops listening to device orientation events.
      * @public
      */
     stopListening() {
         window.removeEventListener('deviceorientation', this.handleDeviceOrientation);
-        window.removeEventListener('devicemotion', this.handleDeviceMotion);
         this.isSensorActive = false;
         this.stopDebugging();
         notifications.showToast('Sensors deactivated.', 'info');
+        console.log('SensorController: Stopped listening to deviceorientation events.');
     }
 
     /**
@@ -119,6 +112,10 @@ export class SensorController {
      */
     handleDeviceOrientation(event) {
         const { alpha, beta, gamma } = event;
+
+        // Log received angles
+        console.log(`DeviceOrientationEvent: alpha=${alpha}, beta=${beta}, gamma=${gamma}`);
+
         this.sensorData.alpha = alpha;
         this.sensorData.beta = beta;
         this.sensorData.gamma = gamma;
@@ -133,27 +130,10 @@ export class SensorController {
         );
         this.quaternion.setFromEuler(euler);
 
+        // Log quaternion
+        console.log(`Quaternion: w=${this.quaternion.w}, x=${this.quaternion.x}, y=${this.quaternion.y}, z=${this.quaternion.z}`);
+
         this.mapQuaternionToParameters(this.quaternion);
-    }
-
-    /**
-     * Handles device motion events.
-     * Not typically used for orientation, but included for completeness.
-     * @param {DeviceMotionEvent} event - The motion event.
-     * @private
-     */
-    handleDeviceMotion(event) {
-        const { rotationRate } = event;
-        if (rotationRate) {
-            const { alpha, beta, gamma } = rotationRate;
-            this.sensorData.alpha = alpha;
-            this.sensorData.beta = beta;
-            this.sensorData.gamma = gamma;
-
-            // Convert rotation rates to quaternion if needed
-            // Typically, deviceorientation is preferred for stable orientation
-            // Here, we'll skip mapping rotation rates directly as they represent angular velocity
-        }
     }
 
     /**
@@ -164,6 +144,9 @@ export class SensorController {
     mapQuaternionToParameters(q) {
         // Apply quaternion to reference vector
         this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
+
+        // Log rotated vector
+        console.log(`Rotated Vector: x=${this.rotatedVector.x}, y=${this.rotatedVector.y}, z=${this.rotatedVector.z}`);
 
         // Normalize vector components from [-1, 1] to [0, 1]
         const mapTo01 = (v) => (v + 1) / 2;
@@ -177,6 +160,7 @@ export class SensorController {
         this.parameterManager.setNormalizedValue('y', yNorm);
         this.parameterManager.setNormalizedValue('z', zNorm);
 
+        // Log normalized parameters
         console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
     }
 
@@ -189,15 +173,16 @@ export class SensorController {
 
         this.debugInterval = setInterval(() => {
             if (this.isSensorActive) {
-                const { alpha, beta, gamma, quaternion } = this.sensorData;
+                const { alpha, beta, gamma } = this.sensorData;
                 notifications.showToast(
                     `Sensor Data:
-Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°
-Quaternion: [${quaternion?.map(v => v.toFixed(2)).join(', ')}]`,
+Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°`,
                     'info'
                 );
             }
         }, 5000);
+
+        console.log('SensorController: Started debugging interval.');
     }
 
     /**
@@ -208,6 +193,7 @@ Quaternion: [${quaternion?.map(v => v.toFixed(2)).join(', ')}]`,
         if (this.debugInterval) {
             clearInterval(this.debugInterval);
             this.debugInterval = null;
+            console.log('SensorController: Stopped debugging interval.');
         }
     }
 }
