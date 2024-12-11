@@ -18,15 +18,20 @@ export class SensorController {
 
         this.parameterManager = ParameterManager.getInstance();
 
+        // Track "continuous" angles to avoid jumps
+        this.lastAlpha = null;
+        this.lastBeta = null;
+        this.lastGamma = null;
+
+        this.accumulatedAlpha = 0; 
+        this.accumulatedBeta = 0;
+        this.accumulatedGamma = 0;
+
         this.debugInterval = null;
 
         SensorController.instance = this;
     }
 
-    /**
-     * Checks if Device Orientation or Motion is supported.
-     * @returns {boolean}
-     */
     static isSupported() {
         return (
             typeof DeviceMotionEvent !== 'undefined' || 
@@ -34,11 +39,6 @@ export class SensorController {
         );
     }
 
-    /**
-     * Requests permission to access sensors if needed (iOS 13+).
-     * @async
-     * @returns {Promise<boolean>} - True if permission granted, false otherwise.
-     */
     async requestPermission() {
         if (
             typeof DeviceMotionEvent !== 'undefined' &&
@@ -65,12 +65,6 @@ export class SensorController {
         return true;
     }
 
-    /**
-     * Activates sensor data listening if supported and user grants permission.
-     * @async
-     * @public
-     * @returns {Promise<void>}
-     */
     async activateSensors() {
         if (!SensorController.isSupported()) {
             notifications.showToast('Device sensors not supported by this browser/device.', 'warning');
@@ -88,11 +82,6 @@ export class SensorController {
         notifications.showToast('Sensors activated successfully!', 'success');
     }
 
-    /**
-     * Starts listening to device orientation or motion events.
-     * Maps sensor data to root parameters.
-     * @private
-     */
     startListening() {
         if (typeof DeviceOrientationEvent !== 'undefined') {
             window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
@@ -103,10 +92,6 @@ export class SensorController {
 /*         this.startDebugging();
  */    }
 
-    /**
-     * Stops listening to sensor events.
-     * @public
-     */
     stopListening() {
         window.removeEventListener('deviceorientation', this.handleDeviceOrientation);
         window.removeEventListener('devicemotion', this.handleDeviceMotion);
@@ -115,12 +100,6 @@ export class SensorController {
         notifications.showToast('Sensors deactivated.', 'info');
     }
 
-    /**
-     * Handles device orientation events.
-     * Maps alpha, beta, gamma to x, y, z parameters.
-     * @param {DeviceOrientationEvent} event - The orientation event.
-     * @private
-     */
     handleDeviceOrientation(event) {
         const { alpha, beta, gamma } = event;
         this.sensorData.alpha = alpha;
@@ -128,16 +107,9 @@ export class SensorController {
         this.sensorData.gamma = gamma;
         this.sensorData.quaternion = this.eulerToQuaternion(alpha, beta, gamma);
 
-        // Map orientation to root parameters
         this.mapToParameters(alpha, beta, gamma);
     }
 
-    /**
-     * Handles device motion events.
-     * Updates rotation rates if available.
-     * @param {DeviceMotionEvent} event - The motion event.
-     * @private
-     */
     handleDeviceMotion(event) {
         const rotation = event.rotationRate;
         if (rotation) {
@@ -145,18 +117,10 @@ export class SensorController {
             this.sensorData.beta = rotation.beta;
             this.sensorData.gamma = rotation.gamma;
 
-            // Map rotation to root parameters
             this.mapToParameters(rotation.alpha, rotation.beta, rotation.gamma);
         }
     }
 
-    /**
-     * Converts Euler angles to a quaternion.
-     * @param {number} alpha - The rotation around the z-axis.
-     * @param {number} beta - The rotation around the x-axis.
-     * @param {number} gamma - The rotation around the y-axis.
-     * @returns {number[]} - The quaternion [w, x, y, z].
-     */
     eulerToQuaternion(alpha, beta, gamma) {
         const _x = beta * Math.PI / 180;
         const _y = gamma * Math.PI / 180;
@@ -178,29 +142,76 @@ export class SensorController {
     }
 
     /**
-     * Maps sensor values to root parameters (x, y, z).
-     * @param {number} alpha - Rotation around z-axis.
-     * @param {number} beta - Rotation around x-axis.
-     * @param {number} gamma - Rotation around y-axis.
-     * @private
+     * Adjusts angles to avoid jumps.
+     * Detects if the angle wrapped from near 360 to 0 (or vice versa) and adjusts accordingly
+     * to maintain a continuous angle.
+     * 
+     * @param {number} angle - Current angle in degrees.
+     * @param {number|null} lastAngle - The last recorded angle.
+     * @param {number} accumulatedAngle - The accumulated angle value.
+     * @param {number} wrapThreshold - The threshold to detect a wrap, e.g., 180.
+     * @returns {{newAccumulated: number, lastAngle: number}} - Updated accumulated angle and lastAngle.
      */
+    adjustAngle(angle, lastAngle, accumulatedAngle, wrapThreshold = 180) {
+        if (lastAngle !== null) {
+            const diff = angle - lastAngle;
+            // If we suddenly jump by more than wrapThreshold, assume wrap happened
+            if (diff > wrapThreshold) {
+                // Jumped forward past 360 boundary, subtract 360
+                accumulatedAngle -= 360;
+            } else if (diff < -wrapThreshold) {
+                // Jumped backward past 0 boundary, add 360
+                accumulatedAngle += 360;
+            }
+        }
+        // Add the current angle (as a delta from lastAngle)
+        if (lastAngle !== null) {
+            accumulatedAngle += (angle - lastAngle);
+        } else {
+            // If first time, initialize without adjusting
+            accumulatedAngle += angle;
+        }
+
+        return { newAccumulated: accumulatedAngle, lastAngle: angle };
+    }
+
     mapToParameters(alpha, beta, gamma) {
-        const x = alpha / 360; // Normalize alpha (0-360) to (0-1)
-        const y = (beta + 180) / 360; // Normalize beta (-180 to 180) to (0-1)
-        const z = (gamma + 90) / 180; // Normalize gamma (-90 to 90) to (0-1)
+        // Adjust alpha, beta, gamma to continuous angles
+        let result = this.adjustAngle(alpha, this.lastAlpha, this.accumulatedAlpha);
+        this.accumulatedAlpha = result.newAccumulated;
+        this.lastAlpha = result.lastAngle;
+
+        result = this.adjustAngle(beta, this.lastBeta, this.accumulatedBeta);
+        this.accumulatedBeta = result.newAccumulated;
+        this.lastBeta = result.lastAngle;
+
+        result = this.adjustAngle(gamma, this.lastGamma, this.accumulatedGamma);
+        this.accumulatedGamma = result.newAccumulated;
+        this.lastGamma = result.lastAngle;
+
+        // Now we have continuous angles: accumulatedAlpha, accumulatedBeta, accumulatedGamma
+        // Normalize these continuous angles to [0, 1] range as needed.
+        // One strategy is to mod them by 360 to keep them in [0, 360) then divide by 360.
+        // But doing modulo will reintroduce the jump. Instead, we can choose a rolling window.
+
+        // For simplicity, let's just map them into a window. For example:
+        // We'll take the current accumulated angle mod 360 to a [0,360) range:
+        const modAlpha = ((this.accumulatedAlpha % 360) + 360) % 360;
+        const modBeta = ((this.accumulatedBeta % 360) + 360) % 360;
+        const modGamma = ((this.accumulatedGamma % 360) + 360) % 360;
+
+        const x = modAlpha / 360; 
+        const y = modBeta / 360;
+        const z = modGamma / 360;
 
         this.parameterManager.setNormalizedValue('x', x);
         this.parameterManager.setNormalizedValue('y', y);
         this.parameterManager.setNormalizedValue('z', z);
 
-        console.debug(`[SensorController] Updated parameters: x=${x}, y=${y}, z=${z}`);
+        console.debug(`[SensorController] Updated parameters: x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)}`);
     }
-
-    /**
-     * Starts periodic debugging toasts with sensor data.
-     * @private
-     */
-/*     startDebugging() {
+/* 
+    startDebugging() {
         if (this.debugInterval) return;
 
         this.debugInterval = setInterval(() => {
@@ -216,10 +227,6 @@ export class SensorController {
         }, 5000);
     } */
 
-    /**
-     * Stops periodic debugging toasts.
-     * @private
-     */
     stopDebugging() {
         if (this.debugInterval) {
             clearInterval(this.debugInterval);
