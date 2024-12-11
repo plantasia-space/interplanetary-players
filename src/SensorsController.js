@@ -1,7 +1,7 @@
 /**
  * @file SensorController.js
  * @description Handles access to device motion/orientation sensors, requesting permission if needed and providing data.
- * @version 1.1.0
+ * @version 1.2.0
  * @author 
  * @license MIT
  * @date 2024-12-11
@@ -15,16 +15,8 @@ export class SensorController {
             return SensorController.instance;
         }
 
-        /**
-         * Indicates if sensor data access is enabled.
-         * @type {boolean}
-         */
         this.isSensorActive = false;
 
-        /**
-         * Last known sensor data.
-         * @type {object}
-         */
         this.sensorData = {
             alpha: null,
             beta: null,
@@ -32,15 +24,15 @@ export class SensorController {
             quaternion: null,
         };
 
-        /**
-         * Interval for debugging sensor data toasts.
-         * @type {number|null}
-         */
         this.debugInterval = null;
 
         SensorController.instance = this;
     }
 
+    /**
+     * Checks if Device Orientation or Motion is supported.
+     * @returns {boolean}
+     */
     static isSupported() {
         return (
             typeof DeviceMotionEvent !== 'undefined' || 
@@ -48,6 +40,11 @@ export class SensorController {
         );
     }
 
+    /**
+     * Requests permission to access sensors if needed (iOS 13+).
+     * @async
+     * @returns {Promise<boolean>} - True if permission granted, false otherwise.
+     */
     async requestPermission() {
         if (
             typeof DeviceMotionEvent !== 'undefined' &&
@@ -55,15 +52,31 @@ export class SensorController {
         ) {
             try {
                 const response = await DeviceMotionEvent.requestPermission();
-                return response === 'granted';
-            } catch (err) {
-                console.error('SensorController: Permission request error', err);
+                if (response === 'granted') {
+                    notifications.showToast('Sensor access granted.', 'success');
+                    return true;
+                } else {
+                    notifications.showToast('Sensor access denied.', 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('SensorController: Error requesting permission:', error);
+                notifications.showToast('Error requesting sensor access.', 'error');
                 return false;
             }
         }
+
+        // Assume permissions are granted for non-iOS devices
+        notifications.showToast('Sensor access available (no explicit request needed).', 'info');
         return true;
     }
 
+    /**
+     * Activates sensor data listening if supported and user grants permission.
+     * @async
+     * @public
+     * @returns {Promise<void>}
+     */
     async activateSensors() {
         if (!SensorController.isSupported()) {
             notifications.showToast('Device sensors not supported by this browser/device.', 'warning');
@@ -72,15 +85,19 @@ export class SensorController {
 
         const permissionGranted = await this.requestPermission();
         if (!permissionGranted) {
-            notifications.showToast('Permission to access device sensors denied.', 'error');
+            notifications.showToast('Permission to access sensors denied.', 'error');
             return;
         }
 
         this.startListening();
         this.isSensorActive = true;
-        notifications.showToast('Device sensors activated!', 'success');
+        notifications.showToast('Sensors activated successfully!', 'success');
     }
 
+    /**
+     * Starts listening to device orientation or motion events.
+     * @private
+     */
     startListening() {
         if (typeof DeviceOrientationEvent !== 'undefined') {
             window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
@@ -88,15 +105,19 @@ export class SensorController {
             window.addEventListener('devicemotion', this.handleDeviceMotion.bind(this), true);
         }
 
-        this.startDebugging(); // Start periodic debugging toasts
+        this.startDebugging();
     }
 
+    /**
+     * Stops listening to sensor events.
+     * @public
+     */
     stopListening() {
         window.removeEventListener('deviceorientation', this.handleDeviceOrientation);
         window.removeEventListener('devicemotion', this.handleDeviceMotion);
         this.isSensorActive = false;
-        this.stopDebugging(); // Stop debugging toasts
-        notifications.showToast('Device sensors deactivated.', 'info');
+        this.stopDebugging();
+        notifications.showToast('Sensors deactivated.', 'info');
     }
 
     handleDeviceOrientation(event) {
@@ -136,10 +157,6 @@ export class SensorController {
         return [w, x, y, z];
     }
 
-    getSensorData() {
-        return this.sensorData;
-    }
-
     /**
      * Starts periodic debugging toasts with sensor data.
      * @private
@@ -152,12 +169,12 @@ export class SensorController {
                 const { alpha, beta, gamma, quaternion } = this.sensorData;
                 notifications.showToast(
                     `Sensor Data:
-                    Alpha: ${alpha?.toFixed(2)}, Beta: ${beta?.toFixed(2)}, Gamma: ${gamma?.toFixed(2)}
+                    Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°
                     Quaternion: [${quaternion?.map(v => v.toFixed(2)).join(', ')}]`,
                     'info'
                 );
             }
-        }, 5000); // Update every 5 seconds
+        }, 5000);
     }
 
     /**

@@ -78,8 +78,9 @@ export class ButtonGroup {
     /**
      * Initializes the ButtonGroup by setting up SVGs and event bindings.
      * @private
+     * @async
      */
-    init() {
+    async init() {
         console.log(`Initializing dropdowns for "${this.containerSelector}"`);
 
         if (this.collapseInstance) {
@@ -87,7 +88,7 @@ export class ButtonGroup {
         }
 
         // Adjust the dropdown based on MIDI and sensor support
-        this.adjustForHardwareSupport();
+        await this.adjustForHardwareSupport();
 
         // Load dynamic SVGs for the main button and dropdown menu items
         this.loadDynamicSVGs();
@@ -353,21 +354,24 @@ export class ButtonGroup {
         // Implement Sensors activation logic here
     }
 
-    /**
-     * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
-     * Hides or shows menu items accordingly.
-     * @private
-     */
-    adjustForHardwareSupport() {
-        this.menuItems.forEach(item => {
-            const value = item.getAttribute('data-value');
-            if (value === 'MIDI') {
-                item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
-            } else if (value === 'Sensors') {
-                item.style.display = SENSORS_SUPPORTED ? 'block' : 'none';
-            }
-        });
-        console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
-        console.log(`[ButtonGroup] SENSORS support: ${SENSORS_SUPPORTED ? 'Enabled' : 'Disabled'}`);
-    }
+/**
+ * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
+ * Hides or shows menu items accordingly.
+ * @private
+ */
+async adjustForHardwareSupport() {
+    const sensorsAvailable = await SENSORS_SUPPORTED;
+
+    this.menuItems.forEach(item => {
+        const value = item.getAttribute('data-value');
+        if (value === 'MIDI') {
+            item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
+        } else if (value === 'Sensors') {
+            item.style.display = sensorsAvailable ? 'block' : 'none';
+        }
+    });
+
+    console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
+    console.log(`[ButtonGroup] SENSORS support: ${sensorsAvailable ? 'Enabled' : 'Disabled'}`);
+}
 }

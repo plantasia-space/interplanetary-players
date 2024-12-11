@@ -21,12 +21,30 @@ export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
 
 /**
  * Indicates whether device sensors (e.g., gyroscope, accelerometer) are supported.
+ * Additionally checks if the device permissions are granted.
  * @constant
- * @memberof CoreModule
- * @type {boolean}
- * @description True if the device/browser supports DeviceOrientationEvent or DeviceMotionEvent, false otherwise.
+ * @type {Promise<boolean>}
+ * @description Resolves to true if sensors are supported and permission is granted.
  */
-export const SENSORS_SUPPORTED = (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined');
+export const SENSORS_SUPPORTED = (async () => {
+    if (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined') {
+        if (
+            typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function'
+        ) {
+            try {
+                const response = await DeviceMotionEvent.requestPermission();
+                return response === 'granted';
+            } catch (err) {
+                console.warn('SENSORS_SUPPORTED: Permission request error:', err);
+                return false;
+            }
+        }
+        // Non-iOS browsers assume permissions are granted if events are available
+        return true;
+    }
+    return false;
+})();
 
 /**
  * @namespace Constants
