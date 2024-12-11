@@ -68,7 +68,7 @@ export function setupInteractions(dataManager, audioPlayer) {
         ModeManagerInstance.registerMode('JAM', {
             onEnter: () => {
                 // Show Jam UI, hide MIDI Learn overlays, etc.
-                notifications.showToast("Switched to Jam (Sharm) mode.");
+                notifications.showToast("Switched to Jam mode.");
             },
             onExit: () => {}
         });
