@@ -8,7 +8,7 @@
  */
 
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './constants.js';
+import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js';
 
 /**
  * Class representing a group of buttons with dropdown menus for various functionalities.
