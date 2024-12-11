@@ -1,12 +1,4 @@
-/**
- * @file SensorController.js
- * @description Handles access to device motion/orientation sensors, requesting permission if needed and providing data.
- * @version 1.3.0
- * @author 
- * @license MIT
- * @date 2024-12-11
- */
-
+import { ParameterManager } from './ParameterManager.js';
 import { notifications } from './Main.js';
 
 export class SensorController {
@@ -23,6 +15,8 @@ export class SensorController {
             gamma: null,
             quaternion: null,
         };
+
+        this.parameterManager = ParameterManager.getInstance();
 
         this.debugInterval = null;
 
@@ -96,6 +90,7 @@ export class SensorController {
 
     /**
      * Starts listening to device orientation or motion events.
+     * Maps sensor data to root parameters.
      * @private
      */
     startListening() {
@@ -105,8 +100,8 @@ export class SensorController {
             window.addEventListener('devicemotion', this.handleDeviceMotion.bind(this), true);
         }
 
-        this.startDebugging();
-    }
+/*         this.startDebugging();
+ */    }
 
     /**
      * Stops listening to sensor events.
@@ -120,23 +115,48 @@ export class SensorController {
         notifications.showToast('Sensors deactivated.', 'info');
     }
 
+    /**
+     * Handles device orientation events.
+     * Maps alpha, beta, gamma to x, y, z parameters.
+     * @param {DeviceOrientationEvent} event - The orientation event.
+     * @private
+     */
     handleDeviceOrientation(event) {
         const { alpha, beta, gamma } = event;
         this.sensorData.alpha = alpha;
         this.sensorData.beta = beta;
         this.sensorData.gamma = gamma;
         this.sensorData.quaternion = this.eulerToQuaternion(alpha, beta, gamma);
+
+        // Map orientation to root parameters
+        this.mapToParameters(alpha, beta, gamma);
     }
 
+    /**
+     * Handles device motion events.
+     * Updates rotation rates if available.
+     * @param {DeviceMotionEvent} event - The motion event.
+     * @private
+     */
     handleDeviceMotion(event) {
         const rotation = event.rotationRate;
         if (rotation) {
             this.sensorData.alpha = rotation.alpha;
             this.sensorData.beta = rotation.beta;
             this.sensorData.gamma = rotation.gamma;
+
+            // Map rotation to root parameters
+            this.mapToParameters(rotation.alpha, rotation.beta, rotation.gamma);
         }
     }
 
+    /**
+     * Converts Euler angles to a quaternion.
+     * @param {number} alpha - The rotation around the z-axis.
+     * @param {number} beta - The rotation around the x-axis.
+     * @param {number} gamma - The rotation around the y-axis.
+     * @returns {number[]} - The quaternion [w, x, y, z].
+     */
     eulerToQuaternion(alpha, beta, gamma) {
         const _x = beta * Math.PI / 180;
         const _y = gamma * Math.PI / 180;
@@ -158,10 +178,29 @@ export class SensorController {
     }
 
     /**
+     * Maps sensor values to root parameters (x, y, z).
+     * @param {number} alpha - Rotation around z-axis.
+     * @param {number} beta - Rotation around x-axis.
+     * @param {number} gamma - Rotation around y-axis.
+     * @private
+     */
+    mapToParameters(alpha, beta, gamma) {
+        const x = alpha / 360; // Normalize alpha (0-360) to (0-1)
+        const y = (beta + 180) / 360; // Normalize beta (-180 to 180) to (0-1)
+        const z = (gamma + 90) / 180; // Normalize gamma (-90 to 90) to (0-1)
+
+        this.parameterManager.setNormalizedValue('x', x);
+        this.parameterManager.setNormalizedValue('y', y);
+        this.parameterManager.setNormalizedValue('z', z);
+
+        console.debug(`[SensorController] Updated parameters: x=${x}, y=${y}, z=${z}`);
+    }
+
+    /**
      * Starts periodic debugging toasts with sensor data.
      * @private
      */
-    startDebugging() {
+/*     startDebugging() {
         if (this.debugInterval) return;
 
         this.debugInterval = setInterval(() => {
@@ -175,7 +214,7 @@ export class SensorController {
                 );
             }
         }, 5000);
-    }
+    } */
 
     /**
      * Stops periodic debugging toasts.
