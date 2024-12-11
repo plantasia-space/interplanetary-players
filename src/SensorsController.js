@@ -8,7 +8,6 @@ export class SensorController {
         }
 
         this.isSensorActive = false;
-
         this.sensorData = {
             alpha: null,
             beta: null,
@@ -17,16 +16,6 @@ export class SensorController {
         };
 
         this.parameterManager = ParameterManager.getInstance();
-
-        // Track "continuous" angles to avoid jumps
-        this.lastAlpha = null;
-        this.lastBeta = null;
-        this.lastGamma = null;
-
-        this.accumulatedAlpha = 0; 
-        this.accumulatedBeta = 0;
-        this.accumulatedGamma = 0;
-
         this.debugInterval = null;
 
         SensorController.instance = this;
@@ -60,7 +49,6 @@ export class SensorController {
             }
         }
 
-        // Assume permissions are granted for non-iOS devices
         notifications.showToast('Sensor access available (no explicit request needed).', 'info');
         return true;
     }
@@ -89,8 +77,8 @@ export class SensorController {
             window.addEventListener('devicemotion', this.handleDeviceMotion.bind(this), true);
         }
 
-/*         this.startDebugging();
- */    }
+        this.startDebugging();
+    }
 
     stopListening() {
         window.removeEventListener('deviceorientation', this.handleDeviceOrientation);
@@ -107,7 +95,7 @@ export class SensorController {
         this.sensorData.gamma = gamma;
         this.sensorData.quaternion = this.eulerToQuaternion(alpha, beta, gamma);
 
-        this.mapToParameters(alpha, beta, gamma);
+        this.mapQuaternionToParameters(this.sensorData.quaternion);
     }
 
     handleDeviceMotion(event) {
@@ -116,8 +104,9 @@ export class SensorController {
             this.sensorData.alpha = rotation.alpha;
             this.sensorData.beta = rotation.beta;
             this.sensorData.gamma = rotation.gamma;
+            this.sensorData.quaternion = this.eulerToQuaternion(rotation.alpha, rotation.beta, rotation.gamma);
 
-            this.mapToParameters(rotation.alpha, rotation.beta, rotation.gamma);
+            this.mapQuaternionToParameters(this.sensorData.quaternion);
         }
     }
 
@@ -133,84 +122,59 @@ export class SensorController {
         const sY = Math.sin(_y / 2);
         const sZ = Math.sin(_z / 2);
 
-        const w = cX * cY * cZ - sX * sY * sZ;
-        const x = sX * cY * cZ + cX * sY * sZ;
-        const y = cX * sY * cZ - sX * cY * sZ;
-        const z = cX * cY * sZ + sX * sY * cZ;
+        let w = cX * cY * cZ - sX * sY * sZ;
+        let x = sX * cY * cZ + cX * sY * sZ;
+        let y = cX * sY * cZ - sX * cY * sZ;
+        let z = cX * cY * sZ + sX * sY * cZ;
+
+        // Ensure a consistent quaternion orientation (avoid sign flips)
+        if (w < 0) {
+            w = -w; x = -x; y = -y; z = -z;
+        }
 
         return [w, x, y, z];
     }
 
     /**
-     * Adjusts angles to avoid jumps.
-     * Detects if the angle wrapped from near 360 to 0 (or vice versa) and adjusts accordingly
-     * to maintain a continuous angle.
-     * 
-     * @param {number} angle - Current angle in degrees.
-     * @param {number|null} lastAngle - The last recorded angle.
-     * @param {number} accumulatedAngle - The accumulated angle value.
-     * @param {number} wrapThreshold - The threshold to detect a wrap, e.g., 180.
-     * @returns {{newAccumulated: number, lastAngle: number}} - Updated accumulated angle and lastAngle.
+     * Convert quaternion to yaw, pitch, roll.
+     * Yaw (around z), Pitch (around y), Roll (around x).
+     * Ranges of these angles are typically -π to π.
+     *
+     * yaw   = atan2(2(wz + xy), w² + x² - y² - z²)
+     * pitch = asin(2(wy - xz))
+     * roll  = atan2(2(wx + yz), w² - x² - y² + z²)
      */
-    adjustAngle(angle, lastAngle, accumulatedAngle, wrapThreshold = 180) {
-        if (lastAngle !== null) {
-            const diff = angle - lastAngle;
-            // If we suddenly jump by more than wrapThreshold, assume wrap happened
-            if (diff > wrapThreshold) {
-                // Jumped forward past 360 boundary, subtract 360
-                accumulatedAngle -= 360;
-            } else if (diff < -wrapThreshold) {
-                // Jumped backward past 0 boundary, add 360
-                accumulatedAngle += 360;
-            }
-        }
-        // Add the current angle (as a delta from lastAngle)
-        if (lastAngle !== null) {
-            accumulatedAngle += (angle - lastAngle);
-        } else {
-            // If first time, initialize without adjusting
-            accumulatedAngle += angle;
-        }
+    quaternionToYawPitchRoll([w, x, y, z]) {
+        const sinPitch = 2 * (w * y - x * z);
+        const pitch = Math.abs(sinPitch) >= 1 ? Math.sign(sinPitch) * (Math.PI / 2) : Math.asin(sinPitch);
+        
+        const yaw = Math.atan2(2 * (w * z + x * y), w * w + x * x - y * y - z * z);
+        const roll = Math.atan2(2 * (w * x + y * z), w * w - x * x - y * y + z * z);
 
-        return { newAccumulated: accumulatedAngle, lastAngle: angle };
+        return { yaw, pitch, roll };
     }
 
-    mapToParameters(alpha, beta, gamma) {
-        // Adjust alpha, beta, gamma to continuous angles
-        let result = this.adjustAngle(alpha, this.lastAlpha, this.accumulatedAlpha);
-        this.accumulatedAlpha = result.newAccumulated;
-        this.lastAlpha = result.lastAngle;
+    /**
+     * Maps quaternion-derived yaw/pitch/roll to x, y, z parameters.
+     * Each angle is in [-π, π]. We'll map to [0,1] by adding π and dividing by 2π.
+     */
+    mapQuaternionToParameters(quaternion) {
+        const { yaw, pitch, roll } = this.quaternionToYawPitchRoll(quaternion);
 
-        result = this.adjustAngle(beta, this.lastBeta, this.accumulatedBeta);
-        this.accumulatedBeta = result.newAccumulated;
-        this.lastBeta = result.lastAngle;
+        // Normalize from (-π, π) to [0, 1]
+        const normalizeAngle = (angle) => (angle + Math.PI) / (2 * Math.PI);
 
-        result = this.adjustAngle(gamma, this.lastGamma, this.accumulatedGamma);
-        this.accumulatedGamma = result.newAccumulated;
-        this.lastGamma = result.lastAngle;
+        const xNorm = normalizeAngle(roll);   // or yaw/pitch depending on preference
+        const yNorm = normalizeAngle(pitch);
+        const zNorm = normalizeAngle(yaw);
 
-        // Now we have continuous angles: accumulatedAlpha, accumulatedBeta, accumulatedGamma
-        // Normalize these continuous angles to [0, 1] range as needed.
-        // One strategy is to mod them by 360 to keep them in [0, 360) then divide by 360.
-        // But doing modulo will reintroduce the jump. Instead, we can choose a rolling window.
+        this.parameterManager.setNormalizedValue('x', xNorm);
+        this.parameterManager.setNormalizedValue('y', yNorm);
+        this.parameterManager.setNormalizedValue('z', zNorm);
 
-        // For simplicity, let's just map them into a window. For example:
-        // We'll take the current accumulated angle mod 360 to a [0,360) range:
-        const modAlpha = ((this.accumulatedAlpha % 360) + 360) % 360;
-        const modBeta = ((this.accumulatedBeta % 360) + 360) % 360;
-        const modGamma = ((this.accumulatedGamma % 360) + 360) % 360;
-
-        const x = modAlpha / 360; 
-        const y = modBeta / 360;
-        const z = modGamma / 360;
-
-        this.parameterManager.setNormalizedValue('x', x);
-        this.parameterManager.setNormalizedValue('y', y);
-        this.parameterManager.setNormalizedValue('z', z);
-
-        console.debug(`[SensorController] Updated parameters: x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)}`);
+        console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(2)}, y=${yNorm.toFixed(2)}, z=${zNorm.toFixed(2)}`);
     }
-/* 
+
     startDebugging() {
         if (this.debugInterval) return;
 
@@ -225,7 +189,7 @@ export class SensorController {
                 );
             }
         }, 5000);
-    } */
+    }
 
     stopDebugging() {
         if (this.debugInterval) {
