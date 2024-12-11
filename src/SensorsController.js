@@ -1,7 +1,7 @@
 /**
  * @file SensorController.js
  * @description Handles access to device motion/orientation sensors, requesting permission if needed and providing data.
- * @version 1.2.0
+ * @version 1.3.0
  * @author 
  * @license MIT
  * @date 2024-12-11

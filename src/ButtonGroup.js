@@ -8,7 +8,7 @@
  */
 
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js';
+import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './constants.js';
 
 /**
  * Class representing a group of buttons with dropdown menus for various functionalities.
@@ -75,32 +75,32 @@ export class ButtonGroup {
         this.init();
     }
 
-    /**
-     * Initializes the ButtonGroup by setting up SVGs and event bindings.
-     * @private
-     * @async
-     */
-    async init() {
-        console.log(`Initializing dropdowns for "${this.containerSelector}"`);
+/**
+ * Initializes the ButtonGroup by setting up SVGs and event bindings.
+ * @private
+ * @async
+ */
+async init() {
+    console.log(`Initializing dropdowns for "${this.containerSelector}"`);
 
-        if (this.collapseInstance) {
-            this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
-        }
-
-        // Adjust the dropdown based on MIDI and sensor support
-        await this.adjustForHardwareSupport();
-
-        // Load dynamic SVGs for the main button and dropdown menu items
-        this.loadDynamicSVGs();
-
-        // Bind event listeners to menu items and buttons
-        this.bindEvents();
-
-        // Initialize Bootstrap Dropdowns to prevent global interference
-        this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
-            new bootstrap.Dropdown(dropdown); // Initialize with default behavior
-        });
+    if (this.collapseInstance) {
+        this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
     }
+
+    // Adjust the dropdown based on MIDI and sensor support
+    await this.adjustForHardwareSupport();
+
+    // Load dynamic SVGs for the main button and dropdown menu items
+    this.loadDynamicSVGs();
+
+    // Bind event listeners to menu items and buttons
+    this.bindEvents();
+
+    // Initialize Bootstrap Dropdowns to prevent global interference
+    this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
+        new bootstrap.Dropdown(dropdown); // Initialize with default behavior
+    });
+}
 
     /**
      * Loads dynamic SVGs for the main button and dropdown menu items.
@@ -368,10 +368,11 @@ async adjustForHardwareSupport() {
             item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
         } else if (value === 'Sensors') {
             item.style.display = sensorsAvailable ? 'block' : 'none';
+            console.log(`[ButtonGroup] Sensors button visibility set to: ${sensorsAvailable ? 'Visible' : 'Hidden'}`);
         }
     });
 
     console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
-    console.log(`[ButtonGroup] SENSORS support: ${sensorsAvailable ? 'Enabled' : 'Disabled'}`);
+    console.log(`[ButtonGroup] Sensors support: ${sensorsAvailable ? 'Enabled' : 'Disabled'}`);
 }
 }

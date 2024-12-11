@@ -28,21 +28,21 @@ export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
  */
 export const SENSORS_SUPPORTED = (async () => {
     if (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined') {
-        if (
-            typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function'
-        ) {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 const response = await DeviceMotionEvent.requestPermission();
+                console.log(`[SENSORS_SUPPORTED] Permission ${response === 'granted' ? 'granted' : 'denied'}`);
                 return response === 'granted';
             } catch (err) {
-                console.warn('SENSORS_SUPPORTED: Permission request error:', err);
+                console.warn(`[SENSORS_SUPPORTED] Permission request error:`, err);
                 return false;
             }
         }
-        // Non-iOS browsers assume permissions are granted if events are available
+        // Assume non-iOS browsers allow access if events are supported
+        console.log('[SENSORS_SUPPORTED] Sensors supported without explicit permission request.');
         return true;
     }
+    console.warn('[SENSORS_SUPPORTED] Sensors not supported on this device/browser.');
     return false;
 })();
 
