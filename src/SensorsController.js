@@ -1,4 +1,5 @@
-import { ParameterManager } from './ParameterManager.js';
+// SensorController.js
+import { ParameterManagerInstance } from './ParameterManager.js';
 import { notifications } from './Main.js';
 import * as THREE from 'three';
 
@@ -9,7 +10,7 @@ export class SensorController {
         }
 
         this.isSensorActive = false;
-        this.parameterManager = ParameterManager.getInstance();
+        this.parameterManager = ParameterManagerInstance;
         this.debugInterval = null;
 
         // Initialize Three.js Quaternion and Vector3
@@ -111,29 +112,33 @@ export class SensorController {
      * @private
      */
     handleDeviceOrientation(event) {
-        const { alpha, beta, gamma } = event;
+        try {
+            const { alpha, beta, gamma } = event;
 
-        // Log received angles
-        console.log(`DeviceOrientationEvent: alpha=${alpha}, beta=${beta}, gamma=${gamma}`);
+            // Log received angles
+            console.log(`DeviceOrientationEvent: alpha=${alpha}, beta=${beta}, gamma=${gamma}`);
 
-        this.sensorData.alpha = alpha;
-        this.sensorData.beta = beta;
-        this.sensorData.gamma = gamma;
+            this.sensorData = { alpha, beta, gamma, quaternion: null };
 
-        // Convert Euler angles to quaternion using Three.js
-        // Three.js uses 'ZXY' order for device orientation by default
-        const euler = new THREE.Euler(
-            THREE.MathUtils.degToRad(beta || 0),
-            THREE.MathUtils.degToRad(alpha || 0),
-            THREE.MathUtils.degToRad(gamma || 0),
-            'ZXY'
-        );
-        this.quaternion.setFromEuler(euler);
+            // Convert Euler angles to quaternion using Three.js
+            // Three.js uses 'ZXY' order for device orientation by default
+            const euler = new THREE.Euler(
+                THREE.MathUtils.degToRad(beta || 0),
+                THREE.MathUtils.degToRad(alpha || 0),
+                THREE.MathUtils.degToRad(gamma || 0),
+                'ZXY'
+            );
+            this.quaternion.setFromEuler(euler);
 
-        // Log quaternion
-        console.log(`Quaternion: w=${this.quaternion.w}, x=${this.quaternion.x}, y=${this.quaternion.y}, z=${this.quaternion.z}`);
+            // Log quaternion
+            console.log(`Quaternion: w=${this.quaternion.w.toFixed(3)}, x=${this.quaternion.x.toFixed(3)}, y=${this.quaternion.y.toFixed(3)}, z=${this.quaternion.z.toFixed(3)}`);
 
-        this.mapQuaternionToParameters(this.quaternion);
+            this.sensorData.quaternion = [this.quaternion.w, this.quaternion.x, this.quaternion.y, this.quaternion.z];
+
+            this.mapQuaternionToParameters(this.quaternion);
+        } catch (error) {
+            console.error('SensorController: Error in handleDeviceOrientation:', error);
+        }
     }
 
     /**
@@ -142,26 +147,33 @@ export class SensorController {
      * @private
      */
     mapQuaternionToParameters(q) {
-        // Apply quaternion to reference vector
-        this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
+        try {
+            // Apply quaternion to reference vector
+            this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
 
-        // Log rotated vector
-        console.log(`Rotated Vector: x=${this.rotatedVector.x}, y=${this.rotatedVector.y}, z=${this.rotatedVector.z}`);
+            // Log rotated vector
+            console.log(`Rotated Vector: x=${this.rotatedVector.x.toFixed(3)}, y=${this.rotatedVector.y.toFixed(3)}, z=${this.rotatedVector.z.toFixed(3)}`);
 
-        // Normalize vector components from [-1, 1] to [0, 1]
-        const mapTo01 = (v) => (v + 1) / 2;
+            // Normalize vector components from [-1, 1] to [0, 1]
+            const mapTo01 = (v) => (v + 1) / 2;
 
-        const xNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.x), 0, 1);
-        const yNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
-        const zNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
+            const xNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.x), 0, 1);
+            const yNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
+            const zNorm = THREE.MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
 
-        // Update parameters
-        this.parameterManager.setNormalizedValue('x', xNorm);
-        this.parameterManager.setNormalizedValue('y', yNorm);
-        this.parameterManager.setNormalizedValue('z', zNorm);
+            // Log normalized values
+            console.log(`Normalized Parameters: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
 
-        // Log normalized parameters
-        console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
+            // Update parameters
+            this.parameterManager.setNormalizedValue('x', xNorm);
+            this.parameterManager.setNormalizedValue('y', yNorm);
+            this.parameterManager.setNormalizedValue('z', zNorm);
+
+            // Log updated parameters
+            console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
+        } catch (error) {
+            console.error('SensorController: Error in mapQuaternionToParameters:', error);
+        }
     }
 
     /**
