@@ -14,6 +14,7 @@ import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED } from './Constants.js'; 
 import notifications from './AppNotifications.js';
+import { SensorControllerInstance } from './SensorController.js';
 
 /**
  * Sets up interactions for dynamic placeholder updates.
