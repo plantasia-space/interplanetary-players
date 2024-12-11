@@ -1,7 +1,8 @@
 // SensorController.js
-import { ParameterManagerInstance } from './ParameterManager.js';
+import { ParameterManager } from './ParameterManager.js';
 import { notifications } from './Main.js';
 import * as THREE from 'three';
+import { Quaternion, Euler, Vector3, MathUtils } from 'three';
 
 export class SensorController {
     constructor() {
@@ -10,7 +11,7 @@ export class SensorController {
         }
 
         this.isSensorActive = false;
-        this.parameterManager = ParameterManagerInstance;
+        this.parameterManager = ParameterManager;
         this.debugInterval = null;
 
         // Initialize Three.js Quaternion and Vector3
