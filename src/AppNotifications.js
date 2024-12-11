@@ -1,12 +1,11 @@
-// src/AppNotifications.js
-
 /**
  * @file AppNotifications.js
  * @description Manages application notifications, including toast messages and modals.
  * @version 2.0.0
- * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @author Bruna Guarnieri
  * @license MIT
- * @date 2024-12-07
+ * 
+ * This file contains the definition and implementation of the `AppNotifications` class.
  */
 /** 
  * @memberof 2DGUI 

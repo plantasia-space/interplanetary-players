@@ -1,63 +1,49 @@
 {
-    "tags": {
-      "allowUnknownTags": true
-    },
-    "source": {
-      "include": ["src", "package.json", "docs/"],
-      "exclude": ["node_modules", "dist"],
-      "includePattern": ".js$",
-      "excludePattern": "(node_modules|dist)"
-    },
-    "plugins": [
-      "plugins/markdown"
-    ],
-    "opts": {
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": ["src", "docs"],
+    "exclude": ["node_modules", "dist"],
+    "includePattern": ".js$",
+    "excludePattern": "(node_modules|dist)"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "opts": {
     "encoding": "utf8",
     "readme": "./README.md",
-    "destination": "../interplanetary-players-docs/docs",
+    "destination": "./docs",
     "recurse": true,
-    "verbose": true,
+    "verbose": false,
     "template": "./node_modules/clean-jsdoc-theme",
     "theme_opts": {
-        "default_theme": "dark",
-        "base_url": "/interplanetary-players-docs/",
-        "favicon": "https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/logos/favicon.ico",
-        "homepageTitle": "Interplanetary Players Documentation",
-        "title": "<img src='https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/logos/Maar-World-Logo.svg' class='logo' width='80' height='80'/> Interplanetary Players Dev Docs",
-        "includeFilesListInHomepage": true,
-        "menu": [
+      "default_theme": "light", 
+      "base_url": "/",
+      "favicon": "https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/logos/favicon.ico",
+      "homepageTitle": "My Project Documentation",
+      "title": "My Project Dev Docs",
+      "includeFilesListInHomepage": true,
+      "menu": [
         {
-            "title": "Documentation GitHub",
-            "id": "github",
-            "link": "https://github.com/maar34/interplanetary-players-docs"
-        },
-        {
-          "title": "Wiki",
-          "id": "wiki",
-          "link": "https://github.com/maar34/interplanetary-players/wiki"
-        },
-        {
-            "title": "Interplanetary Players Github",
-            "id": "app-github",
-            "link": "https://github.com/maar34/interplanetary-players"
+          "title": "GitHub",
+          "id": "github",
+          "link": "https://github.com/maar34/my-project"
         }
-        ],
-        "sections": ["Classes", "Modules", "Namespaces", "Externals", "Global"], 
-        "meta": [
+      ],
+      "sections": ["Classes", "Modules", "Namespaces", "Global"],
+      "meta": [
         {
-            "name": "𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾",
-            "content": "𝙼𝙰𝙰𝚁 𝚆𝙾𝚁𝙻𝙳"
-        },
-        {
-            "name": "description",
-            "content": "Official documentation for the Interplanetary Players project."
+          "name": "description",
+          "content": "Documentation for my project."
         }
-        ],
-        "search": true
+      ],
+      "search": true
     }
-    },
-    "markdown": {
-        "hardwrap": false,
-        "idInHeadings": true
-        }
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
   }
+}

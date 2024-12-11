@@ -1,0 +1,8 @@
+{
+    "locales": ["en"],
+    "outDir": "../docs.maar.world/docs/developers-guide/api",
+    "sidebar": "../docs.maar.world/",
+    "jsdoc": "./jsdoc.json",
+    "prefix": "api/",
+    "bulma": false
+}

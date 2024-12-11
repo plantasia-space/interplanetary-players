@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "docs": "jsdoc -c jsdoc.json"
+    "docs": "jsdoc -c jsdoc.json",
+    "generate-docs": "jsdoc-to-mdx -c config.json"
   },
   "devDependencies": {
     "clean-jsdoc-theme": "^4.3.0",
     "jsdoc": "^4.0.4",
+    "jsdoc-to-mdx": "^1.2.1",
+    "remark-breaks": "^4.0.0",
     "vite": "^5.3.3",
     "vite-plugin-restart": "^0.4.1"
   },
