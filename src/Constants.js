@@ -5,7 +5,7 @@ import lscache from 'lscache';
  * @description Defines and manages application-wide constants and utility functions.
  * Handles caching mechanisms and prioritization for various controller types.
  * @version 2.0.0
- * @author 𝐵𝓇𝓊𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
  */
@@ -26,25 +26,9 @@ export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
  * @type {Promise<boolean>}
  * @description Resolves to true if sensors are supported and permission is granted.
  */
-export const SENSORS_SUPPORTED = (async () => {
-    if (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined') {
-        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-            try {
-                const response = await DeviceMotionEvent.requestPermission();
-                console.log(`[SENSORS_SUPPORTED] Permission ${response === 'granted' ? 'granted' : 'denied'}`);
-                return response === 'granted';
-            } catch (err) {
-                console.warn(`[SENSORS_SUPPORTED] Permission request error:`, err);
-                return false;
-            }
-        }
-        // Assume non-iOS browsers allow access if events are supported
-        console.log('[SENSORS_SUPPORTED] Sensors supported without explicit permission request.');
-        return true;
-    }
-    console.warn('[SENSORS_SUPPORTED] Sensors not supported on this device/browser.');
-    return false;
-})();
+export const SENSORS_SUPPORTED = (
+    typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined'
+);
 
 /**
  * @namespace Constants

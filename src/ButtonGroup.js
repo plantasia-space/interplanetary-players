@@ -56,6 +56,8 @@ export class ButtonGroup {
         this.closeGridBtn = document.querySelector('.close-grid-btn'); // Close button for the grid
         this.collapseElement = document.getElementById('collapseInfoMenu'); // Collapsible menu element
 
+        this.sensorsActivated = false; // Tracks if sensors have been activated
+
         // Validate the presence of essential elements
         if (!this.dropdown || !this.button || !this.menuItems.length || !this.icon) {
             console.error('ButtonGroup initialization failed: Missing essential elements.');
@@ -305,8 +307,9 @@ async init() {
      * Handles selections from the interaction dropdown menu.
      * @param {string} selectedValue - The selected interaction mode.
      * @private
+     * @async
      */
-    handleInteractionDropdown(selectedValue) {
+    async handleInteractionDropdown(selectedValue) {
         switch (selectedValue) {
             case 'Jam':
                 console.log('Jam mode activated.');
@@ -314,16 +317,25 @@ async init() {
                 break;
 
             case 'MIDI':
-                MIDIControllerInstance.activateMIDI().then(() => {
+                try {
+                    await MIDIControllerInstance.activateMIDI();
                     MIDIControllerInstance.enableMidiLearn();
-                }).catch(error => {
+                    console.log('MIDI mode activated successfully.');
+                } catch (error) {
                     console.error('MIDI Activation Error:', error);
-                });
+                }
                 break;
 
             case 'Sensors':
-                console.log('Sensors mode activated.');
-                this.activateSensors();
+                if (!this.sensorsActivated) {
+                    try {
+                        await this.activateSensorsMode();
+                    } catch (error) {
+                        console.error('Error activating sensors:', error);
+                    }
+                } else {
+                    console.log('[ButtonGroup] Sensors mode is already activated.');
+                }
                 break;
 
             case 'Cosmic LFO':
@@ -354,25 +366,52 @@ async init() {
         // Implement Sensors activation logic here
     }
 
-/**
- * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
- * Hides or shows menu items accordingly.
- * @private
- */
-async adjustForHardwareSupport() {
-    const sensorsAvailable = await SENSORS_SUPPORTED;
+    /**
+     * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
+     * Hides or shows menu items accordingly.
+     * @private
+     */
+    async adjustForHardwareSupport() {
+        const sensorsAvailable = await SENSORS_SUPPORTED;
 
-    this.menuItems.forEach(item => {
-        const value = item.getAttribute('data-value');
-        if (value === 'MIDI') {
-            item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
-        } else if (value === 'Sensors') {
-            item.style.display = sensorsAvailable ? 'block' : 'none';
-            console.log(`[ButtonGroup] Sensors button visibility set to: ${sensorsAvailable ? 'Visible' : 'Hidden'}`);
+        this.menuItems.forEach(item => {
+            const value = item.getAttribute('data-value');
+            if (value === 'MIDI') {
+                item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
+            } else if (value === 'Sensors') {
+                item.style.display = 'block'; // Always visible for sensors
+                console.log(`[ButtonGroup] Sensors button always visible.`);
+            }
+        });
+
+        console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
+        console.log(`[ButtonGroup] Sensors support: ${sensorsAvailable ? 'Available' : 'Unavailable'}`);
+    }
+
+    /**
+     * Activates Sensors mode by requesting permission and initializing the SensorController.
+     * @private
+     * @async
+     */
+    async activateSensorsMode() {
+        if (!SensorControllerInstance) {
+            console.warn('[ButtonGroup] Sensors are not supported by this browser/device.');
+            return;
         }
-    });
 
-    console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
-    console.log(`[ButtonGroup] Sensors support: ${sensorsAvailable ? 'Enabled' : 'Disabled'}`);
-}
+        try {
+            const permissionGranted = await SensorControllerInstance.requestPermission();
+            if (permissionGranted) {
+                await SensorControllerInstance.activateSensors();
+                this.sensorsActivated = true;
+                console.log('[ButtonGroup] Sensors mode activated successfully.');
+            } else {
+                console.warn('[ButtonGroup] Permission denied for sensors.');
+            }
+        } catch (error) {
+            console.error('[ButtonGroup] Error activating sensors mode:', error);
+        }
+    }
+
+
 }
