@@ -43,16 +43,6 @@
 // Import Statements
 // -----------------------------
 
-// Import Bootstrap CSS (already done)
-import 'bootstrap/dist/css/bootstrap.min.css';
-
-// Import Bootstrap JS and assign it to window.bootstrap
-import * as bootstrap from 'bootstrap';
-window.bootstrap = bootstrap;
-
-// Import your custom styles
-import './css/style.css';
-
 // Scene and rendering utilities
 import { initScene, initRenderer, addLights } from './Scene.js';
 
@@ -85,11 +75,6 @@ import { logarithmic } from './Transformations.js';
 
 // Notifications handler
 import notifications from './AppNotifications.js';
-
-
-// index.js or main.js
-
-
 
 // -----------------------------
 // Initialization of Core Components
