@@ -1,5 +1,3 @@
-// src/constants.js
-
 import lscache from 'lscache';
 
 /**
@@ -7,11 +5,33 @@ import lscache from 'lscache';
  * @description Defines and manages application-wide constants and utility functions.
  * Handles caching mechanisms and prioritization for various controller types.
  * @version 2.0.0
- * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
+ * @author 𝐵𝓇𝓊𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
  */
 
+/**
+ * Indicates whether the browser supports the Web MIDI API.
+ * @constant
+ * @memberof CoreModule
+ * @type {boolean}
+ * @description True if the Web MIDI API is supported in the current environment, false otherwise.
+ */
+export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
+
+/**
+ * Indicates whether device sensors (e.g., gyroscope, accelerometer) are supported.
+ * @constant
+ * @memberof CoreModule
+ * @type {boolean}
+ * @description True if the device/browser supports DeviceOrientationEvent or DeviceMotionEvent, false otherwise.
+ */
+export const SENSORS_SUPPORTED = (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined');
+
+/**
+ * @namespace Constants
+ * @description A collection of application-wide constants and utility functions for track data caching.
+ */
 export const Constants = {
     /** 
      * @type {string}
@@ -83,10 +103,8 @@ export const Constants = {
         }
         lscache.remove(trackId);
         console.log(`[CACHE] Cleared track data for trackId: ${trackId}`);
-    },
+    }
 };
-
-// Export individual constants for convenience
 
 /**
  * @constant
@@ -144,11 +162,3 @@ export const DEFAULT_PRIORITY = 100;
 export function getPriority(controllerType) {
     return PRIORITY_MAP[controllerType] || DEFAULT_PRIORITY;
 }
-
-/**
- * @constant
- * @memberof CoreModule
- * @type {boolean}
- * @description Indicates whether the browser supports the Web MIDI API.
- */
-export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;

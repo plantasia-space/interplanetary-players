@@ -7,10 +7,8 @@
  * @description Manages button groups within the Interplanetary Players application, handling interactions, SVG loading, and event bindings.
  */
 
-
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED } from './Constants.js'; 
-import notifications from './AppNotifications.js';
+import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './constants.js';
 
 /**
  * Class representing a group of buttons with dropdown menus for various functionalities.
@@ -39,6 +37,9 @@ export class ButtonGroup {
     ) {
         this.audioPlayer = audioPlayer;
         this.dataManager = dataManager;
+
+        // Store the selector for use in logging
+        this.containerSelector = containerSelector;
 
         // Select key elements within the container
         this.container = document.querySelector(containerSelector);
@@ -85,8 +86,8 @@ export class ButtonGroup {
             this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
         }
 
-        // Adjust the dropdown based on MIDI support
-        this.adjustForMidiSupport();
+        // Adjust the dropdown based on MIDI and sensor support
+        this.adjustForHardwareSupport();
 
         // Load dynamic SVGs for the main button and dropdown menu items
         this.loadDynamicSVGs();
@@ -312,14 +313,10 @@ export class ButtonGroup {
                 break;
 
             case 'MIDI':
-                notifications.showToast('MIDI mode Pressed.', 'info', 3000);
                 MIDIControllerInstance.activateMIDI().then(() => {
-                    notifications.showToast('MIDI activateMIDI ready.', 'success', 3000);
                     MIDIControllerInstance.enableMidiLearn();
-                    notifications.showToast('MIDI ENABLED.', 'success', 3000);
                 }).catch(error => {
                     console.error('MIDI Activation Error:', error);
-                    notifications.showToast(`MIDI Activation Error: ${error.message}`, 'error', 5000);
                 });
                 break;
 
@@ -357,17 +354,20 @@ export class ButtonGroup {
     }
 
     /**
-     * Adjusts the dropdown menu based on MIDI support.
-     * Hides or shows the MIDI option accordingly.
+     * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
+     * Hides or shows menu items accordingly.
      * @private
      */
-    adjustForMidiSupport() {
+    adjustForHardwareSupport() {
         this.menuItems.forEach(item => {
             const value = item.getAttribute('data-value');
             if (value === 'MIDI') {
                 item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
+            } else if (value === 'Sensors') {
+                item.style.display = SENSORS_SUPPORTED ? 'block' : 'none';
             }
         });
         console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
+        console.log(`[ButtonGroup] SENSORS support: ${SENSORS_SUPPORTED ? 'Enabled' : 'Disabled'}`);
     }
 }

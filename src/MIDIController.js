@@ -13,6 +13,7 @@ import { Constants, getPriority, MIDI_SUPPORTED } from './Constants.js';
 import lscache from 'lscache';
 import { ButtonGroup } from './ButtonGroup.js';
 import { notifications } from './Main.js';
+import { ModeManagerInstance } from './ModeManager.js';
 
 /**
  * MIDIController Singleton Class
@@ -96,6 +97,22 @@ class MIDIController {
 
     this.init();
 
+    ModeManagerInstance.subscribe((newMode) => {
+      // Only react if we care about MIDI-related modes.
+      if (newMode === 'MIDI_LEARN') {
+          // If mode manager says we're in MIDI learn mode
+          if (this.isMIDIActivated) {
+              this.enableMidiLearn();
+          }
+      } else {
+          // If we leave MIDI_LEARN mode, ensure we exit
+          if (this.isMidiLearnModeActive) {
+              this.exitMidiLearnMode();
+          }
+      }
+  });
+
+
     MIDIController.instance = this;
   }
 
@@ -112,7 +129,7 @@ class MIDIController {
       return;
     }
 
-    notifications.showToast("MIDIController: Web MIDI API supported.");
+    //notifications.showToast("MIDIController: Web MIDI API supported.");
     // Restore persisted mappings if you have this method
     // await this.restoreMidiLearn();
 
@@ -140,14 +157,14 @@ class MIDIController {
    */
   async activateMIDI() {
     if (this.isMIDIActivated) {
-      notifications.showToast('MIDI is already activated.', 'info');
+     // notifications.showToast('MIDI is already activated.', 'info');
       return;
     }
 
     try {
       await this.requestMidiAccess();
       this.isMIDIActivated = true;
-      notifications.showToast('MIDI activated successfully!', 'success');
+      //notifications.showToast('MIDI activated successfully!', 'success');
     } catch (error) {
       notifications.showToast(`MIDI activation failed: ${error.message}`, 'error');
     }
@@ -173,7 +190,7 @@ class MIDIController {
     try {
       // Request MIDI access
       this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-      notifications.showToast('MIDI access granted. Checking inputs...', 'success');
+      //notifications.showToast('MIDI access granted. Checking inputs...', 'success');
 
       // Log available inputs for debugging
       console.log('Initial MIDI Inputs:', Array.from(this.midiAccess.inputs.values()));
@@ -211,7 +228,7 @@ class MIDIController {
     for (let input = inputs.next(); input && !input.done; input = inputs.next()) {
       hasInputs = true;
       input.value.onmidimessage = this.handleMidiMessage.bind(this);
-      notifications.showToast(`Enabled MIDI input: ${input.value.name}`, 'info');
+      //notifications.showToast(`Enabled MIDI input: ${input.value.name}`, 'info');
       console.log(`Connected MIDI input: ${input.value.name}`);
     }
 
@@ -233,16 +250,16 @@ class MIDIController {
   handleStateChange(event) {
     const port = event.port;
 
-    notifications.showToast(`MIDI device ${port.name} is now ${port.state}.`, 'info');
+   // notifications.showToast(`MIDI device ${port.name} is now ${port.state}.`, 'info');
 
     if (port.type === 'input') {
       if (port.state === 'connected') {
         port.onmidimessage = this.handleMidiMessage.bind(this);
-        notifications.showToast(`Connected to MIDI input: ${port.name}`, 'success');
+       // notifications.showToast(`Connected to MIDI input: ${port.name}`, 'success');
         console.log(`Connected to MIDI input: ${port.name}`);
       } else if (port.state === 'disconnected') {
         port.onmidimessage = null;
-        notifications.showToast(`Disconnected from MIDI input: ${port.name}`, 'warning');
+       // notifications.showToast(`Disconnected from MIDI input: ${port.name}`, 'warning');
         console.log(`Disconnected from MIDI input: ${port.name}`);
       }
     }
@@ -570,7 +587,7 @@ class MIDIController {
       notifications.showToast('MIDIController: MIDI is not activated. Cannot enter MIDI Learn mode.');
       return;
     }
-    notifications.showToast('MIDIController: Entering MIDI Learn mode...');
+    //notifications.showToast('MIDIController: Entering MIDI Learn mode...');
 
     this.isMidiLearnModeActive = true;
     this.currentLearnParam = null;
@@ -1301,4 +1318,4 @@ class MIDIController {
   }
 }
 
-export const MIDIControllerInstance = new MIDIController();
+export const MIDIControllerInstance = MIDI_SUPPORTED ? new MIDIController() : null;

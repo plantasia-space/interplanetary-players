@@ -9,9 +9,11 @@
  * @date 2024-12-07
  */
 
+import { ModeManagerInstance } from './ModeManager.js';
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED } from './Constants.js'; 
+import notifications from './AppNotifications.js';
 
 /**
  * Sets up interactions for dynamic placeholder updates.
@@ -60,6 +62,66 @@ export function setupInteractions(dataManager, audioPlayer) {
     if (MIDI_SUPPORTED) {
         registerMenuItemsWithMIDIController(buttonGroups);
     }
+
+
+        // Define mode behaviors and integration here:
+        ModeManagerInstance.registerMode('JAM', {
+            onEnter: () => {
+                // Show Jam UI, hide MIDI Learn overlays, etc.
+                notifications.showToast("Switched to Jam (Sharm) mode.");
+            },
+            onExit: () => {}
+        });
+    
+        ModeManagerInstance.registerMode('MIDI_LEARN', {
+            onEnter: () => {
+                // If MIDI is supported and controller is available, enable MIDI Learn
+                if (MIDIControllerInstance) {
+                    MIDIControllerInstance.enableMidiLearn();
+                }
+                notifications.showToast("MIDI Learn mode activated.");
+            },
+            onExit: () => {
+                if (MIDIControllerInstance) {
+                    MIDIControllerInstance.exitMidiLearnMode();
+                }
+                notifications.showToast("Exited MIDI Learn mode.");
+            }
+        });
+    
+        ModeManagerInstance.registerMode('SENSORS', {
+            onEnter: async () => {
+                if (SensorControllerInstance) {
+                    await SensorControllerInstance.activateSensors();
+                    notifications.showToast("Sensors mode activated. Receiving device orientation data.");
+                } else {
+                    notifications.showToast("Sensors not supported on this device/browser.", 'warning');
+                }
+            },
+            onExit: () => {
+                if (SensorControllerInstance && SensorControllerInstance.isSensorActive) {
+                    SensorControllerInstance.stopListening();
+                }
+                notifications.showToast("Exited Sensors mode.");
+            }
+        });
+    
+    
+        ModeManagerInstance.registerMode('COSMIC_LFO', {
+            onEnter: () => {
+                // Show cosmic LFO UI...
+                notifications.showToast("Cosmic LFO mode activated.");
+            },
+            onExit: () => {
+                // Clean up cosmic LFO UI...
+                notifications.showToast("Exited Cosmic LFO mode.");
+            }
+        });
+    
+        // Initially start in JAM mode
+        ModeManagerInstance.activateMode('JAM');
+
+        
 }
 
 /**
