@@ -1873,7 +1873,8 @@ try {
          this.wheel = this.wheel.bind(this);
          this.redraw = this.redraw.bind(this);
          this.handleParamChange = this.handleParamChange.bind(this);
-   
+         this.kickVisualActive = false; // New visual-only flag
+
         // Initialize properties for ResizeObserver
         this.resizeObserver = null;
   
@@ -1965,7 +1966,7 @@ try {
         this.type = this.getAttribute("type") || "toggle"; // Types: toggle, kick, radio, sequential
         this.group = this.getAttribute("group") || null; // Group name for radio switches
         this._colors = this.getAttribute("colors") || "#e00;#333"; // background; stroke/fill
-        this.outline = this.getAttribute("outline") || "1px solid #444";
+        this.outline = this.getAttribute("outline") || "2px solid #444";
         this.setupLabel();
   
         // Process colors
@@ -2156,38 +2157,37 @@ try {
       drawSwitch() {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this._width, this._height);
-  
+      
         if (this.type === 'kick') {
-          // Draw a hexagon for 'kick' type
+          // Draw outer hexagon
           drawHexagon(ctx, this.centerX, this.centerY, this.radius, this.coltab[0], this.coltab[1]);
-        } else {
-          // Draw a circle for other types
-          ctx.beginPath();
-          ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
-          ctx.fillStyle = this.coltab[0]; // Background color
-          ctx.fill();
-          ctx.strokeStyle = this.coltab[1]; // Stroke color
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-  
-        // If active, fill the inside
-        if (this.isActive()) {
-          if (this.type === 'kick') {
-            // For hexagon, fill a smaller hexagon or change the color
-            drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.7, this.coltab[1], this.coltab[1]);
-          } else {
-            // For circle, fill a smaller circle
-            ctx.beginPath();
-            ctx.arc(this.centerX, this.centerY, this.radius * 0.8, 0, Math.PI * 2);
-            ctx.fillStyle = this.coltab[1]; // Fill color
-            ctx.fill();
+        
+          // Draw inner inverted hexagon only if kickVisualActive is true
+          if (this.kickVisualActive) {
+            drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.7, this.coltab[1], this.coltab[0]);
           }
+        } else {
+            // Default circle drawing for other types
+            ctx.beginPath();
+            ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.coltab[0]; // Background color
+            ctx.fill();
+            ctx.strokeStyle = this.coltab[1]; // Stroke color
+            ctx.lineWidth = 2;
+            ctx.stroke();
+    
+            // For active state, fill a smaller circle
+            if (this.isActive()) {
+                ctx.beginPath();
+                ctx.arc(this.centerX, this.centerY, this.radius * 0.8, 0, Math.PI * 2);
+                ctx.fillStyle = this.coltab[1]; // Fill color
+                ctx.fill();
+            }
         }
-  
-        // Draw mode-specific indicators
+    
+        // Add any additional indicators if needed
         this.drawModeIndicator();
-      }
+    }
   
       /**
        * Draws additional indicators based on the current type and state.
@@ -2480,7 +2480,18 @@ try {
        * Triggers a kick (momentary press).
        */
       triggerKick() {
-        user1Manager.setToMiddle(this.rootParam);
+        // Existing behavior - do not change parameter logic
+        user1Manager.setToMiddle(this.rootParam); // sets param to 0.5 or whatever is needed
+        
+        // Now add the visual effect
+        this.kickVisualActive = true; 
+        this.redraw(); // Redraw to show the inner hexagon
+      
+        // Reset after 100ms (adjust time as needed)
+        setTimeout(() => {
+          this.kickVisualActive = false;
+          this.redraw(); // Redraw to remove the inner hexagon
+        }, 100);
       }
   
       /**

@@ -227,6 +227,10 @@
                     <webaudio-switch id="xBalance" data-automatable="true" type="kick" min="0" max="1" root-param="x" class="xyz-balance" is-bidirectional="false" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
+                    <!-- Activate Sensors Button -->
+                    <webaudio-switch id="toggleSensorX" data-automatable="true" type="toggle" min="0" max="1" class="xyz-sensors-toggle" is-bidirectional="true" midilearn="1"
+                    colors="var(--color2);var(--color1);var(--color3)">
+                  </webaudio-switch>
                     <!-- WebAudio Param -->
                     <webaudio-param  width="10vmin" height="3.0vmin" fontsize="2.4vmin"   label="x" tooltip="x" root-param="x" is-bidirectional="true"   colors="var(--color1);#0000007d">
                     </webaudio-param>
@@ -241,7 +245,10 @@
                     <webaudio-switch id="yBalance" type="kick" class="xyz-balance" data-automatable="true" is-bidirectional="false" root-param="y" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
-
+                    <!-- Activate Sensors Button -->
+                    <webaudio-switch id="toggleSensorY" data-automatable="true" type="toggle" min="0" max="1" class="xyz-sensors-toggle" outline="12px solid #444" is-bidirectional="true" midilearn="1"
+                    colors="var(--color2);var(--color1);var(--color3)">
+                  </webaudio-switch>
                     <!-- WebAudio Param -->
                     <webaudio-param   width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="y" is-bidirectional="true"  colors="var(--color1);#0000007d">
                     </webaudio-param>
@@ -256,7 +263,10 @@
                     <webaudio-switch id="zBalance" type="kick" class="xyz-balance" data-automatable="true" is-bidirectional="false" root-param="z" min="0" max="1" midilearn="1"
                       colors="var(--color2);var(--color1);var(--color3)">
                     </webaudio-switch>
-
+                    <!-- Activate Sensors Button -->
+                    <webaudio-switch id="toggleSensorZ" data-automatable="true" type="toggle" min="0" max="1" class="xyz-sensors-toggle" is-bidirectional="true" midilearn="1"
+                    colors="var(--color2);var(--color1);var(--color3)">
+                  </webaudio-switch>
                     <!-- WebAudio Param -->
                     <webaudio-param  width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="z" is-bidirectional="true"  colors="var(--color1);#0000007d">
                     </webaudio-param>

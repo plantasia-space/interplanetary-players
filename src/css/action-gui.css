@@ -38,7 +38,7 @@
     margin-bottom: 1vh;
 }
 
-.xyz-balance {
+.xyz-balance, .xyz-sensors-toggle, .xyz-sensors-toggle{
     width: 3vmin;
     height: 3vmin;
     margin-bottom: 1vh;
@@ -67,7 +67,7 @@
         height: calc(var(--size-knobs) + 2vmin);
     }
 
-    .xyz-balance {
+    .xyz-balance, .xyz-sensors-toggle {
         width: 5vmin;
         height: 5vmin;
     }
@@ -92,7 +92,7 @@
         height: calc(var(--size-knobs) + 4vmin);
     }
 
-    .xyz-balance {
+    .xyz-balance, .xyz-sensors-toggle {
         width: 7vmin;
         height: 7vmin;
     }
@@ -117,7 +117,7 @@
         height: calc(var(--size-knobs) + 6vmin);
     }
 
-    .xyz-balance {
+    .xyz-balance, .xyz-sensors-toggle {
         width: 9vmin;
         height: 9vmin;
     }
