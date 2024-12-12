@@ -1862,7 +1862,16 @@ try {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-
+    function drawSquare(ctx, x, y, size, fillStyle, strokeStyle) {
+      const half = size / 2;
+      ctx.beginPath();
+      ctx.rect(x - half, y - half, size, size);
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
     customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
       constructor() {
         super();
@@ -2164,8 +2173,22 @@ try {
         
           // Draw inner inverted hexagon only if kickVisualActive is true
           if (this.kickVisualActive) {
-            drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.7, this.coltab[1], this.coltab[0]);
+            drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.77, this.coltab[1], this.coltab[0]);
           }
+        } else if (this.type === 'toggle') {
+          // Draw the main square using the outer colors
+          // Full size of the square: let's use radius*2 so it matches the previous circle dimensions
+          const fullSize = this.radius * 2;
+          drawSquare(ctx, this.centerX, this.centerY, fullSize, this.coltab[0], this.coltab[1]);
+      
+          // If active, draw the inner square
+          if (this.isActive()) {
+            // Smaller inner square: let's make it 70% of the full size
+            const innerSize = fullSize * 0.77;
+            // Invert colors: fill with coltab[1], stroke with coltab[0]
+            drawSquare(ctx, this.centerX, this.centerY, innerSize, this.coltab[1], this.coltab[0]);
+          }
+          
         } else {
             // Default circle drawing for other types
             ctx.beginPath();
@@ -2605,7 +2628,7 @@ try {
     position:relative;
     text-align:center;
     background:none;
-    border-radius: 10px;
+    border-radius: 7.7px;
     margin:0;
     padding:0;
     font-family:sans-serif;
