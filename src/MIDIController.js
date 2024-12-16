@@ -279,58 +279,86 @@ class MIDIController {
     const [status, data1, data2] = event.data;
     const channel = status & 0x0F;
     const messageType = status & 0xF0;
-
-    // Process only Control Change (CC) messages
-    if (messageType !== 0xB0) return;
-
-    // MIDI Learn Mode: Map MIDI input to a widget
+  
+    // Original code only handled CC (0xB0).
+    // We add logic to treat notes like CC:
+    let ccNumber = null;
+    let finalValue = data2;
+  
+    if (messageType === 0xB0) {
+      // CC message - no change
+      ccNumber = data1;
+    } else if (messageType === 0x90) {
+      // Note On
+      ccNumber = data1; // Treat note number as cc number
+      if (data2 > 0) {
+        // Note On with velocity > 0 = On
+        finalValue = 127;
+      } else {
+        // Note On with velocity 0 = Note Off
+        finalValue = 0;
+      }
+    } else if (messageType === 0x80) {
+      // Note Off
+      ccNumber = data1;
+      finalValue = 0; // Off
+    } else {
+      // Not CC or note
+      return;
+    }
+  
+    let isNote = false;
+    
+    if (messageType === 0xB0) {
+      // CC message
+      ccNumber = data1;
+    } else if (messageType === 0x90 || messageType === 0x80) {
+      // Note On (0x90) or Note Off (0x80)
+      isNote = true;
+      ccNumber = data1;
+    } else {
+      return; // Not CC or note
+    }
+    
     if (this.isMidiLearnModeActive && this.currentLearnWidget) {
       const widgetId = this.currentLearnWidget.id || this.currentLearnWidget.getAttribute('data-value');
-      console.log(`Mapping widget '${widgetId}' to MIDI Channel ${channel + 1}, CC ${data1}`);
-      this.setMidiWidgetMapping(widgetId, channel, data1);
-
-      // Update feedback and reset learning
+      console.log(`Mapping widget '${widgetId}' to MIDI Channel ${channel+1}, ${isNote ? 'NOTE' : 'CC'} ${ccNumber}`);
+    
+      // Use the existing setMidiWidgetMapping for CC mappings
+      // If it's a note, we just store it the same way, but remember to pass 'note' to markAsMapped
+      this.setMidiWidgetMapping(widgetId, channel, ccNumber);
+    
       this.unhighlightWidget(widgetId);
-      this.markAsMapped(widgetId, data1, channel);
-      //notifications.showToast(`Assigned CC ${data1} to '${widgetId}'.`, 'success');
+      // Pass 'note' if isNote = true, otherwise 'cc'
+      this.markAsMapped(widgetId, ccNumber, channel, isNote ? 'note' : 'cc');
       this.currentLearnWidget = null;
-      return; // Exit after mapping
+      return;
     }
-
-    // Process mapped widgets
+    
+  
+    // Process mapped widgets (same CC logic)
     this.midiWidgetMappings.forEach((mapping, widgetId) => {
-      if (mapping.channel === channel && mapping.cc === data1) {
+      if (mapping.channel === channel && mapping.cc === ccNumber) {
         const widget = this.widgetRegistry.get(widgetId);
-
-        if (!widget) {
-          console.warn(`Widget '${widgetId}' not found.`);
-          return;
-        }
-
-        // Dropdown Item Handling
+        if (!widget) return;
+        // finalValue is either data2 from CC or converted note value (0 or 127)
         if (widget.classList.contains('dropdown-item')) {
           widget.click();
-        }
-        // WebAudioSwitch Handling
-        else if (widget instanceof HTMLElement && widget.tagName === 'WEBAUDIO-SWITCH') {
-          this.triggerWebAudioSwitch(widget, data2);
-        }
-        // Standard Widget Handling (e.g., sliders)
-        else {
-          this.updateWebAudioWidget(widget, data2);
+        } else if (widget instanceof HTMLElement && widget.tagName === 'WEBAUDIO-SWITCH') {
+          this.triggerWebAudioSwitch(widget, finalValue);
+        } else {
+          this.updateWebAudioWidget(widget, finalValue);
         }
       }
     });
-
-    // Update Parameters
+  
+    // Update parameters (same CC logic)
     this.midiParamMappings.forEach((mapping, param) => {
-      if (mapping.channel === channel && mapping.cc === data1) {
-        this.updateParameter(param, data2);
+      if (mapping.channel === channel && mapping.cc === ccNumber) {
+        this.updateParameter(param, finalValue);
       }
     });
-  }
-
-  /**
+  }  /**
    * Updates standard widgets like sliders based on MIDI values.
    * @private
    * @param {HTMLElement} widget - The widget element to update.
@@ -340,22 +368,47 @@ class MIDIController {
    * @example
    * midiController.updateWebAudioWidget(sliderElement, 64);
    */
-  updateWebAudioWidget(widget, value) {
-    const normalizedValue = value / 127;
-
-    // Use _min and _max if available, otherwise fall back to min and max
-    const min = widget._min !== undefined ? widget._min : widget.min;
-    const max = widget._max !== undefined ? widget._max : widget.max;
-
-    if (min === undefined || max === undefined) {
-      console.warn(`Widget '${widget.id}' is missing min/max values.`);
-      return;
+  updateWebAudioWidget(widget, value, type = 'cc') {
+    if (type === 'cc') {
+      // Original CC logic as is
+      const normalizedValue = value / 127;
+      const min = widget._min !== undefined ? widget._min : widget.min;
+      const max = widget._max !== undefined ? widget._max : widget.max;
+      if (min === undefined || max === undefined) {
+        console.warn(`Widget '${widget.id}' is missing min/max values.`);
+        return;
+      }
+      widget.value = min + normalizedValue * (max - min);
+    } else if (type === 'note') {
+      // For note messages:
+      // If it's a toggle switch (check widget.type or widget's attributes),
+      // we interpret data2 as on/off:
+      // If widget is a webaudio-switch with type='toggle', on if value>0 else off.
+      // Otherwise, if it's a continuous widget, just treat it like CC:
+      if (widget.type === 'toggle' || widget.hasAttribute('data-toggle')) {
+        // Toggle logic: note on (>0) => 1, note off (=0) => 0
+        widget.value = value > 0 ? 1 : 0;
+      } else {
+        // If it's not a toggle, just normalize like CC:
+        const normalizedValue = value / 127;
+        const min = widget._min !== undefined ? widget._min : widget.min;
+        const max = widget._max !== undefined ? widget._max : widget.max;
+        if (min === undefined || max === undefined) {
+          console.warn(`Widget '${widget.id}' is missing min/max values.`);
+          return;
+        }
+        widget.value = min + normalizedValue * (max - min);
+      }
     }
-
-    // Calculate the new value based on normalization
-    widget.value = min + normalizedValue * (max - min);
+  
+    if (typeof widget.setValue === 'function') {
+      widget.setValue(widget.value, true);
+    }
+    if (typeof widget.redraw === 'function') {
+      widget.redraw();
+    }
+    console.log(`MIDIController: Updated widget '${widget.id}' to value ${widget.value}`);
   }
-
   /**
    * Triggers actions for WebAudioSwitch widgets or invokes dropdown item actions.
    * @private
@@ -402,31 +455,28 @@ class MIDIController {
    * @example
    * midiController.markAsMapped('volumeSlider', 7, 0);
    */
-  markAsMapped(elementId, midiCC, midiChannel) {
+  markAsMapped(elementId, midiCC, midiChannel, type = 'cc') {
     const element = document.getElementById(elementId) || document.querySelector(`[data-value="${elementId}"]`);
     if (element) {
-      // Change highlight class
       element.classList.remove('midi-learn-highlight');
       element.classList.add('midi-mapped');
-
-      // Remove existing indicator if any
+  
       let indicator = document.querySelector(`.midi-indicator[data-element-id="${elementId}"]`);
       if (indicator) {
         indicator.remove();
       }
-
-      // Add MIDI controller indicator
+  
       indicator = document.createElement('div');
       indicator.className = 'midi-indicator';
       indicator.dataset.elementId = elementId;
-      indicator.textContent = `CH ${midiChannel + 1} / CC ${midiCC}`;
+      // If type is 'note', show NOTE, else show CC
+      indicator.textContent = `CH ${midiChannel + 1} / ${type.toUpperCase()} ${midiCC}`;
       document.body.appendChild(indicator);
-
-      // Position the indicator over the element
+  
       const rect = element.getBoundingClientRect();
       indicator.style.position = 'fixed';
-      indicator.style.left = `${rect.right - 30}px`; // Adjust as needed
-      indicator.style.top = `${rect.bottom - 20}px`; // Adjust as needed
+      indicator.style.left = `${rect.right - 30}px`;
+      indicator.style.top = `${rect.bottom - 20}px`;
       indicator.style.zIndex = '1002';
     }
   }
