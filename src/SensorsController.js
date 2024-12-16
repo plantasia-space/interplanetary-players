@@ -1,34 +1,58 @@
-// src/SensorsController.js
 import { Quaternion, Euler, Vector3, MathUtils } from 'three';
 
+/**
+ * @class SensorController
+ * @description Manages device orientation sensor inputs and maps them to user parameters.
+ * Handles toggle-based activation/deactivation of sensor axes (x, y, z).
+ * Integrates with a user-defined `ParameterManager` for real-time updates.
+ */
 export class SensorController {
+    /**
+     * Creates an instance of SensorController.
+     * @param {User1Manager} user1Manager - The user manager instance for handling parameter updates.
+     */
     constructor(user1Manager) {
         if (SensorController.instance) {
             return SensorController.instance;
         }
 
+        /**
+         * @type {boolean} Indicates if the sensor is actively listening to device orientation events.
+         */
         this.isSensorActive = false;
+
+        /**
+         * @type {User1Manager} Manages parameter updates and subscriptions.
+         */
         this.user1Manager = user1Manager;
 
-        // Initialize Three.js Quaternion and Vector3
+        // Initialize Three.js Quaternion and Vector3 for sensor calculations.
         this.quaternion = new Quaternion();
-        this.referenceVector = new Vector3(1, 0, 0);
-        this.rotatedVector = new Vector3();
+        this.referenceVector = new Vector3(1, 0, 0); // Fixed reference axis for mapping.
+        this.rotatedVector = new Vector3(); // Stores the rotated vector after quaternion transformation.
 
-        // Axis activation states (default to inactive)
+        /**
+         * @type {Object} Tracks activation states for each axis ('x', 'y', 'z'). Defaults to inactive.
+         */
         this.activeAxes = { x: false, y: false, z: false };
 
-        // Bind toggle handlers
+        // Throttle updates to prevent excessive parameter updates.
+        this.throttleUpdate = this.throttle(this.updateParameters.bind(this), 100);
+
+        // Bind toggle handlers for event listeners.
         this.handleToggleChange = this.handleToggleChange.bind(this);
 
-        // Set up sensor toggles
+        // Initialize toggles for controlling sensor axes.
         this.initializeToggles();
 
+        // Singleton pattern.
         SensorController.instance = this;
     }
 
     /**
-     * Initializes the toggles and binds their change events.
+     * Initializes the toggles for sensor axes (x, y, z) and binds their change events.
+     * Assumes toggles are WebAudioSwitch elements with `state` representing activation.
+     * Logs the initial state of each toggle for debugging purposes.
      */
     initializeToggles() {
         ['toggleSensorX', 'toggleSensorY', 'toggleSensorZ'].forEach((id) => {
@@ -36,10 +60,9 @@ export class SensorController {
             const axis = id.replace('toggleSensor', '').toLowerCase();
 
             if (toggle) {
-                // Log the initial state for debugging
                 console.debug(`[Init Debug] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${toggle.state}`);
 
-                // Listen for state changes
+                // Bind change event to the toggle.
                 toggle.addEventListener('change', () => this.handleToggleChange(toggle, axis));
             } else {
                 console.warn(`SensorController: Toggle element '${id}' not found.`);
@@ -47,10 +70,20 @@ export class SensorController {
         });
     }
 
+    /**
+     * Checks if the device supports orientation sensors.
+     * @static
+     * @returns {boolean} True if `DeviceOrientationEvent` is supported, false otherwise.
+     */
     static isSupported() {
         return typeof DeviceOrientationEvent !== 'undefined';
     }
 
+    /**
+     * Requests user permission to access orientation sensors (iOS 13+ only).
+     * @async
+     * @returns {Promise<boolean>} Resolves to `true` if permission is granted, `false` otherwise.
+     */
     async requestPermission() {
         if (
             typeof DeviceOrientationEvent !== 'undefined' &&
@@ -58,20 +91,20 @@ export class SensorController {
         ) {
             try {
                 const response = await DeviceOrientationEvent.requestPermission();
-                if (response === 'granted') {
-                    return true;
-                } else {
-                    console.warn('SensorController: Sensor access denied by user.');
-                    return false;
-                }
+                return response === 'granted';
             } catch (error) {
                 console.error('SensorController: Error requesting permission:', error);
                 return false;
             }
         }
-        return true;
+        return true; // Assume permission is granted on non-iOS devices.
     }
 
+    /**
+     * Activates the device orientation sensor if supported and permission is granted.
+     * Binds the `deviceorientation` event to listen for orientation changes.
+     * @async
+     */
     async activateSensors() {
         if (!SensorController.isSupported()) {
             console.warn('SensorController: Device orientation not supported by this browser/device.');
@@ -89,26 +122,39 @@ export class SensorController {
         console.log('SensorController: Sensors activated.');
     }
 
+    /**
+     * Starts listening for `deviceorientation` events to capture orientation changes.
+     * Ensures that only one listener is active at a time.
+     * @private
+     */
     startListening() {
-        window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
-        console.log('SensorController: Started listening to deviceorientation events.');
+        if (!this.isSensorActive) {
+            window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
+            console.log('SensorController: Started listening to deviceorientation events.');
+        }
     }
-
-    stopListening() {
-        window.removeEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
-        this.isSensorActive = false;
-        this.stopDebugging();
-        console.log('SensorController: Stopped listening to deviceorientation events.');
-    }
-
 
     /**
-     * Handles changes to toggle states.
+     * Stops listening for `deviceorientation` events.
+     * Resets the `isSensorActive` flag.
+     * @public
+     */
+    stopListening() {
+        if (this.isSensorActive) {
+            window.removeEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
+            this.isSensorActive = false;
+            console.log('SensorController: Stopped listening to deviceorientation events.');
+        }
+    }
+
+    /**
+     * Handles changes to toggle states for sensor axes.
+     * Updates the `activeAxes` state and manages sensor activation/deactivation.
      * @param {HTMLElement} toggle - The toggle element.
-     * @param {string} axis - The axis ('x', 'y', or 'z').
+     * @param {string} axis - The axis ('x', 'y', or 'z') corresponding to the toggle.
      */
     handleToggleChange(toggle, axis) {
-        const isActive = toggle.state === 1; // Use the `state` property of WebAudioSwitch
+        const isActive = toggle.state === 1;
 
         console.debug(`[Toggle Debug] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${toggle.state}`);
 
@@ -117,26 +163,25 @@ export class SensorController {
             console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${isActive ? 'active' : 'inactive'}.`);
 
             if (isActive) {
-                // Activate sensors if this is the first active axis
-                if (!this.isSensorActive) {
-                    this.activateSensors();
-                }
+                if (!this.isSensorActive) this.activateSensors();
             } else {
-                // Deactivate sensors if no axes are active
                 const anyActive = Object.values(this.activeAxes).some(val => val);
-                if (!anyActive && this.isSensorActive) {
-                    this.stopListening();
-                }
+                if (!anyActive && this.isSensorActive) this.stopListening();
             }
         }
 
         console.debug(`[Toggle Debug] ActiveAxes After:`, this.activeAxes);
     }
 
-
+    /**
+     * Handles `deviceorientation` events, converts orientation data to a quaternion,
+     * and maps the quaternion to normalized parameters for active axes.
+     * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
+     */
     handleDeviceOrientation(event) {
         try {
             const { alpha, beta, gamma } = event;
+
             const euler = new Euler(
                 MathUtils.degToRad(beta || 0),
                 MathUtils.degToRad(alpha || 0),
@@ -145,13 +190,18 @@ export class SensorController {
             );
             this.quaternion.setFromEuler(euler);
 
-            this.mapQuaternionToParameters(this.quaternion);
+            this.throttleUpdate(this.quaternion);
         } catch (error) {
             console.error('SensorController: Error in handleDeviceOrientation:', error);
         }
     }
 
-    mapQuaternionToParameters(q) {
+    /**
+     * Maps a quaternion to normalized parameters and updates the `user1Manager`.
+     * @param {THREE.Quaternion} q - The quaternion representing the current device orientation.
+     * @private
+     */
+    updateParameters(q) {
         try {
             this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
 
@@ -161,38 +211,31 @@ export class SensorController {
             const yNorm = MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
             const zNorm = MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
 
-            console.log(`SensorController: Normalized Parameters - x: ${xNorm.toFixed(3)}, y: ${yNorm.toFixed(3)}, z: ${zNorm.toFixed(3)}`);
+            console.log(`SensorController: Normalized Parameters - x: ${xNorm.toFixed(3)}, y: ${yNorm.toFixed(3)}, z: ${zNorm}`);
 
             if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
             if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
             if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
-
-            console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm}, y=${yNorm}, z=${zNorm}`);
         } catch (error) {
-            console.error('SensorController: Error in mapQuaternionToParameters:', error);
+            console.error('SensorController: Error in updateParameters:', error);
         }
     }
 
-    /* startDebugging() {
-        if (this.debugInterval) return;
-
-        this.debugInterval = setInterval(() => {
-            if (this.isSensorActive) {
-                const { alpha, beta, gamma } = this.sensorData;
-                console.log(
-                    `Sensor Data - Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°`
-                );
+    /**
+     * Throttles a function call to a specified limit.
+     * Prevents excessive executions of expensive operations.
+     * @param {Function} func - The function to throttle.
+     * @param {number} limit - The time in milliseconds to throttle executions.
+     * @returns {Function} The throttled function.
+     */
+    throttle(func, limit) {
+        let inThrottle;
+        return function (...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => (inThrottle = false), limit);
             }
-        }, 5000);
-
-        console.log('SensorController: Started debugging interval.');
-    } */
-
-    stopDebugging() {
-        if (this.debugInterval) {
-            clearInterval(this.debugInterval);
-            this.debugInterval = null;
-            console.log('SensorController: Stopped debugging interval.');
-        }
+        };
     }
 }
