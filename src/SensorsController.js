@@ -20,10 +20,29 @@ export class SensorController {
         this.quaternion = new Quaternion();
         this.referenceVector = new Vector3(1, 0, 0); // Reference axis to map
         this.rotatedVector = new Vector3();
+        // Axis activation states
+        this.activeAxes = { x: true, y: true, z: true };
+
+        // Bind toggle handlers
+        this.handleToggleChange = this.handleToggleChange.bind(this);
+
+        // Set up sensor toggles
+        this.initializeToggles();
 
         SensorController.instance = this;
     }
 
+    initializeToggles() {
+        // Listen for toggle changes
+        ['toggleSensorX', 'toggleSensorY', 'toggleSensorZ'].forEach((id) => {
+            const toggle = document.getElementById(id);
+            if (toggle) {
+                toggle.addEventListener('change', this.handleToggleChange);
+            } else {
+                console.warn(`SensorController: Toggle element '${id}' not found.`);
+            }
+        });
+    }
     /**
      * Checks if Device Orientation is supported.
      * @returns {boolean}
@@ -59,8 +78,8 @@ export class SensorController {
         }
 
         // Assume permissions are granted for non-iOS devices
-        notifications.showToast('Sensor access available (no explicit request needed).', 'info');
-        return true;
+/*         notifications.showToast('Sensor access available (no explicit request needed).', 'info');
+ */        return true;
     }
 
     /**
@@ -83,8 +102,8 @@ export class SensorController {
 
         this.startListening();
         this.isSensorActive = true;
-        notifications.showToast('Sensors activated successfully!', 'success');
-    }
+/*         notifications.showToast('Sensors activated successfully!', 'success');
+ */    }
 
     /**
      * Starts listening to device orientation events.
@@ -92,9 +111,9 @@ export class SensorController {
      */
     startListening() {
         window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
-        this.startDebugging();
+/*         this.startDebugging();
         console.log('SensorController: Started listening to deviceorientation events.');
-    }
+ */    }
 
     /**
      * Stops listening to device orientation events.
@@ -106,6 +125,21 @@ export class SensorController {
         this.stopDebugging();
         notifications.showToast('Sensors deactivated.', 'info');
         console.log('SensorController: Stopped listening to deviceorientation events.');
+    }
+
+    handleToggleChange(event) {
+        const toggleId = event.target.id;
+        const axis = toggleId.replace('toggleSensor', '').toLowerCase(); // Derive axis from ID
+        const isActive = event.target.value === '1';
+    
+        if (axis in this.activeAxes) {
+            this.activeAxes[axis] = isActive;
+            notifications.showToast(
+                `Sensor axis '${axis.toUpperCase()}' ${isActive ? 'activated' : 'deactivated'}.`,
+                'info'
+            );
+            console.log(`SensorController: Axis '${axis}' is now ${isActive ? 'active' : 'inactive'}.`);
+        }
     }
 
     /**
@@ -151,29 +185,24 @@ export class SensorController {
      */
     mapQuaternionToParameters(q) {
         try {
-            // Apply quaternion to reference vector
             this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
 
-            // Log rotated vector
-            console.log(`Rotated Vector: x=${this.rotatedVector.x.toFixed(3)}, y=${this.rotatedVector.y.toFixed(3)}, z=${this.rotatedVector.z.toFixed(3)}`);
-
-            // Normalize vector components from [-1, 1] to [0, 1]
             const mapTo01 = (v) => (v + 1) / 2;
 
             const xNorm = MathUtils.clamp(mapTo01(this.rotatedVector.x), 0, 1);
             const yNorm = MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
             const zNorm = MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
 
-            // Log normalized values
-            console.log(`Normalized Parameters: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
+            console.log(`Normalized Parameters: x=${xNorm}, y=${yNorm}, z=${zNorm}`);
 
-            // Update parameters
-            this.user1Manager.setNormalizedValue('x', xNorm);
-            this.user1Manager.setNormalizedValue('y', yNorm);
-            this.user1Manager.setNormalizedValue('z', zNorm);
+            // Update parameters only if the axis is active
+            if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
+            if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
+            if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
 
-            // Log updated parameters
-            console.debug(`[SensorController] Updated parameters via quaternion: x=${xNorm.toFixed(3)}, y=${yNorm.toFixed(3)}, z=${zNorm.toFixed(3)}`);
+            console.debug(
+                `[SensorController] Updated parameters via quaternion: x=${xNorm}, y=${yNorm}, z=${zNorm}`
+            );
         } catch (error) {
             console.error('SensorController: Error in mapQuaternionToParameters:', error);
         }
@@ -183,7 +212,7 @@ export class SensorController {
      * Starts periodic debugging toasts with sensor data.
      * @private
      */
-    startDebugging() {
+/*     startDebugging() {
         if (this.debugInterval) return;
 
         this.debugInterval = setInterval(() => {
@@ -198,7 +227,7 @@ Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFi
         }, 5000);
 
         console.log('SensorController: Started debugging interval.');
-    }
+    } */
 
     /**
      * Stops periodic debugging toasts.
