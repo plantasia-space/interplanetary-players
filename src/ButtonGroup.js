@@ -179,17 +179,7 @@ export class ButtonGroup {
         }
     }
 
-    /**
-     * Handles selection changes from the dropdown menu.
-     * @param {string} selectedValue - The value of the selected menu item.
-     * @private
-     */
-/**
- * Handles selection changes from the dropdown menu.
- * Updates the button's icon and label to reflect the selected menu item.
- * @param {string} selectedValue - The value of the selected menu item.
- * @private
- */
+
 /**
  * Handles selection changes from the dropdown menu.
  * Updates the button's icon and label to reflect the selected menu item.
@@ -200,11 +190,14 @@ export class ButtonGroup {
 onSelectionChange(selectedValue) {
     console.log(`[Dropdown] Item clicked: ${selectedValue}`);
 
+    // Precheck MIDI support and controller initialization
+    const isMidiLearnAvailable = MIDI_SUPPORTED && this.midiController;
+
     // Determine the type of button group based on a data attribute
     const groupType = this.container.getAttribute('data-group');
 
-    // Check if MIDI Learn mode is active
-    if (this.midiController.isMidiLearnModeActive) {
+    // Handle MIDI Learn mode if available
+    if (isMidiLearnAvailable && this.midiController.isMidiLearnModeActive) {
         const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
 
         if (selectedItem) {
@@ -249,7 +242,10 @@ onSelectionChange(selectedValue) {
         default:
             console.warn(`[ButtonGroup] Unknown group type: ${groupType}`);
     }
-}    /**
+}
+
+
+/**
      * Handles selections from the information dropdown menu.
      * @param {string} selectedValue - The selected information type.
      * @private

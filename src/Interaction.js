@@ -52,16 +52,12 @@ export function setupInteractions(dataManager, audioPlayer, user1Manager) {
         buttonGroups.push(buttonGroup);
     });
 
-    // Register dropdown items with MIDIController for MIDI interactions
-    if (MIDI_SUPPORTED) {
-        registerMenuItemsWithMIDIController(buttonGroups);
-    }
-
-    // No longer need to register modes here; they are handled in ModeManager.js
-
-    // Optionally, you can trigger initial UI setup or other interactions here
-
-    // Additional setup or initializations can go here
+// Register dropdown items with MIDIController for MIDI interactions
+if (MIDI_SUPPORTED && MIDIControllerInstance) {
+    registerMenuItemsWithMIDIController(buttonGroups);
+} else {
+    console.warn('MIDI is not supported in this environment. Skipping MIDI setup.');
+}
 }
 
 /**
