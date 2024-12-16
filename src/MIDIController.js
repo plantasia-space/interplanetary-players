@@ -949,47 +949,49 @@ class MIDIController {
   exitMidiLearnMode() {
     console.log('MIDIController: Exiting MIDI Learn mode.');
 
-    // Update the mode state
+    // Reset mode state
     this.isMidiLearnModeActive = false;
     this.currentLearnParam = null;
     this.currentLearnWidget = null;
 
-    // Remove mode-specific body class
+    // Clean up UI
     document.body.classList.remove('midi-learn-mode');
-    // Close context menu if open
     this.closeContextMenu();
-    // Remove overlays
     this.removeOverlays();
-    this.toggleMoreMenuButton(false); // Revert button
-
-    // Remove all highlights
-    const highlightedElements = document.querySelectorAll('.midi-learn-highlight');
-    highlightedElements.forEach(element => {
-      element.classList.remove('midi-learn-highlight');
-    });
-
-    // Close context menu if open
-    this.closeContextMenu();
-
-    // Remove lingering messages
-    const toastContainer = document.getElementById('toast-container');
-    if (toastContainer) {
-      toastContainer.innerHTML = '';
-    }
-
-    // Remove Esc key listener
+    this.toggleMoreMenuButton(false); // Reset the More Menu button
     document.removeEventListener('keydown', this.handleEscKey);
 
-    // Reset the MIDI Learn icon
-    const midiIcon = document.getElementById('midi-learn-icon');
-    if (midiIcon) {
-      midiIcon.classList.remove('active');
-      midiIcon.classList.add('default');
-      midiIcon.setAttribute('aria-label', 'Jam Mode');
+    // Remove highlights
+    document.querySelectorAll('.midi-learn-highlight').forEach(element =>
+        element.classList.remove('midi-learn-highlight')
+    );
+
+    // Clear lingering messages
+    const toastContainer = document.getElementById('toast-container');
+    if (toastContainer) toastContainer.innerHTML = '';
+
+    // Reset interaction dropdown to Jam mode
+    const interactionButton = document.getElementById('interactionMenuButton');
+    const interactionIcon = interactionButton?.querySelector('.button-icon');
+    const jamItem = document.getElementById('jam-item');
+
+    if (interactionButton && interactionIcon && jamItem) {
+        const jamIconSrc = jamItem.getAttribute('data-icon');
+        const jamLabel = jamItem.getAttribute('data-value');
+
+        // Update button attributes
+        interactionButton.setAttribute('aria-label', jamLabel);
+
+        // Fetch and set the SVG dynamically using fetchAndSetSVG
+        this.fetchAndSetSVG(jamIconSrc, interactionIcon, true);
+
+        console.log(`Interaction dropdown reset to "${jamLabel}" mode.`);
+    } else {
+        console.warn('Interaction dropdown elements are missing or undefined.');
     }
 
     console.log('MIDIController: Fully exited MIDI Learn mode.');
-  }
+}
 
   /**
    * Handles the "Learn" action from the context menu.
