@@ -141,7 +141,7 @@ async function initializeApp() {
         updateKnobsFromTrackData(trackData);
 
         // Setup UI interactions and populate initial placeholders
-        setupInteractions(dataManager, audioPlayer);
+        setupInteractions(dataManager, audioPlayer, user1Manager);
         dataManager.populatePlaceholders('monitorInfo');
 
         // Load and display the 3D model in the scene

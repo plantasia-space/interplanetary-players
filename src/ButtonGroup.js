@@ -1,15 +1,8 @@
-/**
- * @file ButtonGroup.js
- * @version 2.0.0
- * @autor 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾
- * @license MIT
- * @date 2024-12-07
- * @description Manages button groups within the Interplanetary Players application, handling interactions, SVG loading, and event bindings.
- */
-
+// ButtonGroup.js
+import { ModeManagerInstance } from './ModeManager.js'; // Import ModeManager
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js';
-import { SensorControllerInstance } from './SensorsController.js';
+import notifications from './AppNotifications.js';
 
 /**
  * Class representing a group of buttons with dropdown menus for various functionalities.
@@ -57,8 +50,6 @@ export class ButtonGroup {
         this.closeGridBtn = document.querySelector('.close-grid-btn'); // Close button for the grid
         this.collapseElement = document.getElementById('collapseInfoMenu'); // Collapsible menu element
 
-        this.sensorsActivated = false; // Tracks if sensors have been activated
-
         // Validate the presence of essential elements
         if (!this.dropdown || !this.button || !this.menuItems.length || !this.icon) {
             console.error('ButtonGroup initialization failed: Missing essential elements.');
@@ -78,32 +69,32 @@ export class ButtonGroup {
         this.init();
     }
 
-/**
- * Initializes the ButtonGroup by setting up SVGs and event bindings.
- * @private
- * @async
- */
-async init() {
-    console.log(`Initializing dropdowns for "${this.containerSelector}"`);
+    /**
+     * Initializes the ButtonGroup by setting up SVGs and event bindings.
+     * @private
+     * @async
+     */
+    async init() {
+        console.log(`Initializing dropdowns for "${this.containerSelector}"`);
 
-    if (this.collapseInstance) {
-        this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
+        if (this.collapseInstance) {
+            this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
+        }
+
+        // Adjust the dropdown based on MIDI and sensor support
+        await this.adjustForHardwareSupport();
+
+        // Load dynamic SVGs for the main button and dropdown menu items
+        this.loadDynamicSVGs();
+
+        // Bind event listeners to menu items and buttons
+        this.bindEvents();
+
+        // Initialize Bootstrap Dropdowns to prevent global interference
+        this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
+            new bootstrap.Dropdown(dropdown); // Initialize with default behavior
+        });
     }
-
-    // Adjust the dropdown based on MIDI and sensor support
-    await this.adjustForHardwareSupport();
-
-    // Load dynamic SVGs for the main button and dropdown menu items
-    this.loadDynamicSVGs();
-
-    // Bind event listeners to menu items and buttons
-    this.bindEvents();
-
-    // Initialize Bootstrap Dropdowns to prevent global interference
-    this.container.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
-        new bootstrap.Dropdown(dropdown); // Initialize with default behavior
-    });
-}
 
     /**
      * Loads dynamic SVGs for the main button and dropdown menu items.
@@ -173,18 +164,9 @@ async init() {
         this.menuItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                const newIconPath = item.getAttribute('data-icon');
-                const newValue = item.getAttribute('data-value');
-            
-                if (newIconPath && newValue) {
-                    // Update the main button's icon and aria-label
-                    this.icon.setAttribute('data-src', newIconPath);
-                    this.icon.setAttribute('aria-label', newValue);
-                    this.fetchAndSetSVG(newIconPath, this.icon, true);
-                }
-            
-                // Handle the selection change based on the new value
-                this.onSelectionChange(newValue);
+                const selectedValue = item.getAttribute('data-value');
+                console.log(`[Dropdown] Item clicked: ${selectedValue}`);
+                this.onSelectionChange(selectedValue);
             });
         });
 
@@ -202,26 +184,72 @@ async init() {
      * @param {string} selectedValue - The value of the selected menu item.
      * @private
      */
-    onSelectionChange(selectedValue) {
-        // Determine the type of button group based on a data attribute
-        const groupType = this.container.getAttribute('data-group');
+/**
+ * Handles selection changes from the dropdown menu.
+ * Updates the button's icon and label to reflect the selected menu item.
+ * @param {string} selectedValue - The value of the selected menu item.
+ * @private
+ */
+/**
+ * Handles selection changes from the dropdown menu.
+ * Updates the button's icon and label to reflect the selected menu item.
+ * Handles MIDI Learn behavior for interaction dropdowns.
+ * @param {string} selectedValue - The value of the selected menu item.
+ * @private
+ */
+onSelectionChange(selectedValue) {
+    console.log(`[Dropdown] Item clicked: ${selectedValue}`);
 
-        switch (groupType) {
-            case 'information-dropdown':
-                this.handleInformationDropdown(selectedValue);
-                break;
-            case 'transport-dropdown':
-                this.handleTransportDropdown(selectedValue);
-                break;
-            case 'interaction-dropdown':
-                this.handleInteractionDropdown(selectedValue);
-                break;
-            default:
-                console.warn(`Unknown group type: ${groupType}`);
+    // Determine the type of button group based on a data attribute
+    const groupType = this.container.getAttribute('data-group');
+
+    // Check if MIDI Learn mode is active
+    if (this.midiController.isMidiLearnModeActive) {
+        const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
+
+        if (selectedItem) {
+            console.log(`[Dropdown] MIDI Learn active: Mapping dropdown item "${selectedValue}"`);
+            this.midiController.startMidiLearnForWidget(selectedItem); // Trigger MIDI Learn for this item
+        } else {
+            console.warn(`[Dropdown] Selected item "${selectedValue}" not found.`);
         }
+        return; // Exit early since MIDI Learn handles the selection
     }
 
-    /**
+    // Update the main button's icon and label
+    const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
+    if (selectedItem) {
+        const newIconPath = selectedItem.getAttribute('data-icon');
+        const newLabel = selectedItem.textContent.trim();
+
+        if (newIconPath) {
+            this.fetchAndSetSVG(newIconPath, this.icon, true);
+            console.log(`[Dropdown] Updated button icon to: ${newIconPath}`);
+        }
+
+        if (newLabel) {
+            this.button.setAttribute('aria-label', newLabel);
+            console.log(`[Dropdown] Updated button label to: ${newLabel}`);
+        }
+    } else {
+        console.warn(`[Dropdown] Selected item "${selectedValue}" not found in menu.`);
+    }
+
+    // Handle group-specific actions
+    switch (groupType) {
+        case 'information-dropdown':
+            this.handleInformationDropdown(selectedValue);
+            break;
+        case 'transport-dropdown':
+            this.handleTransportDropdown(selectedValue);
+            break;
+        case 'interaction-dropdown':
+            this.handleInteractionDropdown(selectedValue);
+            break;
+        default:
+            console.warn(`[ButtonGroup] Unknown group type: ${groupType}`);
+    }
+}    /**
      * Handles selections from the information dropdown menu.
      * @param {string} selectedValue - The selected information type.
      * @private
@@ -306,67 +334,40 @@ async init() {
 
     /**
      * Handles selections from the interaction dropdown menu.
+     * Delegates mode activations to ModeManager.
      * @param {string} selectedValue - The selected interaction mode.
      * @private
-     * @async
      */
-    async handleInteractionDropdown(selectedValue) {
+    handleInteractionDropdown(selectedValue) {
+        console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
         switch (selectedValue) {
             case 'Jam':
-                console.log('Jam mode activated.');
-                // Implement Jam mode activation logic here
+                ModeManagerInstance.activateMode('JAM');
                 break;
-
+    
             case 'MIDI':
-                try {
-                    await MIDIControllerInstance.activateMIDI();
-                    MIDIControllerInstance.enableMidiLearn();
-                    console.log('MIDI mode activated successfully.');
-                } catch (error) {
-                    console.error('MIDI Activation Error:', error);
-                }
+                ModeManagerInstance.activateMode('MIDI_LEARN');
                 break;
-
+    
             case 'Sensors':
-                if (!this.sensorsActivated) {
-                    try {
-                        await this.activateSensorsMode();
-                    } catch (error) {
-                        console.error('Error activating sensors:', error);
-                    }
-                } else {
-                    console.log('[ButtonGroup] Sensors mode is already activated.');
-                }
+                ModeManagerInstance.activateMode('SENSORS');
                 break;
-
+    
             case 'Cosmic LFO':
-                console.log('Cosmic LFO mode activated.');
-                this.activateCosmicLFO();
+                ModeManagerInstance.activateMode('COSMIC_LFO');
                 break;
-
+    
             default:
-                console.warn(`Unknown interaction mode: ${selectedValue}`);
+                console.warn(`[ButtonGroup] Unknown interaction mode selected: ${selectedValue}`);
         }
     }
 
     /**
-     * Activates the Cosmic LFO mode.
-     * @private
+     * Handles the activation of Sensors mode by delegating to ModeManager.
+     * @deprecated This method is no longer needed as mode activation is delegated directly.
      */
-    activateCosmicLFO() {
-        console.log("Cosmic LFO activated.");
-        // Implement Cosmic LFO activation logic here
-    }
-
-    /**
-     * Activates the Sensors mode.
-     * @private
-     */
-    activateSensors() {
-        console.log("Sensors mode activated.");
-        // Implement Sensors activation logic here
-    }
-
+    // Removed the redundant activateSensors and sensorsActivated flag
+    // All sensor activation is now handled by ModeManager
     /**
      * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
      * Hides or shows menu items accordingly.
@@ -374,45 +375,20 @@ async init() {
      */
     async adjustForHardwareSupport() {
         const sensorsAvailable = await SENSORS_SUPPORTED;
-
+        console.log(`[ButtonGroup] Sensors support: ${sensorsAvailable ? 'Available' : 'Unavailable'}`);
+        
         this.menuItems.forEach(item => {
             const value = item.getAttribute('data-value');
             if (value === 'MIDI') {
                 item.style.display = MIDI_SUPPORTED ? 'block' : 'none';
+                console.log(`[ButtonGroup] MIDI menu item display set to: ${MIDI_SUPPORTED ? 'block' : 'none'}`);
             } else if (value === 'Sensors') {
-                item.style.display = 'block'; // Always visible for sensors
-                console.log(`[ButtonGroup] Sensors button always visible.`);
+                item.style.display = sensorsAvailable ? 'block' : 'none';
+                console.log(`[ButtonGroup] Sensors menu item display set to: ${sensorsAvailable ? 'block' : 'none'}`);
             }
         });
 
         console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
         console.log(`[ButtonGroup] Sensors support: ${sensorsAvailable ? 'Available' : 'Unavailable'}`);
     }
-
-    /**
-     * Activates Sensors mode by requesting permission and initializing the SensorController.
-     * @private
-     * @async
-     */
-    async activateSensorsMode() {
-        if (!SensorControllerInstance) {
-            console.warn('[ButtonGroup] Sensors are not supported by this browser/device.');
-            return;
-        }
-
-        try {
-            const permissionGranted = await SensorControllerInstance.requestPermission();
-            if (permissionGranted) {
-                await SensorControllerInstance.activateSensors();
-                this.sensorsActivated = true;
-                console.log('[ButtonGroup] Sensors mode activated successfully.');
-            } else {
-                console.warn('[ButtonGroup] Permission denied for sensors.');
-            }
-        } catch (error) {
-            console.error('[ButtonGroup] Error activating sensors mode:', error);
-        }
-    }
-
-
 }

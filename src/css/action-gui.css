@@ -29,7 +29,9 @@
 
 }
 
-
+.xyz-sensors-toggle {
+    display: none; /* Hide by default */
+}
 
 /* Default (Extra-large screens: xl ≥1200px) */
 .xyz-knobs {

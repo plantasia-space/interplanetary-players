@@ -4,7 +4,6 @@
  * @file Interaction.js
  * @description Sets up interactions for dynamic placeholder updates, handles MIDI registrations, and applies UI color configurations based on track data.
  * @version 2.0.0
- * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
  */
@@ -12,9 +11,9 @@
 import { ModeManagerInstance } from './ModeManager.js';
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED } from './Constants.js'; 
+import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js'; // Ensure SENSORS_SUPPORTED is defined
 import notifications from './AppNotifications.js';
-import { SensorControllerInstance } from './SensorsController.js';
+import { SensorController } from './SensorsController.js'; // Import the class instead of instance
 
 /**
  * Sets up interactions for dynamic placeholder updates.
@@ -23,24 +22,18 @@ import { SensorControllerInstance } from './SensorsController.js';
  * @function setupInteractions
  * @param {DataManager} dataManager - The shared DataManager instance.
  * @param {AudioPlayer} audioPlayer - The shared AudioPlayer instance.
+ * @param {User1Manager} user1Manager - The user manager instance.
  * @returns {void}
  * @throws Will log an error if Bootstrap is not loaded.
  */
-export function setupInteractions(dataManager, audioPlayer) {
+export function setupInteractions(dataManager, audioPlayer, user1Manager) {
     if (typeof bootstrap === 'undefined') {
         console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
         return;
     }
 
-    // Bind event listeners to dropdown items for manual interactions
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', event => {
-            event.preventDefault(); // Prevent default link behavior
-            const action = item.getAttribute('data-value'); // Get action value
-            // TODO: Implement action handling based on 'action' value
-            //console.log(`[Interaction] Dropdown item clicked: ${action}`);
-        });
-    });
+    // Assign user1Manager to ModeManager for access within mode hooks
+    ModeManagerInstance.user1Manager = user1Manager;
 
     // Initialize all button groups
     const buttonGroups = [];
@@ -64,65 +57,11 @@ export function setupInteractions(dataManager, audioPlayer) {
         registerMenuItemsWithMIDIController(buttonGroups);
     }
 
+    // No longer need to register modes here; they are handled in ModeManager.js
 
-        // Define mode behaviors and integration here:
-        ModeManagerInstance.registerMode('JAM', {
-            onEnter: () => {
-                // Show Jam UI, hide MIDI Learn overlays, etc.
-                notifications.showToast("Switched to Jam mode.");
-            },
-            onExit: () => {}
-        });
-    
-        ModeManagerInstance.registerMode('MIDI_LEARN', {
-            onEnter: () => {
-                // If MIDI is supported and controller is available, enable MIDI Learn
-                if (MIDIControllerInstance) {
-                    MIDIControllerInstance.enableMidiLearn();
-                }
-                notifications.showToast("MIDI Learn mode activated.");
-            },
-            onExit: () => {
-                if (MIDIControllerInstance) {
-                    MIDIControllerInstance.exitMidiLearnMode();
-                }
-                notifications.showToast("Exited MIDI Learn mode.");
-            }
-        });
-    
-        ModeManagerInstance.registerMode('SENSORS', {
-            onEnter: async () => {
-                if (SensorControllerInstance) {
-                    await SensorControllerInstance.activateSensors();
-                    notifications.showToast("Sensors mode activated. Receiving device orientation data.");
-                } else {
-                    notifications.showToast("Sensors not supported on this device/browser.", 'warning');
-                }
-            },
-            onExit: () => {
-                if (SensorControllerInstance && SensorControllerInstance.isSensorActive) {
-                    SensorControllerInstance.stopListening();
-                }
-                notifications.showToast("Exited Sensors mode.");
-            }
-        });
-    
-    
-        ModeManagerInstance.registerMode('COSMIC_LFO', {
-            onEnter: () => {
-                // Show cosmic LFO UI...
-                notifications.showToast("Cosmic LFO mode activated.");
-            },
-            onExit: () => {
-                // Clean up cosmic LFO UI...
-                notifications.showToast("Exited Cosmic LFO mode.");
-            }
-        });
-    
-        // Initially start in JAM mode
-        ModeManagerInstance.activateMode('JAM');
+    // Optionally, you can trigger initial UI setup or other interactions here
 
-        
+    // Additional setup or initializations can go here
 }
 
 /**
@@ -142,7 +81,7 @@ function registerMenuItemsWithMIDIController(buttonGroups) {
             const itemId = item.id || item.getAttribute('data-value');
             if (itemId) {
                 midiController.registerWidget(itemId, item);
-                //console.log(`[MIDIController] Registered widget: ${itemId}`);
+                console.log(`[MIDIController] Registered widget: ${itemId}`);
             } else {
                 console.warn("Menu item missing 'id' or 'data-value' attribute:", item);
             }

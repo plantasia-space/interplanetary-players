@@ -1,9 +1,13 @@
-// SensorController.js
+// SensorsController.js
 import { Quaternion, Euler, Vector3, MathUtils } from 'three'; // Use named imports
-import { user1Manager, notifications } from './Main.js'; // Adjust path as needed
+import notifications from './AppNotifications.js'; // Import notifications directly
 
 export class SensorController {
-    constructor() {
+    /**
+     * Creates an instance of SensorController.
+     * @param {User1Manager} user1Manager - The user manager instance.
+     */
+    constructor(user1Manager) {
         if (SensorController.instance) {
             return SensorController.instance;
         }
@@ -187,7 +191,7 @@ export class SensorController {
                 const { alpha, beta, gamma } = this.sensorData;
                 notifications.showToast(
                     `Sensor Data:
-    Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°`,
+Alpha: ${alpha?.toFixed(2)}°, Beta: ${beta?.toFixed(2)}°, Gamma: ${gamma?.toFixed(2)}°`,
                     'info'
                 );
             }
@@ -208,5 +212,3 @@ export class SensorController {
         }
     }
 }
-
-export const SensorControllerInstance = SensorController.isSupported() ? new SensorController() : null;
