@@ -2,6 +2,7 @@
 import { SensorController } from './SensorsController.js'; // Import the class
 import notifications from './AppNotifications.js';
 import { MIDIControllerInstance } from './MIDIController.js'; // Ensure MIDIController is properly exported
+import { INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE, setExternalSensorsUsable } from './Constants.js';
 
 export class ModeManager {
     constructor() {
@@ -117,10 +118,21 @@ ModeManagerInstance.registerMode('SENSORS', {
 
         if (ModeManagerInstance.user1Manager) {
             const sensorController = SensorController.getInstance(ModeManagerInstance.user1Manager);
-            await sensorController.activateSensors();
-            ModeManagerInstance.sensorControllerInstance = sensorController;
 
-            notifications.showToast('Sensors mode activated. Receiving device orientation data.');
+            if (INTERNAL_SENSORS_USABLE) {
+                await sensorController.activateSensors();
+                notifications.showToast('Sensors mode activated. Receiving device orientation data.');
+            } else if (EXTERNAL_SENSORS_USABLE) {
+                sensorController.activateExternalSensors();
+                notifications.showToast('Sensors mode activated with external sensors.');
+            } else {
+                notifications.showToast(
+                    'No sensors available. Use "Connect External Sensor" to enable external sensors.',
+                    'warning'
+                );
+            }
+
+            ModeManagerInstance.sensorControllerInstance = sensorController;
 
             document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
                 button.style.display = 'block';
@@ -132,10 +144,15 @@ ModeManagerInstance.registerMode('SENSORS', {
     },
     onExit: () => {
         console.log('[ModeManager] Exiting SENSORS mode...');
+
         const sensorController = ModeManagerInstance.sensorControllerInstance;
 
         if (sensorController) {
-            sensorController.stopListening();
+            if (INTERNAL_SENSORS_USABLE) {
+                sensorController.stopListening();
+            } else if (EXTERNAL_SENSORS_USABLE) {
+                sensorController.deactivateExternalSensors();
+            }
             console.log('[ModeManager] Sensors deactivated.');
         }
 
@@ -145,7 +162,6 @@ ModeManagerInstance.registerMode('SENSORS', {
         });
     }
 });
-
 ModeManagerInstance.registerMode('COSMIC_LFO', {
     onEnter: () => {
         console.log('[ModeManager] Entered COSMIC_LFO mode.');

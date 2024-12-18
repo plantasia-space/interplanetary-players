@@ -1,4 +1,7 @@
 import { Quaternion, Euler, Vector3, MathUtils } from 'three';
+import { INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE, setExternalSensorsUsable } from './Constants.js';
+import QRCode from 'qrcode';
+import notifications from './AppNotifications';
 
 /**
  * @class SensorController
@@ -7,14 +10,14 @@ import { Quaternion, Euler, Vector3, MathUtils } from 'three';
  * Integrates with a user-defined `ParameterManager` for real-time updates.
  */
 export class SensorController {
-    /**
-     * Creates an instance of SensorController.
-     * @param {User1Manager} user1Manager - The user manager instance for handling parameter updates.
-     */
-    constructor(user1Manager) {
-        if (SensorController.instance) {
-            return SensorController.instance;
+    static getInstance(user1Manager) {
+        if (!SensorController.instance) {
+            SensorController.instance = new SensorController(user1Manager);
         }
+        return SensorController.instance;
+    }
+    constructor(user1Manager) {
+        if (SensorController.instance) return SensorController.instance;
 
         /**
          * @type {boolean} Indicates if the sensor is actively listening to device orientation events.
@@ -44,6 +47,19 @@ export class SensorController {
 
         // Initialize toggles for controlling sensor axes.
         this.initializeToggles();
+
+        // Determine whether internal or external sensors are usable
+        this.useInternalSensors = INTERNAL_SENSORS_USABLE;
+        this.useExternalSensors = EXTERNAL_SENSORS_USABLE;
+
+        // Initialize sensors based on availability
+        if (this.useInternalSensors) {
+            this.initializeInternalSensors();
+        } else if (this.useExternalSensors) {
+            this.initializeExternalSensors();
+        } else {
+            console.warn('SensorController: No usable sensors detected.');
+        }
 
         // Singleton pattern.
         SensorController.instance = this;
@@ -78,7 +94,37 @@ export class SensorController {
     static isSupported() {
         return typeof DeviceOrientationEvent !== 'undefined';
     }
-
+    generateConnectionModal() {
+        console.log('[SensorController] generateConnectionModal called.');
+    
+        // Example pairing information
+        const pairingInfo = JSON.stringify({
+            desktopClientId: 'unique-desktop-client-id',
+            signalingServer: ' wss://media.maar.world/ws/',
+        });
+    
+        // Generate the QR code and inject it into the modal
+        QRCode.toDataURL(pairingInfo, { width: 150 })
+            .then(url => {
+                const modalContent = `
+                    <div style="text-align: center; padding: 15px;">
+                        <p style="margin-bottom: 10px;">Scan the QR code with your mobile device to pair it as an external sensor.</p>
+                        <img src="${url}" alt="QR Code" style="display: block; margin: 0 auto; max-width: 150px; height: auto;" />
+                    </div>
+                `;
+    
+                // Display the modal using AppNotifications
+                notifications
+                    .showUniversalModal('Connect External Sensor', modalContent, 'Close')
+                    .then(() => {
+                        console.log('[SensorController] Connection modal closed.');
+                    });
+            })
+            .catch(error => {
+                console.error('Failed to generate QR code:', error);
+                notifications.showToast('Failed to generate QR code.', 'error');
+            });
+    }
     /**
      * Requests user permission to access orientation sensors (iOS 13+ only).
      * @async
@@ -239,3 +285,4 @@ export class SensorController {
         };
     }
 }
+

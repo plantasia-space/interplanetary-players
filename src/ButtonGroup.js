@@ -1,7 +1,7 @@
 // ButtonGroup.js
 import { ModeManagerInstance } from './ModeManager.js'; // Import ModeManager
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js';
+import { MIDI_SUPPORTED, SENSORS_SUPPORTED, INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE, setExternalSensorsUsable } from './Constants.js';
 import notifications from './AppNotifications.js';
 import { SensorController } from './SensorsController.js';
 

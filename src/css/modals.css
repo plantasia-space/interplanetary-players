@@ -1,4 +1,5 @@
 /* Base Modal Styles (shared between Numeric and Universal Modals) */
+/* Base Modal Styles (shared between Numeric and Universal Modals) */
 .modal {
     --bs-modal-zindex: 1055; /* Ensure it overlays other elements */
     --bs-modal-width: 90%; /* Responsive width */
@@ -17,12 +18,8 @@
     max-width: 400px;
     height: auto;
     z-index: var(--bs-modal-zindex);
-/*     display: none; 
-    visibility: hidden;
-    opacity: 0; */
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
-
 
 
 /* Specific Numeric Keyboard Modal Styles */
@@ -38,40 +35,58 @@
 }
 
 /* Specific Universal Modal Styles */
+/* Specific Universal Modal Styles */
 #universalModal {
     --bs-modal-bg: #f8f9fa; /* Light gray background */
     --bs-modal-border-radius: 10px; /* Slightly more rounded corners */
     padding: 16px; /* Adjusted padding for generic messaging */
     z-index: 1056; /* Ensure higher than numeric keyboard */
 }
+
 #universalModal.active {
-    display: block !important;;
-    visibility: visible !important;;
-    opacity: 1 !important;;
-    
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 #universalModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Ensure footer stays at the bottom */
     background-color: var(--bs-modal-bg);
     border-radius: var(--bs-modal-border-radius);
+    max-height: 90vh; /* Prevent overflow */
+    overflow-y: auto; /* Enable scrolling if content exceeds viewport */
 }
 
-#universalModal .modal-header {
-    border-bottom: 1px solid #dee2e6; /* Optional: Divider */
-    padding: 0.75rem 1rem;
-}
-
-#universalModal .modal-title {
-    font-size: 1.25rem;
-    font-weight: 500;
-}
-
+/* Style the modal body for vertical stacking */
 #universalModal .modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     padding: 1rem;
     font-size: 1rem;
     color: #495057; /* Neutral text color */
 }
 
+/* Wrapper for dynamic modal content */
+.modal-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem; /* Add space between elements */
+}
+
+/* QR Code Canvas Styling */
+#qrCodeCanvas {
+    display: block;
+    margin: 0 auto; /* Center the QR code */
+    max-width: 80%; /* Limit size within the modal */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Optional shadow for style */
+}
+
+/* Modal Footer Styling */
 #universalModal .modal-footer {
     border-top: 1px solid #dee2e6; /* Optional: Divider */
     display: flex;
@@ -80,18 +95,24 @@
     padding: 0.75rem 1rem;
 }
 
-.modal-backdrop {
-    z-index: 1040;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
+/* Prevent overflow */
+.modal-content {
+    max-height: 90vh; /* Ensure modal fits within viewport */
+    overflow-y: auto; /* Scroll only if content exceeds height */
 }
 
 /* Responsive Behavior */
 @media (max-width: 768px) {
     .modal {
-        --bs-modal-width: 100%; /* Use full width for small screens */
+        --bs-modal-width: 100%; /* Full width on smaller screens */
     }
 
     #universalModal {
         --bs-modal-border-radius: 0; /* No rounded corners on small screens */
+    }
+
+    #universalModal .modal-body {
+        padding: 1rem;
+        gap: 0.75rem; /* Slightly smaller spacing on mobile */
     }
 }
