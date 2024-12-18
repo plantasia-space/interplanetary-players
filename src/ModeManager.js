@@ -114,38 +114,33 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
 ModeManagerInstance.registerMode('SENSORS', {
     onEnter: async () => {
         console.log('[ModeManager] Entering SENSORS mode...');
-        // Instantiate SensorController with user1Manager when activating
-        if (ModeManagerInstance.user1Manager) { // Ensure user1Manager is set
-            const sensorControllerInstance = new SensorController(ModeManagerInstance.user1Manager);
-            await sensorControllerInstance.activateSensors();
-            notifications.showToast("Sensors mode activated. Receiving device orientation data.");
-            console.log('[ModeManager] Sensors mode activated.');
 
-            // Show sensor toggle buttons
+        if (ModeManagerInstance.user1Manager) {
+            const sensorController = SensorController.getInstance(ModeManagerInstance.user1Manager);
+            await sensorController.activateSensors();
+            ModeManagerInstance.sensorControllerInstance = sensorController;
+
+            notifications.showToast('Sensors mode activated. Receiving device orientation data.');
+
             document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-                console.log(`Showing button: ${button.id}`);
                 button.style.display = 'block';
             });
-
-            // Store the instance if needed for later use
-            ModeManagerInstance.sensorControllerInstance = sensorControllerInstance;
         } else {
             console.error('[ModeManager] user1Manager is not initialized.');
-            notifications.showToast("Sensors cannot be activated because user manager is not available.", 'error');
+            notifications.showToast('Sensors cannot be activated because user manager is not available.', 'error');
         }
     },
     onExit: () => {
         console.log('[ModeManager] Exiting SENSORS mode...');
-        const sensorControllerInstance = ModeManagerInstance.sensorControllerInstance;
-        if (sensorControllerInstance && sensorControllerInstance.isSensorActive) {
-            sensorControllerInstance.stopListening();
-            console.log('[ModeManager] Sensors mode deactivated.');
-        }
-        notifications.showToast("Exited Sensors mode.");
+        const sensorController = ModeManagerInstance.sensorControllerInstance;
 
-        // Hide sensor toggle buttons
+        if (sensorController) {
+            sensorController.stopListening();
+            console.log('[ModeManager] Sensors deactivated.');
+        }
+
+        notifications.showToast('Exited Sensors mode.');
         document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-            console.log(`Hiding button: ${button.id}`);
             button.style.display = 'none';
         });
     }

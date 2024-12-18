@@ -92,7 +92,7 @@ export class AppNotifications {
             modalTitle.textContent = title;
             modalBody.innerHTML = ''; // Clear previous content
             if (typeof content === 'string') {
-                modalBody.textContent = content;
+                modalBody.innerHTML = content; // Renders the HTML correctly
             } else if (content instanceof HTMLElement) {
                 modalBody.appendChild(content);
             }

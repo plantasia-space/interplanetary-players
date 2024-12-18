@@ -3,6 +3,7 @@ import { ModeManagerInstance } from './ModeManager.js'; // Import ModeManager
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js';
 import notifications from './AppNotifications.js';
+import { SensorController } from './SensorsController.js';
 
 /**
  * Class representing a group of buttons with dropdown menus for various functionalities.
@@ -19,6 +20,7 @@ export class ButtonGroup {
      * @param {string} iconSelector - CSS selector for the icon within the main button.
      * @param {AudioPlayer} audioPlayer - Instance of AudioPlayer for managing audio controls.
      * @param {DataManager} [dataManager=null] - Instance of DataManager for managing data (optional).
+     * @param {User1Manager} [user1Manager=null] - Instance of User1Manager for managing user parameters (optional).
      */
     constructor(
         containerSelector,
@@ -27,10 +29,12 @@ export class ButtonGroup {
         menuItemsSelector,
         iconSelector,
         audioPlayer,
-        dataManager = null
+        dataManager = null,
+        user1Manager = null // Added parameter
     ) {
         this.audioPlayer = audioPlayer;
         this.dataManager = dataManager;
+        this.user1Manager = user1Manager; // Store user1Manager
 
         // Store the selector for use in logging
         this.containerSelector = containerSelector;
@@ -179,73 +183,105 @@ export class ButtonGroup {
         }
     }
 
+    /**
+     * Handles selection changes from the dropdown menu.
+     * Updates the button's icon and label to reflect the selected menu item.
+     * @param {string} selectedValue - The value of the selected menu item.
+     * @private
+     */
+    onSelectionChange(selectedValue) {
+        console.log(`[Dropdown] Item clicked: ${selectedValue}`);
 
-/**
- * Handles selection changes from the dropdown menu.
- * Updates the button's icon and label to reflect the selected menu item.
- * Handles MIDI Learn behavior for interaction dropdowns.
- * @param {string} selectedValue - The value of the selected menu item.
- * @private
- */
-onSelectionChange(selectedValue) {
-    console.log(`[Dropdown] Item clicked: ${selectedValue}`);
+        // Precheck MIDI support and controller initialization
+        const isMidiLearnAvailable = MIDI_SUPPORTED && this.midiController;
 
-    // Precheck MIDI support and controller initialization
-    const isMidiLearnAvailable = MIDI_SUPPORTED && this.midiController;
+        const groupType = this.container.getAttribute('data-group');
 
-    // Determine the type of button group based on a data attribute
-    const groupType = this.container.getAttribute('data-group');
+        // Handle MIDI Learn mode if available
+        if (isMidiLearnAvailable && this.midiController.isMidiLearnModeActive) {
+            const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
 
-    // Handle MIDI Learn mode if available
-    if (isMidiLearnAvailable && this.midiController.isMidiLearnModeActive) {
+            if (selectedItem) {
+                console.log(`[Dropdown] MIDI Learn active: Mapping dropdown item "${selectedValue}"`);
+                this.midiController.startMidiLearnForWidget(selectedItem);
+            } else {
+                console.warn(`[Dropdown] Selected item "${selectedValue}" not found.`);
+            }
+            return; // Exit early
+        }
+
+        // Update the main button's icon and label
         const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
-
         if (selectedItem) {
-            console.log(`[Dropdown] MIDI Learn active: Mapping dropdown item "${selectedValue}"`);
-            this.midiController.startMidiLearnForWidget(selectedItem); // Trigger MIDI Learn for this item
-        } else {
-            console.warn(`[Dropdown] Selected item "${selectedValue}" not found.`);
-        }
-        return; // Exit early since MIDI Learn handles the selection
-    }
+            const newIconPath = selectedItem.getAttribute('data-icon');
+            const newLabel = selectedItem.textContent.trim();
 
-    // Update the main button's icon and label
-    const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
-    if (selectedItem) {
-        const newIconPath = selectedItem.getAttribute('data-icon');
-        const newLabel = selectedItem.textContent.trim();
-
-        if (newIconPath) {
-            this.fetchAndSetSVG(newIconPath, this.icon, true);
-            console.log(`[Dropdown] Updated button icon to: ${newIconPath}`);
+            if (newIconPath) this.fetchAndSetSVG(newIconPath, this.icon, true);
+            if (newLabel) this.button.setAttribute('aria-label', newLabel);
         }
 
-        if (newLabel) {
-            this.button.setAttribute('aria-label', newLabel);
-            console.log(`[Dropdown] Updated button label to: ${newLabel}`);
+        // Handle group-specific actions
+        switch (groupType) {
+            case 'information-dropdown':
+                this.handleInformationDropdown(selectedValue);
+                break;
+            case 'transport-dropdown':
+                this.handleTransportDropdown(selectedValue);
+                break;
+            case 'interaction-dropdown':
+                this.handleInteractionDropdown(selectedValue);
+                break;
+            case 'more-dropdown': // New case for the More menu
+                this.handleMoreDropdown(selectedValue);
+                break;
+            default:
+                console.warn(`[ButtonGroup] Unknown group type: ${groupType}`);
         }
-    } else {
-        console.warn(`[Dropdown] Selected item "${selectedValue}" not found in menu.`);
     }
 
-    // Handle group-specific actions
-    switch (groupType) {
-        case 'information-dropdown':
-            this.handleInformationDropdown(selectedValue);
-            break;
-        case 'transport-dropdown':
-            this.handleTransportDropdown(selectedValue);
-            break;
-        case 'interaction-dropdown':
-            this.handleInteractionDropdown(selectedValue);
-            break;
-        default:
-            console.warn(`[ButtonGroup] Unknown group type: ${groupType}`);
+    /**
+     * Handles selections from the More dropdown menu.
+     * @param {string} selectedValue - The selected action.
+     * @private
+     */
+    handleMoreDropdown(selectedValue) {
+        console.log(`[More Dropdown] Selected: ${selectedValue}`);
+
+        switch (selectedValue) {
+            case 'Share':
+                console.log('[More Dropdown] Share option clicked.');
+                notifications.showToast('Sharing functionality is under development!', 'info');
+                break;
+
+            case 'Fullscreen':
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                    console.log('[More Dropdown] Exited fullscreen mode.');
+                    notifications.showToast('Exited fullscreen mode.');
+                } else {
+                    document.documentElement.requestFullscreen();
+                    console.log('[More Dropdown] Entered fullscreen mode.');
+                    notifications.showToast('Entered fullscreen mode.');
+                }
+                break;
+
+            case 'Connect External Sensor':
+                if (!this.user1Manager) {
+                    console.error('ButtonGroup: user1Manager is not defined');
+                    notifications.showToast('Connection failed: user manager is undefined.', 'error');
+                    break;
+                }
+                console.log('[SensorController] Calling generateConnectionModal().');
+                const sensorControllerInstance = SensorController.getInstance(this.user1Manager);
+                sensorControllerInstance.generateConnectionModal();
+                break;
+
+            default:
+                console.warn(`[More Dropdown] Unknown action: ${selectedValue}`);
+        }
     }
-}
 
-
-/**
+    /**
      * Handles selections from the information dropdown menu.
      * @param {string} selectedValue - The selected information type.
      * @private
@@ -340,30 +376,24 @@ onSelectionChange(selectedValue) {
             case 'Jam':
                 ModeManagerInstance.activateMode('JAM');
                 break;
-    
+
             case 'MIDI':
                 ModeManagerInstance.activateMode('MIDI_LEARN');
                 break;
-    
+
             case 'Sensors':
                 ModeManagerInstance.activateMode('SENSORS');
                 break;
-    
+
             case 'Cosmic LFO':
                 ModeManagerInstance.activateMode('COSMIC_LFO');
                 break;
-    
+
             default:
                 console.warn(`[ButtonGroup] Unknown interaction mode selected: ${selectedValue}`);
         }
     }
 
-    /**
-     * Handles the activation of Sensors mode by delegating to ModeManager.
-     * @deprecated This method is no longer needed as mode activation is delegated directly.
-     */
-    // Removed the redundant activateSensors and sensorsActivated flag
-    // All sensor activation is now handled by ModeManager
     /**
      * Adjusts the dropdown menu based on hardware support (MIDI and Sensors).
      * Hides or shows menu items accordingly.

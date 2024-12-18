@@ -10,25 +10,69 @@ import lscache from 'lscache';
  * @date 2024-12-07
  */
 
+
+/**
+ * Utility function to check if sensors are supported on the current device.
+ * @returns {boolean} - True if DeviceMotion or DeviceOrientation APIs are available.
+ */
+export const SENSORS_SUPPORTED = () => {
+    return (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined');
+};
+
+/**
+ * Utility function to detect if the current device is mobile.
+ * @returns {boolean} - True if the device is a mobile device, false otherwise.
+ */
+export const isMobileDevice = () => {
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+/**
+ * Utility function to determine if internal sensors are usable.
+ * Sensors are only considered usable if supported and the device is mobile.
+ * @constant
+ * @type {boolean}
+ */
+export const INTERNAL_SENSORS_USABLE = SENSORS_SUPPORTED() && isMobileDevice();
+
+/**
+ * External sensors placeholder:
+ * Set to true if external sensors are connected (via WebSocket, Bluetooth, or API).
+ * Currently defaults to false on desktops.
+ * @constant
+ * @type {boolean}
+ */
+export let EXTERNAL_SENSORS_USABLE = !isMobileDevice() && false;
+
+/**
+ * Dynamically sets the usability of external sensors.
+ * @param {boolean} status - The status of external sensors.
+ */
+export function setExternalSensorsUsable(status) {
+    EXTERNAL_SENSORS_USABLE = status;
+    console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
+}
+/**
+ * Determines if any sensors (internal or external) are usable.
+ * @constant
+ * @type {boolean}
+ */
+export const SENSORS_USABLE = INTERNAL_SENSORS_USABLE || EXTERNAL_SENSORS_USABLE;
+
 /**
  * Indicates whether the browser supports the Web MIDI API.
  * @constant
- * @memberof CoreModule
  * @type {boolean}
- * @description True if the Web MIDI API is supported in the current environment, false otherwise.
  */
 export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
 
 /**
- * Indicates whether device sensors (e.g., gyroscope, accelerometer) are supported.
- * Additionally checks if the device permissions are granted.
- * @constant
- * @type {Promise<boolean>}
- * @description Resolves to true if sensors are supported and permission is granted.
+ * Logs sensor availability for debugging purposes.
  */
-export const SENSORS_SUPPORTED = (
-    typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined'
-);
+console.log(`[SENSORS] Sensors Supported: ${SENSORS_SUPPORTED()}`);
+console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
+console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
+console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);
 
 /**
  * @namespace Constants

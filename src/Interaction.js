@@ -2,7 +2,7 @@
 
 /**
  * @file Interaction.js
- * @description Sets up interactions for dynamic placeholder updates, handles MIDI registrations, and applies UI color configurations based on track data.
+ * @description Sets up interactions for dynamic placeholder updates, button groups, handles MIDI registrations, and applies UI color configurations based on track data.
  * @version 2.0.0
  * @license MIT
  * @date 2024-12-07
@@ -11,7 +11,7 @@
 import { ModeManagerInstance } from './ModeManager.js';
 import { ButtonGroup } from './ButtonGroup.js';
 import { MIDIControllerInstance } from './MIDIController.js';
-import { MIDI_SUPPORTED, SENSORS_SUPPORTED } from './Constants.js'; // Ensure SENSORS_SUPPORTED is defined
+import { MIDI_SUPPORTED, SENSORS_SUPPORTED, INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE  } from './Constants.js'; // Ensure SENSORS_SUPPORTED is defined
 import notifications from './AppNotifications.js';
 import { SensorController } from './SensorsController.js'; // Import the class instead of instance
 
@@ -47,17 +47,29 @@ export function setupInteractions(dataManager, audioPlayer, user1Manager) {
             'a.dropdown-item',                                    // menuItemsSelector
             '.button-icon',                                       // iconSelector
             audioPlayer,                                          // audioPlayer
-            dataManager                                           // dataManager
+            dataManager,                                           // dataManager
+            user1Manager
         );
         buttonGroups.push(buttonGroup);
     });
 
-// Register dropdown items with MIDIController for MIDI interactions
-if (MIDI_SUPPORTED && MIDIControllerInstance) {
-    registerMenuItemsWithMIDIController(buttonGroups);
-} else {
-    console.warn('MIDI is not supported in this environment. Skipping MIDI setup.');
-}
+    // Register dropdown items with MIDIController for MIDI interactions
+    if (MIDI_SUPPORTED && MIDIControllerInstance) {
+        registerMenuItemsWithMIDIController(buttonGroups);
+    } else {
+        console.warn('MIDI is not supported in this environment. Skipping MIDI setup.');
+    }
+
+
+    const connectExternalSensor = document.getElementById('connect-external-sensor');
+    if (connectExternalSensor) {
+        connectExternalSensor.addEventListener('click', () => {
+            const sensorController = SensorController.getInstance(user1Manager);
+            sensorController.activateSensors();
+        });
+    }
+
+
 }
 
 /**
