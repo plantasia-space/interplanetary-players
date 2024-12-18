@@ -97,14 +97,12 @@ export class SensorController {
     generateConnectionModal() {
         console.log('[SensorController] generateConnectionModal called.');
     
-        // Example pairing information
-        const pairingInfo = JSON.stringify({
+        const pairingInfo = {
             desktopClientId: 'unique-desktop-client-id',
-            signalingServer: ' wss://media.maar.world/ws/',
-        });
+            signalingServer: 'wss://media.maar.world/ws/',
+        };
     
-        // Generate the QR code and inject it into the modal
-        QRCode.toDataURL(pairingInfo, { width: 150 })
+        QRCode.toDataURL(JSON.stringify(pairingInfo), { width: 150 })
             .then(url => {
                 const modalContent = `
                     <div style="text-align: center; padding: 15px;">
@@ -113,12 +111,20 @@ export class SensorController {
                     </div>
                 `;
     
-                // Display the modal using AppNotifications
                 notifications
                     .showUniversalModal('Connect External Sensor', modalContent, 'Close')
                     .then(() => {
                         console.log('[SensorController] Connection modal closed.');
                     });
+    
+                // Send pairing info to the signaling server
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'pairing-request', payload: pairingInfo }));
+                    console.log('[SensorController] Pairing request sent.');
+                } else {
+                    console.error('[SensorController] WebSocket is not connected.');
+                    notifications.showToast('Unable to send pairing request.', 'error');
+                }
             })
             .catch(error => {
                 console.error('Failed to generate QR code:', error);
@@ -145,6 +151,46 @@ export class SensorController {
         }
         return true; // Assume permission is granted on non-iOS devices.
     }
+    initializeSignalingServer() {
+        console.log('[SensorController] Initializing signaling server connection...');
+        this.ws = new WebSocket('wss://media.maar.world/ws/');
+    
+        this.ws.onopen = () => {
+            console.log('[SensorController] Connected to signaling server.');
+            notifications.showToast('Connected to signaling server.', 'success');
+        };
+    
+        this.ws.onmessage = (message) => {
+            console.log('[SensorController] Message received from server:', message.data);
+            this.handleSignalingMessage(JSON.parse(message.data));
+        };
+    
+        this.ws.onclose = () => {
+            console.warn('[SensorController] Signaling server connection closed.');
+            notifications.showToast('Connection to signaling server closed.', 'warning');
+        };
+    
+        this.ws.onerror = (error) => {
+            console.error('[SensorController] Error with signaling server:', error);
+            notifications.showToast('Error with signaling server.', 'error');
+        };
+    }
+
+    handleSignalingMessage(data) {
+        switch (data.type) {
+            case 'pairing-ack':
+                console.log('[SensorController] Pairing acknowledged:', data);
+                notifications.showToast('Pairing successful!', 'success');
+                break;
+            case 'sensor-data':
+                console.log('[SensorController] Sensor data received:', data);
+                // Handle sensor data
+                break;
+            default:
+                console.warn('[SensorController] Unknown message type:', data.type);
+        }
+    }
+
 
     /**
      * Activates the device orientation sensor if supported and permission is granted.

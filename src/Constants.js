@@ -11,53 +11,60 @@ import lscache from 'lscache';
  */
 
 
+
 /**
- * Utility function to check if sensors are supported on the current device.
+ * Checks if the current environment supports sensors.
  * @returns {boolean} - True if DeviceMotion or DeviceOrientation APIs are available.
  */
 export const SENSORS_SUPPORTED = () => {
-    return (typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined');
+    return typeof DeviceMotionEvent !== 'undefined' || typeof DeviceOrientationEvent !== 'undefined';
 };
 
 /**
- * Utility function to detect if the current device is mobile.
- * @returns {boolean} - True if the device is a mobile device, false otherwise.
+ * Detects if the current device is a mobile device.
+ * @returns {boolean} - True if the device is mobile, false otherwise.
  */
 export const isMobileDevice = () => {
     return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
 /**
- * Utility function to determine if internal sensors are usable.
- * Sensors are only considered usable if supported and the device is mobile.
+ * Determines if internal sensors are usable based on device type and sensor support.
  * @constant
  * @type {boolean}
  */
 export const INTERNAL_SENSORS_USABLE = SENSORS_SUPPORTED() && isMobileDevice();
 
 /**
- * External sensors placeholder:
- * Set to true if external sensors are connected (via WebSocket, Bluetooth, or API).
- * Currently defaults to false on desktops.
+ * Determines if external sensors can be connected. Defaults to desktop devices.
  * @constant
  * @type {boolean}
  */
 export let EXTERNAL_SENSORS_USABLE = !isMobileDevice() && false;
 
 /**
- * Dynamically sets the usability of external sensors.
- * @param {boolean} status - The status of external sensors.
+ * Dynamically updates the usability of external sensors (e.g., WebSocket connected).
+ * @param {boolean} status - True if external sensors are connected, false otherwise.
  */
 export function setExternalSensorsUsable(status) {
     EXTERNAL_SENSORS_USABLE = status;
     console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
 }
+
 /**
- * Determines if any sensors (internal or external) are usable.
+ * Checks if any sensors (internal or external) are usable.
  * @constant
  * @type {boolean}
  */
 export const SENSORS_USABLE = INTERNAL_SENSORS_USABLE || EXTERNAL_SENSORS_USABLE;
+
+/**
+ * Logs sensor detection states for debugging.
+ */
+console.log(`[SENSORS] Supported: ${SENSORS_SUPPORTED()}`);
+console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
+console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
+console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);
 
 /**
  * Indicates whether the browser supports the Web MIDI API.
@@ -66,13 +73,7 @@ export const SENSORS_USABLE = INTERNAL_SENSORS_USABLE || EXTERNAL_SENSORS_USABLE
  */
 export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
 
-/**
- * Logs sensor availability for debugging purposes.
- */
-console.log(`[SENSORS] Sensors Supported: ${SENSORS_SUPPORTED()}`);
-console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
-console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
-console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);
+
 
 /**
  * @namespace Constants

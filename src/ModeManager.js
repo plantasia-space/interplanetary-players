@@ -131,12 +131,12 @@ ModeManagerInstance.registerMode('SENSORS', {
                     'warning'
                 );
             }
-
-            ModeManagerInstance.sensorControllerInstance = sensorController;
-
             document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
                 button.style.display = 'block';
             });
+            ModeManagerInstance.sensorControllerInstance = sensorController;
+
+
         } else {
             console.error('[ModeManager] user1Manager is not initialized.');
             notifications.showToast('Sensors cannot be activated because user manager is not available.', 'error');
