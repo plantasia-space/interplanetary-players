@@ -1,3 +1,5 @@
+// constants.js
+
 import lscache from 'lscache';
 
 /**
@@ -5,12 +7,8 @@ import lscache from 'lscache';
  * @description Defines and manages application-wide constants and utility functions.
  * Handles caching mechanisms and prioritization for various controller types.
  * @version 2.0.0
- * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
- * @license MIT
- * @date 2024-12-07
+ * @date 2024-12-18
  */
-
-
 
 /**
  * Checks if the current environment supports sensors.
@@ -59,21 +57,11 @@ export function setExternalSensorsUsable(status) {
 export const SENSORS_USABLE = INTERNAL_SENSORS_USABLE || EXTERNAL_SENSORS_USABLE;
 
 /**
- * Logs sensor detection states for debugging.
- */
-console.log(`[SENSORS] Supported: ${SENSORS_SUPPORTED()}`);
-console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
-console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
-console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);
-
-/**
  * Indicates whether the browser supports the Web MIDI API.
  * @constant
  * @type {boolean}
  */
 export const MIDI_SUPPORTED = 'requestMIDIAccess' in navigator;
-
-
 
 /**
  * @namespace Constants
@@ -209,3 +197,39 @@ export const DEFAULT_PRIORITY = 100;
 export function getPriority(controllerType) {
     return PRIORITY_MAP[controllerType] || DEFAULT_PRIORITY;
 }
+
+/**
+ * Generates and retrieves a persistent `uniqueId` for the desktop client.
+ * Utilizes `lscache` to store the `uniqueId` with a 60-minute expiration.
+ * If a `uniqueId` exists and is valid, it retrieves it; otherwise, generates a new one.
+ * @returns {string} - The persistent `uniqueId`.
+ */
+export function getUniqueId() {
+    const UNIQUE_ID_KEY = 'uniqueId';
+    let uniqueId = lscache.get(UNIQUE_ID_KEY);
+
+    if (!uniqueId) {
+        uniqueId = 'unique-' + Math.random().toString(36).substr(2, 16);
+        lscache.set(UNIQUE_ID_KEY, uniqueId, 60); // Expires in 60 minutes
+        console.log(`[SENSORS] Generated new uniqueId: ${uniqueId}`);
+    } else {
+        console.log(`[SENSORS] Retrieved existing uniqueId from cache: ${uniqueId}`);
+    }
+
+    return uniqueId;
+}
+
+/**
+ * @constant
+ * @type {string}
+ * @description Persistent unique identifier for the desktop client.
+ */
+export const UNIQUE_ID = getUniqueId();
+
+/**
+ * Logs sensor detection states for debugging.
+ */
+console.log(`[SENSORS] Supported: ${SENSORS_SUPPORTED()}`);
+console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
+console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
+console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);
