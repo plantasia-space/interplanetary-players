@@ -21,7 +21,15 @@
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
+modal.show {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+}
 
+.modal-backdrop {
+    opacity: 0.5; /* Semi-transparent backdrop */
+}
 /* Specific Numeric Keyboard Modal Styles */
 #numericKeyboardModal {
     padding: 20px;
@@ -33,6 +41,9 @@
     visibility: visible;
     opacity: 1;
 }
+
+
+
 
 /* Specific Universal Modal Styles */
 /* Specific Universal Modal Styles */

@@ -38,8 +38,7 @@ export const INTERNAL_SENSORS_USABLE = SENSORS_SUPPORTED() && isMobileDevice();
  * @constant
  * @type {boolean}
  */
-export let EXTERNAL_SENSORS_USABLE = !isMobileDevice() && false;
-
+export let EXTERNAL_SENSORS_USABLE = !isMobileDevice(); // Default to true for desktop
 /**
  * Dynamically updates the usability of external sensors (e.g., WebSocket connected).
  * @param {boolean} status - True if external sensors are connected, false otherwise.

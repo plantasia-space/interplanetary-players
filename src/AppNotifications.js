@@ -2,15 +2,8 @@
  * @file AppNotifications.js
  * @description Manages application notifications, including toast messages and modals.
  * @version 2.0.0
- * @author Bruna Guarnieri
- * @license MIT
- * 
- * This file contains the definition and implementation of the `AppNotifications` class.
  */
-/** 
- * @memberof 2DGUI 
- * @class
- */
+
 export class AppNotifications {
     /**
      * Creates an instance of AppNotifications.
@@ -64,59 +57,101 @@ export class AppNotifications {
      * Displays a universal modal using Bootstrap and returns a promise that resolves when the modal is closed.
      * @param {string} title - The title of the modal.
      * @param {string|HTMLElement} content - The content of the modal.
-     * @param {string} [buttonText="Okay"] - The text for the primary button.
+     * @param {string} [buttonText="Close"] - The text for the primary button.
      * @returns {Promise<void>} - Resolves when the modal is closed.
      */
-    showUniversalModal(title, content, buttonText = "Okay") {
+    showUniversalModal(title, content, buttonText = "Close") {
         return new Promise((resolve) => {
-            // Retrieve the universal modal element by its ID
-            const modal = document.getElementById('universalModal');
-            if (!modal) {
+            const modalElement = document.getElementById('universalModal');
+            if (!modalElement) {
                 console.error('AppNotifications: Universal Modal element not found.');
                 resolve();
                 return;
             }
-        
-            // Update modal content elements
-            const modalTitle = modal.querySelector('.modal-title');
-            const modalBody = modal.querySelector('.modal-body');
-            const modalFooterButton = modal.querySelector('.modal-footer button');
-        
-            if (!modalTitle || !modalBody || !modalFooterButton) {
-                console.error('AppNotifications: Universal Modal structure is incorrect.');
-                resolve();
-                return;
-            }
-        
-            // Set the modal's title and content
+    
+            // Update modal title
+            const modalTitle = modalElement.querySelector('.modal-title');
             modalTitle.textContent = title;
-            modalBody.innerHTML = ''; // Clear previous content
+    
+            // Update modal body
+            const modalBody = modalElement.querySelector('.modal-body .modal-content-wrapper');
+            modalBody.innerHTML = ''; // Clear any existing content
             if (typeof content === 'string') {
-                modalBody.innerHTML = content; // Renders the HTML correctly
+                modalBody.innerHTML = content; // Add string content as HTML
             } else if (content instanceof HTMLElement) {
-                modalBody.appendChild(content);
+                modalBody.appendChild(content); // Append HTMLElement content
             }
-        
-            // Set the text of the primary button
+    
+            // Update footer button text
+            const modalFooterButton = modalElement.querySelector('.modal-footer button');
             modalFooterButton.textContent = buttonText;
-        
-            // Define the button click handler
+    
+            // Add button click event handler
             const buttonHandler = () => {
                 modalFooterButton.removeEventListener('click', buttonHandler);
-                const bsModal = bootstrap.Modal.getInstance(modal);
-                bsModal.hide();
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide(); // Close the modal
+                }
                 resolve();
             };
-        
-            // Attach the click event listener to the primary button
             modalFooterButton.addEventListener('click', buttonHandler);
-        
-            // Initialize and show the modal using Bootstrap
-            const bootstrapModal = new bootstrap.Modal(modal);
-            bootstrapModal.show();
-            
+    
+            // Initialize and show the modal
+            const modalInstance = new bootstrap.Modal(modalElement, {
+                backdrop: true, // Allow clicking outside to close
+                keyboard: true  // Allow ESC key to close
+            });
+            modalInstance.show();
+    
+            // Cleanup after modal is hidden
+            const hiddenHandler = () => {
+                modalElement.removeEventListener('hidden.bs.modal', hiddenHandler);
+                // Remove lingering backdrops if any
+                document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
+                    backdrop.remove();
+                });
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = ''; // Restore body scroll behavior
+                resolve();
+            };
+            modalElement.addEventListener('hidden.bs.modal', hiddenHandler, { once: true });
+    
             console.log(`AppNotifications: Universal modal '${title}' displayed.`);
         });
+    }
+    closeModal() {
+        const modalElement = document.getElementById('universalModal');
+        if (modalElement) {
+            // Retrieve the Bootstrap modal instance
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide(); // Hide the modal
+                modalElement.addEventListener('hidden.bs.modal', () => {
+                    modalInstance.dispose(); // Dispose the modal only after it's fully hidden
+                    console.log('Modal instance hidden and disposed.');
+    
+                    // Clear the modal content to avoid lingering references
+                    const modalBody = modalElement.querySelector('.modal-body .modal-content-wrapper');
+                    if (modalBody) {
+                        modalBody.innerHTML = ''; // Clear the content
+                    }
+    
+                    // Remove lingering backdrops
+                    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
+                        backdrop.remove();
+                    });
+    
+                    // Reset body scroll behavior
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                }, { once: true }); // Attach event handler to fire only once
+            } else {
+                console.warn('No active modal instance found.');
+            }
+        } else {
+            console.warn('Modal element not found or already closed.');
+        }
     }
 
     /**
@@ -150,7 +185,9 @@ export class AppNotifications {
                 listItem.addEventListener('click', () => {
                     modalTitle.textContent = `Mapping MIDI to '${param}'`;
                     const bsModal = bootstrap.Modal.getInstance(modal);
-                    bsModal.hide();
+                    if (bsModal) {
+                        bsModal.hide();
+                    }
                     resolve(param);
                 });
 
@@ -159,7 +196,10 @@ export class AppNotifications {
             });
         
             // Initialize and show the parameter selection modal using Bootstrap
-            const bsModal = new bootstrap.Modal(modal);
+            const bsModal = new bootstrap.Modal(modal, {
+                backdrop: true,
+                keyboard: true
+            });
             bsModal.show();
         
             // Handle modal dismissal (e.g., clicking outside or pressing ESC)

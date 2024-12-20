@@ -3,6 +3,7 @@ import { SensorController } from './SensorsController.js'; // Import the class
 import notifications from './AppNotifications.js';
 import { MIDIControllerInstance } from './MIDIController.js'; // Ensure MIDIController is properly exported
 import { INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE, setExternalSensorsUsable } from './Constants.js';
+import { WebRTCManager } from './WebRTCManager.js';
 
 export class ModeManager {
     constructor() {
@@ -119,23 +120,43 @@ ModeManagerInstance.registerMode('SENSORS', {
         if (ModeManagerInstance.user1Manager) {
             const sensorController = SensorController.getInstance(ModeManagerInstance.user1Manager);
 
-            if (INTERNAL_SENSORS_USABLE) {
-                await sensorController.activateSensors();
-                notifications.showToast('Sensors mode activated. Receiving device orientation data.');
+            if (INTERNAL_SENSORS_USABLE && SensorController.isSupported()) {
+                console.log('[ModeManager] Activating internal sensors...');
+                const permissionGranted = await sensorController.requestPermission();
+                if (permissionGranted) {
+                    await sensorController.activateSensors();
+                    notifications.showToast('Sensors mode activated. Receiving device orientation data.', 'success');
+                } else {
+                    console.warn('[ModeManager] Permission denied for internal sensors.');
+                    notifications.showToast('Permission denied for sensors.', 'error');
+                }
             } else if (EXTERNAL_SENSORS_USABLE) {
-                sensorController.activateExternalSensors();
-                notifications.showToast('Sensors mode activated with external sensors.');
+                console.log('[ModeManager] No internal sensors detected, switching to external sensors.');
+                const webRTCManager = WebRTCManager.getInstance();
+                if (webRTCManager) {
+                    webRTCManager.generateConnectionModal();
+                    notifications.showToast('No internal sensors. Using external sensors via QR code.', 'info');
+                } else {
+                    console.error('[ModeManager] Failed to initialize WebRTCManager.');
+                    notifications.showToast('Error initializing WebRTC Manager.', 'error');
+                }
             } else {
+                console.warn('[ModeManager] No sensors available.');
                 notifications.showToast(
-                    'No sensors available. Use "Connect External Sensor" to enable external sensors.',
+                    'No sensors available. Please connect an external device via the "Connect External Sensor" option.',
                     'warning'
                 );
             }
-            document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-                button.style.display = 'block';
-            });
-            ModeManagerInstance.sensorControllerInstance = sensorController;
 
+            // Show sensor toggle buttons if internal sensors are usable
+            if (INTERNAL_SENSORS_USABLE && SensorController.isSupported()) {
+                document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+                    button.style.display = 'block';
+                });
+            }
+
+            // Save reference to the active sensor controller instance
+            ModeManagerInstance.sensorControllerInstance = sensorController;
 
         } else {
             console.error('[ModeManager] user1Manager is not initialized.');
@@ -151,7 +172,10 @@ ModeManagerInstance.registerMode('SENSORS', {
             if (INTERNAL_SENSORS_USABLE) {
                 sensorController.stopListening();
             } else if (EXTERNAL_SENSORS_USABLE) {
-                sensorController.deactivateExternalSensors();
+                const webRTCManager = WebRTCManager.getInstance();
+                if (webRTCManager) {
+                    webRTCManager.cleanupConnection(); // Clean up WebRTC resources
+                }
             }
             console.log('[ModeManager] Sensors deactivated.');
         }
@@ -162,6 +186,7 @@ ModeManagerInstance.registerMode('SENSORS', {
         });
     }
 });
+
 ModeManagerInstance.registerMode('COSMIC_LFO', {
     onEnter: () => {
         console.log('[ModeManager] Entered COSMIC_LFO mode.');

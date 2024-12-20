@@ -239,47 +239,37 @@ export class ButtonGroup {
         }
     }
 
-    /**
-     * Handles selections from the More dropdown menu.
-     * @param {string} selectedValue - The selected action.
-     * @private
-     */
-    handleMoreDropdown(selectedValue) {
-        console.log(`[More Dropdown] Selected: ${selectedValue}`);
+/**
+ * Handles selections from the More dropdown menu.
+ * @param {string} selectedValue - The selected action.
+ * @private
+ */
+handleMoreDropdown(selectedValue) {
+    console.log(`[More Dropdown] Selected: ${selectedValue}`);
 
-        switch (selectedValue) {
-            case 'Share':
-                console.log('[More Dropdown] Share option clicked.');
-                notifications.showToast('Sharing functionality is under development!', 'info');
-                break;
+    switch (selectedValue) {
+        case 'Share':
+            console.log('[More Dropdown] Share option clicked.');
+            notifications.showToast('Sharing functionality is under development!', 'info');
+            break;
 
-            case 'Fullscreen':
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                    console.log('[More Dropdown] Exited fullscreen mode.');
-                    notifications.showToast('Exited fullscreen mode.');
-                } else {
-                    document.documentElement.requestFullscreen();
-                    console.log('[More Dropdown] Entered fullscreen mode.');
-                    notifications.showToast('Entered fullscreen mode.');
-                }
-                break;
+        case 'Fullscreen':
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+                console.log('[More Dropdown] Exited fullscreen mode.');
+                notifications.showToast('Exited fullscreen mode.');
+            } else {
+                document.documentElement.requestFullscreen();
+                console.log('[More Dropdown] Entered fullscreen mode.');
+                notifications.showToast('Entered fullscreen mode.');
+            }
+            break;
 
-            case 'Connect External Sensor':
-                if (!this.user1Manager) {
-                    console.error('ButtonGroup: user1Manager is not defined');
-                    notifications.showToast('Connection failed: user manager is undefined.', 'error');
-                    break;
-                }
-                console.log('[SensorController] Calling generateConnectionModal().');
-                const sensorControllerInstance = SensorController.getInstance(this.user1Manager);
-                sensorControllerInstance.generateConnectionModal();
-                break;
 
-            default:
-                console.warn(`[More Dropdown] Unknown action: ${selectedValue}`);
-        }
+        default:
+            console.warn(`[More Dropdown] Unknown action: ${selectedValue}`);
     }
+}
 
     /**
      * Handles selections from the information dropdown menu.
