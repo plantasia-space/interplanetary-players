@@ -148,12 +148,9 @@ ModeManagerInstance.registerMode('SENSORS', {
                 );
             }
 
-            // Show sensor toggle buttons if internal sensors are usable
-            if (INTERNAL_SENSORS_USABLE && SensorController.isSupported()) {
                 document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
                     button.style.display = 'block';
                 });
-            }
 
             // Save reference to the active sensor controller instance
             ModeManagerInstance.sensorControllerInstance = sensorController;
