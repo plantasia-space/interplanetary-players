@@ -82,18 +82,17 @@ export class SensorController {
         ['toggleSensorX', 'toggleSensorY', 'toggleSensorZ'].forEach((id) => {
             const toggle = document.getElementById(id);
             const axis = id.replace('toggleSensor', '').toLowerCase();
-
+    
             if (toggle) {
                 console.debug(`[SensorController Init] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${toggle.checked}`);
-
-                // Bind change event to the toggle.
+                
+                // Bind change event to the toggle
                 toggle.addEventListener('change', () => this.handleToggleChange(toggle, axis));
             } else {
                 console.warn(`SensorController: Toggle element '${id}' not found.`);
             }
         });
     }
-
     /**
      * Checks if the device supports orientation sensors.
      * @static
@@ -170,8 +169,9 @@ export class SensorController {
      * @private
      */
     startListening() {
-        if (!this.isSensorActive) {
+        if (!this.isSensorActive && Object.values(this.activeAxes).some(val => val)) {
             window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
+            this.isSensorActive = true;
             console.log('SensorController: Started listening to deviceorientation events.');
         }
     }
@@ -221,25 +221,23 @@ export class SensorController {
     updateParameters(q) {
         try {
             this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
-
+    
             const mapTo01 = (v) => (v + 1) / 2;
-
+    
             const xNorm = MathUtils.clamp(mapTo01(this.rotatedVector.x), 0, 1);
             const yNorm = MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
             const zNorm = MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
-
+    
             console.log(`SensorController: Normalized Parameters - x: ${xNorm.toFixed(3)}, y: ${yNorm.toFixed(3)}, z: ${zNorm}`);
-
+    
             if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
             if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
             if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
-
-            console.log('[SensorController] BEFORE onDataUpdate callback.');
-
-            // Invoke callback with normalized data
+    
             if (this.onDataUpdate) {
-                console.log('[SensorController] Invoking onDataUpdate callback.');
-                this.onDataUpdate({ x: xNorm, y: yNorm, z: zNorm });
+                this.onDataUpdate({ x: this.activeAxes.x ? xNorm : null, 
+                                    y: this.activeAxes.y ? yNorm : null, 
+                                    z: this.activeAxes.z ? zNorm : null });
             }
         } catch (error) {
             console.error('SensorController: Error in updateParameters:', error);
@@ -254,22 +252,28 @@ export class SensorController {
      */
     handleToggleChange(toggle, axis) {
         const isActive = toggle.checked;
-
+    
         console.debug(`[SensorController Toggle] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${isActive}`);
-
+    
         if (axis in this.activeAxes) {
             this.activeAxes[axis] = isActive;
             console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${isActive ? 'active' : 'inactive'}.`);
-
+    
             if (isActive) {
-                if (!this.isSensorActive) this.activateSensors();
+                if (!this.isSensorActive) {
+                    this.activateSensors();
+                }
             } else {
                 const anyActive = Object.values(this.activeAxes).some(val => val);
-                if (!anyActive && this.isSensorActive) this.stopListening();
+                if (!anyActive && this.isSensorActive) {
+                    this.stopListening();
+                }
             }
+    
+            console.debug(`[SensorController Debug] ActiveAxes After:`, this.activeAxes);
+        } else {
+            console.warn(`SensorController: Unknown axis '${axis}' for toggle.`);
         }
-
-        console.debug(`[SensorController Debug] ActiveAxes After:`, this.activeAxes);
     }
 
     /**
