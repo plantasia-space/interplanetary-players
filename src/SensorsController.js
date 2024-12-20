@@ -86,7 +86,7 @@ export class SensorController {
             const axis = id.replace('toggleSensor', '').toLowerCase();
 
             if (toggle) {
-                console.debug(`[Init Debug] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${toggle.checked}`);
+                console.debug(`[Init Debug] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${toggle.state}`);
 
                 // Bind change event to the toggle.
                 toggle.addEventListener('change', () => this.handleToggleChange(toggle, axis));
@@ -228,22 +228,11 @@ export class SensorController {
             const yNorm = MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
             const zNorm = MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
 
-            console.log(`SensorController: Normalized Parameters - x: ${xNorm.toFixed(3)}, y: ${yNorm.toFixed(3)}, z: ${zNorm.toFixed(3)}`);
+            console.log(`SensorController: Normalized Parameters - x: ${xNorm.toFixed(3)}, y: ${yNorm.toFixed(3)}, z: ${zNorm}`);
 
-            if (this.activeAxes.x) {
-                this.user1Manager.setNormalizedValue('x', xNorm);
-                console.log(`SensorController: Updated 'x' to ${xNorm}`);
-            }
-            if (this.activeAxes.y) {
-                this.user1Manager.setNormalizedValue('y', yNorm);
-                console.log(`SensorController: Updated 'y' to ${yNorm}`);
-            }
-            if (this.activeAxes.z) {
-                this.user1Manager.setNormalizedValue('z', zNorm);
-                console.log(`SensorController: Updated 'z' to ${zNorm}`);
-            }
-
-
+            if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
+            if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
+            if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
         } catch (error) {
             console.error('SensorController: Error in updateParameters:', error);
         }
@@ -256,7 +245,7 @@ export class SensorController {
      * @param {string} axis - The axis ('x', 'y', or 'z') corresponding to the toggle.
      */
     handleToggleChange(toggle, axis) {
-        const isActive = toggle.checked;
+        const isActive = toggle.state;
 
         console.debug(`[Toggle Debug] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${isActive}`);
 
@@ -274,6 +263,7 @@ export class SensorController {
 
         console.debug(`[Toggle Debug] ActiveAxes After:`, this.activeAxes);
     }
+
     /**
      * Throttles a function call to a specified limit.
      * Prevents excessive executions of expensive operations.
