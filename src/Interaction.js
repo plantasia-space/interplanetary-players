@@ -61,14 +61,14 @@ export function setupInteractions(dataManager, audioPlayer, user1Manager) {
     }
 
 
-    const connectExternalSensor = document.getElementById('connect-external-sensor');
+/*     const connectExternalSensor = document.getElementById('connect-external-sensor');
     if (connectExternalSensor) {
         connectExternalSensor.addEventListener('click', () => {
             const sensorController = SensorController.getInstance(user1Manager);
             sensorController.activateSensors();
         });
     }
-
+ */
 
 }
 

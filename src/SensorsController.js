@@ -234,8 +234,11 @@ export class SensorController {
             if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
             if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
 
+            console.log('[SensorController] BEFORE onDataUpdate callback.');
+
             // Invoke callback with normalized data
             if (this.onDataUpdate) {
+                console.log('[SensorController] Invoking onDataUpdate callback.');
                 this.onDataUpdate({ x: xNorm, y: yNorm, z: zNorm });
             }
         } catch (error) {
