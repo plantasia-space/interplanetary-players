@@ -88,28 +88,14 @@ export class SensorController {
             const axis = id.replace('toggleSensor', '').toLowerCase();
 
             if (toggle) {
-                // Retrieve the initial state from the 'state' attribute
-                const stateAttr = toggle.getAttribute('state');
-                const stateValue = stateAttr !== null ? parseInt(stateAttr, 10) : 0;
-                const initialState = stateValue === 1;
-                this.activeAxes[axis] = initialState;
+                console.debug(`[Init Debug] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${toggle.checked}`);
 
-                console.debug(`[SensorController Init] Toggle ID: ${id}, Axis: ${axis}, State: ${stateValue}`);
-
-                // Bind event listener for 'change' events
+                // Bind change event to the toggle.
                 toggle.addEventListener('change', () => this.handleToggleChange(toggle, axis));
-
-                // If initially active, ensure sensors are activated
-                if (initialState && !this.isSensorActive) {
-                    console.log(`SensorController: Initial toggle for axis '${axis}' is active. Activating sensors.`);
-                    this.activateSensors();
-                }
             } else {
                 console.warn(`SensorController: Toggle element '${id}' not found.`);
             }
         });
-
-        console.log(`[SensorController] Initialized activeAxes:`, this.activeAxes);
     }
 
     /**
@@ -188,9 +174,8 @@ export class SensorController {
      * @private
      */
     startListening() {
-        if (!this.isSensorActive && Object.values(this.activeAxes).some(val => val)) {
-            window.addEventListener('deviceorientation', this.boundHandleDeviceOrientation, true);
-            this.isSensorActive = true;
+        if (!this.isSensorActive) {
+            window.addEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
             console.log('SensorController: Started listening to deviceorientation events.');
         }
     }
@@ -202,12 +187,11 @@ export class SensorController {
      */
     stopListening() {
         if (this.isSensorActive) {
-            window.removeEventListener('deviceorientation', this.boundHandleDeviceOrientation, true);
+            window.removeEventListener('deviceorientation', this.handleDeviceOrientation.bind(this), true);
             this.isSensorActive = false;
             console.log('SensorController: Stopped listening to deviceorientation events.');
         }
     }
-
     /**
      * Handles `deviceorientation` events, converts orientation data to a quaternion,
      * and maps the quaternion to normalized parameters for active axes.
@@ -289,10 +273,7 @@ export class SensorController {
      * @param {string} axis - The axis ('x', 'y', or 'z') corresponding to the toggle.
      */
     handleToggleChange(toggle, axis) {
-        // Retrieve the updated state from the 'state' attribute
-        const stateAttr = toggle.getAttribute('state');
-        const stateValue = stateAttr !== null ? parseInt(stateAttr, 10) : 0;
-        const isActive = stateValue === 1;
+        const isActive = toggle.checked;
 
         console.debug(`[Toggle Debug] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${isActive}`);
 
@@ -301,26 +282,15 @@ export class SensorController {
             console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${isActive ? 'active' : 'inactive'}.`);
 
             if (isActive) {
-                // Activate sensors if not already active
-                if (!this.isSensorActive) {
-                    console.log('SensorController: Activating sensors due to active axis.');
-                    this.activateSensors();
-                }
+                if (!this.isSensorActive) this.activateSensors();
             } else {
-                // Deactivate sensors only if no axes are active
                 const anyActive = Object.values(this.activeAxes).some(val => val);
-                if (!anyActive && this.isSensorActive) {
-                    console.log('SensorController: Deactivating sensors as no axes are active.');
-                    this.stopListening();
-                }
+                if (!anyActive && this.isSensorActive) this.stopListening();
             }
-
-            console.debug(`[SensorController Debug] ActiveAxes After:`, this.activeAxes);
-        } else {
-            console.warn(`SensorController: Unknown axis '${axis}' for toggle.`);
         }
-    }
 
+        console.debug(`[Toggle Debug] ActiveAxes After:`, this.activeAxes);
+    }
     /**
      * Throttles a function call to a specified limit.
      * Prevents excessive executions of expensive operations.
