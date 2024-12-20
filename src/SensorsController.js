@@ -13,6 +13,7 @@ import notifications from './AppNotifications.js';
  * @class SensorController
  * @description Manages device orientation sensor inputs and maps them to user parameters.
  * Handles toggle-based activation/deactivation of sensor axes (x, y, z).
+ * Integrates with a user-defined `User1Manager` for real-time updates.
  */
 export class SensorController {
     // Private static instance variable
@@ -263,7 +264,11 @@ export class SensorController {
 
             // Invoke callback with normalized data
             if (this.onDataUpdate) {
-                console.log('[SensorController] Invoking onDataUpdate callback.');
+                console.log('[SensorController] Invoking onDataUpdate callback with:', {
+                    x: this.activeAxes.x ? xNorm : null,
+                    y: this.activeAxes.y ? yNorm : null,
+                    z: this.activeAxes.z ? zNorm : null
+                });
                 this.onDataUpdate({
                     x: this.activeAxes.x ? xNorm : null,
                     y: this.activeAxes.y ? yNorm : null,
