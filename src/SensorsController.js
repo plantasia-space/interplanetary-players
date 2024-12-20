@@ -22,12 +22,11 @@ export class SensorController {
     /**
      * Returns the singleton instance of SensorController.
      * @param {User1Manager} user1Manager - The user manager instance.
-     * @param {Function} onDataUpdate - Callback function to handle sensor data updates.
      * @returns {SensorController} The singleton instance.
      */
-    static getInstance(user1Manager, onDataUpdate) {
+    static getInstance(user1Manager) {
         if (!SensorController.#instance) {
-            SensorController.#instance = new SensorController(user1Manager, onDataUpdate);
+            SensorController.#instance = new SensorController(user1Manager);
         }
         return SensorController.#instance;
     }
@@ -35,9 +34,9 @@ export class SensorController {
     /**
      * Private constructor to prevent direct instantiation.
      * @param {User1Manager} user1Manager - The user manager instance.
-     * @param {Function} onDataUpdate - Callback function to handle sensor data updates.
+     * @param {Function - Callback function to handle sensor data updates.
      */
-    constructor(user1Manager, onDataUpdate) {
+    constructor(user1Manager) {
         if (SensorController.#instance) {
             throw new Error('Use SensorController.getInstance() to get the singleton instance.');
         }
@@ -52,7 +51,6 @@ export class SensorController {
         this.throttleUpdate = this.throttle(this.updateParameters.bind(this), 100);
 
         // Callback for data updates (e.g., to send over communication channel)
-        this.onDataUpdate = onDataUpdate;
 
         // Bind toggle handlers for event listeners.
         this.handleToggleChange = this.handleToggleChange.bind(this);
@@ -217,7 +215,6 @@ export class SensorController {
 
     /**
      * Maps a quaternion to normalized parameters and updates the `user1Manager`.
-     * Also invokes the `onDataUpdate` callback with the normalized data.
      * @param {THREE.Quaternion} q - The quaternion representing the current device orientation.
      * @private
      */
@@ -246,21 +243,7 @@ export class SensorController {
                 console.log(`SensorController: Updated 'z' to ${zNorm}`);
             }
 
-            console.log('[SensorController] BEFORE onDataUpdate callback.');
 
-            // Invoke callback with normalized data
-            if (this.onDataUpdate) {
-                console.log('[SensorController] Invoking onDataUpdate callback with:', {
-                    x: this.activeAxes.x ? xNorm : null,
-                    y: this.activeAxes.y ? yNorm : null,
-                    z: this.activeAxes.z ? zNorm : null
-                });
-                this.onDataUpdate({
-                    x: this.activeAxes.x ? xNorm : null,
-                    y: this.activeAxes.y ? yNorm : null,
-                    z: this.activeAxes.z ? zNorm : null
-                });
-            }
         } catch (error) {
             console.error('SensorController: Error in updateParameters:', error);
         }
@@ -309,14 +292,4 @@ export class SensorController {
         };
     }
 
-    /**
-     * Test method to manually trigger onDataUpdate for debugging.
-     */
-    testDataUpdate() {
-        const mockData = { x: 0.5, y: 0.5, z: 0.5 };
-        console.log('[SensorController] Testing onDataUpdate with:', mockData);
-        if (this.onDataUpdate) {
-            this.onDataUpdate(mockData);
-        }
-    }
 }

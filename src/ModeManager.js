@@ -118,17 +118,8 @@ ModeManagerInstance.registerMode('SENSORS', {
         console.log('[ModeManager] Entering SENSORS mode...');
 
         if (ModeManagerInstance.user1Manager) {
-            const sensorController = SensorController.getInstance(
-                ModeManagerInstance.user1Manager,
-                (data) => {
-                    console.log('[ModeManager] onDataUpdate received:', data);
-                    if (ModeManagerInstance.user1Manager) {
-                        ModeManagerInstance.user1Manager.setNormalizedValue('x', data.x);
-                        ModeManagerInstance.user1Manager.setNormalizedValue('y', data.y);
-                        ModeManagerInstance.user1Manager.setNormalizedValue('z', data.z);
-                    }
-                }
-            );
+            const sensorController = SensorController.getInstance(ModeManagerInstance.user1Manager);
+
             if (INTERNAL_SENSORS_USABLE && SensorController.isSupported()) {
                 console.log('[ModeManager] Activating internal sensors...');
                 const permissionGranted = await sensorController.requestPermission();
