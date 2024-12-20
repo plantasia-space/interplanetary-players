@@ -79,7 +79,7 @@ export class SensorController {
 
     /**
      * Initializes the toggles for sensor axes (x, y, z) and binds their change events.
-     * Assumes toggles are standard checkbox inputs.
+     * Assumes toggles are custom web components with a 'state' attribute.
      * Logs the initial state of each toggle for debugging purposes.
      */
     initializeToggles() {
@@ -88,13 +88,15 @@ export class SensorController {
             const axis = id.replace('toggleSensor', '').toLowerCase();
 
             if (toggle) {
-                // Ensure toggle.checked is a boolean
-                const initialState = typeof toggle.checked === 'boolean' ? toggle.checked : false;
+                // Retrieve the initial state from the 'state' attribute
+                const stateAttr = toggle.getAttribute('state');
+                const stateValue = stateAttr !== null ? parseInt(stateAttr, 10) : 0;
+                const initialState = stateValue === 1;
                 this.activeAxes[axis] = initialState;
 
-                console.debug(`[SensorController Init] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${initialState}`);
+                console.debug(`[SensorController Init] Toggle ID: ${id}, Axis: ${axis}, State: ${stateValue}`);
 
-                // Bind change event to the toggle.
+                // Bind event listener for 'change' events
                 toggle.addEventListener('change', () => this.handleToggleChange(toggle, axis));
 
                 // If initially active, ensure sensors are activated
@@ -287,9 +289,12 @@ export class SensorController {
      * @param {string} axis - The axis ('x', 'y', or 'z') corresponding to the toggle.
      */
     handleToggleChange(toggle, axis) {
-        const isActive = toggle.checked;
+        // Retrieve the updated state from the 'state' attribute
+        const stateAttr = toggle.getAttribute('state');
+        const stateValue = stateAttr !== null ? parseInt(stateAttr, 10) : 0;
+        const isActive = stateValue === 1;
 
-        console.debug(`[SensorController Toggle] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${isActive}`);
+        console.debug(`[Toggle Debug] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${isActive}`);
 
         if (axis in this.activeAxes) {
             this.activeAxes[axis] = isActive;
