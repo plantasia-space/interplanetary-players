@@ -57,6 +57,13 @@ export class SensorController {
         this.calibrated = false;
         this.previousAccY = 0; // Initialize previous acceleration Y
 
+        // Friction (Sensitivity) parameters for each axis
+        this.friction = {
+            x: 1.0,       // Default friction for X-axis
+            y: 1.0,       // Default friction for Y-axis
+            distance: 1.0 // Default friction for Distance
+        };
+
         // Bind toggle handlers for event listeners.
         this.handleToggleChange = this.handleToggleChange.bind(this);
 
@@ -276,15 +283,25 @@ export class SensorController {
             const { alpha, beta, gamma } = event;
 
             // Calculate relative angles based on calibration
-            const relativeAlpha = (alpha || 0) - this.initialAlpha;
-            const relativeBeta = (beta || 0) - this.initialBeta;
-            const relativeGamma = (gamma || 0) - this.initialGamma;
+            let relativeAlpha = (alpha || 0) - this.initialAlpha;
+            let relativeBeta = (beta || 0) - this.initialBeta;
+            let relativeGamma = (gamma || 0) - this.initialGamma;
+
+            // Normalize angles to be within -180° to +180°
+            relativeAlpha = MathUtils.clamp(relativeAlpha, -180, 180);
+            relativeBeta = MathUtils.clamp(relativeBeta, -180, 180);
+            relativeGamma = MathUtils.clamp(relativeGamma, -180, 180);
+
+            // Apply friction (sensitivity) by scaling the relative angles
+            const scaledAlpha = relativeAlpha / this.friction.x;
+            const scaledBeta = relativeBeta / this.friction.y;
+            const scaledGamma = relativeGamma / this.friction.y; // Assuming friction.y applies to pitch and roll
 
             // Convert degrees to radians
             const euler = new Euler(
-                MathUtils.degToRad(relativeBeta),
-                MathUtils.degToRad(relativeAlpha),
-                MathUtils.degToRad(relativeGamma),
+                MathUtils.degToRad(scaledBeta),
+                MathUtils.degToRad(scaledAlpha),
+                MathUtils.degToRad(scaledGamma),
                 'ZXY'
             );
             this.quaternion.setFromEuler(euler);
@@ -315,8 +332,8 @@ export class SensorController {
             const deltaAccY = accY - this.initialAccelerationY;
 
             // Apply a simple low-pass filter to reduce noise
-            const alpha = 0.8; // Smoothing factor
-            const filteredAccY = alpha * deltaAccY + (1 - alpha) * (this.previousAccY || 0);
+            const alphaFilter = 0.8; // Smoothing factor
+            const filteredAccY = alphaFilter * deltaAccY + (1 - alphaFilter) * (this.previousAccY || 0);
             this.previousAccY = filteredAccY;
 
             // Integrate acceleration to get velocity
@@ -325,8 +342,8 @@ export class SensorController {
             // Integrate velocity to get position
             this.positionY += this.velocityY * deltaTime;
 
-            // Normalize distance (0 near, 1 at 0.8 meters)
-            const normalizedDistance = Math.min(Math.abs(this.positionY) / 0.8, 1);
+            // Normalize distance (0 near, 1 at 0.8 meters), adjusted by friction
+            const normalizedDistance = Math.min(Math.abs(this.positionY) / (0.8 * this.friction.distance), 1);
 
             // Update user manager if 'distance' axis is active
             if (this.activeAxes.distance) {
@@ -503,5 +520,19 @@ export class SensorController {
 
         // Load the SVG dynamically
         this.loadCalibrationButtonSVG();
+    }
+
+    /**
+     * Allows setting friction (sensitivity) for each axis.
+     * Can be called during calibration or via UI controls.
+     * @param {Object} frictionValues - Object containing friction values for each axis.
+     */
+    setFriction(frictionValues) {
+        ['x', 'y', 'distance'].forEach(axis => {
+            if (frictionValues[axis] !== undefined) {
+                this.friction[axis] = frictionValues[axis];
+                console.log(`SensorController: Friction for '${axis}' set to ${this.friction[axis]}`);
+            }
+        });
     }
 }
