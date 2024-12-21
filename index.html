@@ -30,7 +30,7 @@
 <!-- Header Row -->
 <div class="header-row  align-items-center mx-auto">
   <!-- Information Dropdown -->
-    <div class="col-1 d-flex button-group-container justify-content-start" data-group="information-dropdown">
+    <div class="col-3 d-flex button-group-container justify-content-start" data-group="information-dropdown">
       <div class="dropdown">
         <button class="btn info-button dropdown-toggle" type="button" id="informationMenuButton"
           data-bs-toggle="dropdown" aria-expanded="false" aria-label="Information">
@@ -66,14 +66,24 @@
   </div>
 
   <!-- Title -->
-  <div class="col-10 text-center">
+  <div class="col-6 text-center">
     <h1 class="responsive-title">jamming</h1>
   </div>
+  <div class="col-1 d-flex justify-content-end">   
+    <button id="sensor-calibration" class="btn info-button calibration-button" aria-label="Calibrate sensor">
+      <span class="button-icon" data-src="/assets/icons/calibrate.svg"></span>
+    </button>
+  </div>
+  <div class="col-1 d-flex justify-content-end">
+    <button id="connectionStatus" class="status-button" aria-label="Device Disconnected">
+      <span id="connectionStatusIcon" class="button-icon"></span>
+      <span id="connectionStatusText"></span>
+  </button>
+</div>
 
   <!-- More Button with Dropdown Menu -->
   <div class="col-1 d-flex justify-content-end button-group-container"  data-group="more-dropdown">
     <div class="dropdown">
-
       <button class="btn more-button dropdown-toggle" type="button" id="moreMenuButton"
       data-bs-toggle="dropdown" aria-expanded="false" aria-label="more">
       <span class="button-icon" data-src="/assets/icons/more.svg" aria-label="More options"></span>
@@ -269,10 +279,11 @@
               <!-- Cosmic-LFO Button Column (1 column) -->
               <div class="col-1 d-flex justify-content-center">
                 <!-- Interaction Button Group -->
-                 <!-- Add this button somewhere accessible in your UI -->
 
                 <div class="button-group-container" data-group="interaction-dropdown">
                   <div class="dropup-center dropup">
+                                     <!-- Add this button somewhere accessible in your UI -->
+
                     <button class="btn interaction-button dropdown-toggle" type="button" id="interactionMenuButton"
                       data-bs-toggle="dropdown" aria-expanded="false" aria-label="Jam" data-src="/assets/icons/jam.svg">
                       <span class="button-icon" data-src="/assets/icons/jam.svg" aria-label="Jam"></span>

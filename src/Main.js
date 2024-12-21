@@ -356,6 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
+
+    
 });
 
 // -----------------------------

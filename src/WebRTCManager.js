@@ -40,6 +40,7 @@ export class WebRTCManager {
         this.dataChannel = null; // DataChannel for communication
         this.targetClientId = null; // Mobile clientId to target for signaling
         this.clientId = null; // Desktop's own clientId
+        this.isConnected = false; // Tracks the connection state
 
         // Ping-Pong mechanism variables
         this.pingInterval = null;
@@ -47,6 +48,9 @@ export class WebRTCManager {
 
         // Callback for handling incoming sensor data
         this.onSensorData = onSensorData;
+
+
+        this.initializeConnectionButton();
 
         // Initialize WebSocket signaling server connection
         this.initializeSignalingServer();
@@ -77,21 +81,25 @@ export class WebRTCManager {
                         this.generateConnectionModal();
                         break;
 
-                    case 'mobileConnected':
-                        console.log(`[WebRTCManager] Mobile client connected: ${message.clientId}`);
-                        this.targetClientId = message.clientId;
-                    
-                        // Close the modal
-                        notifications.closeModal();
-                        console.log('[WebRTCManager] Connection modal closed.');
-                    
-                        // Notify the user
-                        notifications.showToast('Device successfully connected as an external sensor.', 'success');
-                    
-                        // Proceed to create WebRTC offer
-                        this.createAndSendOffer();
-                        break;
+                        case 'mobileConnected':
+                            console.log(`[WebRTCManager] Mobile client connected: ${message.clientId}`);
+                            this.targetClientId = message.clientId;
+                            this.isConnected = true; // Update connection state
+                            this.updateConnectionStatus();
 
+                            notifications.closeModal(); // Close the modal
+                            console.log('[WebRTCManager] Connection modal closed.');
+                            notifications.showToast('Device successfully connected as an external sensor.', 'success');
+                            this.createAndSendOffer(); // Proceed to create WebRTC offer
+                            break;
+                        
+                        case 'mobileDisconnected':
+                            console.warn(`[WebRTCManager] Mobile client disconnected: ${message.clientId}`);
+                            this.cleanupConnection();
+                            this.isConnected = false;
+                            this.updateConnectionStatus();
+                            notifications.showToast('Device disconnected.', 'warning');
+                            break;
                     case 'answer':
                         console.log('[WebRTCManager] Received SDP Answer from mobile:', message.answer.sdp);
                         if (this.peerConnection) {
@@ -128,11 +136,6 @@ export class WebRTCManager {
                         console.error(`[WebRTCManager] Server Error: ${message.message}`);
                         break;
 
-                    case 'mobileDisconnected':
-                        console.warn(`[WebRTCManager] Mobile client disconnected: ${message.clientId}`);
-                        // Clean up WebRTC connection if necessary
-                        this.cleanupConnection();
-                        break;
 
                     default:
                         console.warn('[WebRTCManager] Unknown message type:', message.type);
@@ -180,6 +183,12 @@ export class WebRTCManager {
      * This function should be called after the desktop has received its clientId from the server.
      */
     generateConnectionModal() {
+
+        if (this.isConnected) {
+            console.log('[WebRTCManager] Connection already established. Modal not shown.');
+            return;
+        }
+
         console.log('[WebRTCManager] Attempting to generate connection modal...');
     
         // Check if clientId is available
@@ -221,6 +230,17 @@ export class WebRTCManager {
                 notifications.showToast('Error generating QR Code.', 'error');
             });
     }
+
+    /**
+ * Handle connection button clicks.
+ * Always shows the connection modal when clicked, without disconnecting.
+ */
+handleConnectionButtonClick() {
+    console.log('[WebRTCManager] Connection button clicked. Showing connection modal.');
+    this.generateConnectionModal();
+}
+
+
     /**
      * Creates a WebRTC offer and sends it to the mobile client via WebSocket.
      */
@@ -291,8 +311,88 @@ export class WebRTCManager {
             })
             .catch((error) => console.error('[WebRTCManager] Error creating SDP offer:', error));
     }
+/**
+ * Initialize the connection button and attach the click listener.
+ */
+initializeConnectionButton() {
+    this.statusButton = document.getElementById('connectionStatus');
+    this.iconSpan = document.getElementById('connectionStatusIcon');
+    this.textSpan = document.getElementById('connectionStatusText');
+
+    if (!this.statusButton || !this.iconSpan || !this.textSpan) {
+        console.error('[WebRTCManager] Button or elements missing in DOM.');
+        return;
+    }
+
+    // Ensure the click event listener is attached
+    this.statusButton.removeEventListener('click', this.handleConnectionButtonClick.bind(this));
+    this.statusButton.addEventListener('click', this.handleConnectionButtonClick.bind(this));
+
+    this.updateConnectionStatus();
+}
 
     /**
+     * Toggle connection state.
+     */
+    toggleConnection() {
+        if (this.isConnected) {
+            this.cleanupConnection();
+        } else {
+            this.createAndSendOffer();
+        }
+    
+        // Explicitly update the connection status
+        this.updateConnectionStatus();
+    }
+
+    /**
+     * Update button appearance and state based on connection status.
+     */
+    updateConnectionStatus() {
+        const config = this.isConnected
+            ? {
+                iconPath: '/assets/icons/ext-mobile-connect.svg',
+                color: '#4CAF50',
+                label: 'Device Connected',
+                text: ''
+            }
+            : {
+                iconPath: '/assets/icons/ext-mobile-disconnect.svg',
+                color: '#F44336',
+                label: 'Device Disconnected',
+                text: ''
+            };
+
+        // Update button text and label
+        this.statusButton.setAttribute('aria-label', config.label);
+        this.textSpan.textContent = config.text;
+        this.statusButton.style.color = config.color;
+
+        // Load and inject SVG icon
+        this.loadSVGIcon(config.iconPath);
+    }
+
+    /**
+     * Load SVG dynamically into the button icon span.
+     * @param {string} src - SVG file path.
+     */
+    loadSVGIcon(src) {
+        fetch(src)
+            .then(response => {
+                if (!response.ok) throw new Error(`Failed to load SVG: ${src}`);
+                return response.text();
+            })
+            .then(svgContent => {
+                this.iconSpan.innerHTML = svgContent;
+            })
+            .catch(error => {
+                console.error(`[WebRTCManager] Error loading SVG: ${error}`);
+                this.iconSpan.innerHTML = '<span class="icon-placeholder">⚠️</span>';
+            });
+    }
+
+
+/**
      * Handles incoming messages on the DataChannel.
      * @param {Object} message - The received message object.
      */
@@ -421,5 +521,11 @@ export class WebRTCManager {
         }
         this.targetClientId = null;
         this.stopPingPong();
+    
+        this.isConnected = false;
+        this.updateConnectionStatus();
+    
     }
+
+
 }
