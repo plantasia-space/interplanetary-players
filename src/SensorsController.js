@@ -1,19 +1,11 @@
 // SensorController.js
 
 import { Quaternion, Euler, Vector3, MathUtils } from 'three';
-import { 
-    INTERNAL_SENSORS_USABLE, 
-    EXTERNAL_SENSORS_USABLE, 
-    setExternalSensorsUsable, 
-    UNIQUE_ID 
-} from './Constants.js';
 import notifications from './AppNotifications.js';
 
 /**
  * @class SensorController
  * @description Manages device orientation and motion sensor inputs and maps them to user parameters.
- * Handles toggle-based activation/deactivation of sensor axes (x, y, z, distance).
- * Integrates with a user-defined `User1Manager` for real-time updates.
  */
 export class SensorController {
     // Private static instance variable
@@ -41,79 +33,35 @@ export class SensorController {
         }
 
         // Initialize properties
-        this.isSensorActive = false;
         this.user1Manager = user1Manager;
         this.quaternion = new Quaternion();
-        this.referenceVector = new Vector3(1, 0, 0); // Fixed reference axis for mapping.
-        this.rotatedVector = new Vector3(); // Stores the rotated vector after quaternion transformation.
-        this.activeAxes = { x: false, y: false, z: false, distance: false };
-        this.throttleUpdate = this.throttle(this.updateParameters.bind(this), 33); // ~30 FPS
+        this.euler = new Euler('ZXY'); // Order matches sensor data
+        this.referenceEuler = new Euler(); // To store calibrated reference
+        this.activeAxes = { x: false, y: false, distance: false };
+        this.friction = { x: 1.0, y: 1.0, distance: 1.0 };
+        this.isCalibrated = false;
 
-        // Translation properties
-        this.velocityY = 0;
-        this.positionY = 0;
-        this.initialAccelerationY = 0;
-        this.lastTimestamp = null;
-        this.calibrated = false;
-        this.previousAccY = 0; // Initialize previous acceleration Y
+        // Bind event handlers
+        this.handleDeviceOrientation = this.handleDeviceOrientation.bind(this);
+        this.handleDeviceMotion = this.handleDeviceMotion.bind(this);
 
-        // Cumulative rotation angles
-        this.cumulativeAlpha = 0;
-        this.cumulativeBeta = 0;
-        this.cumulativeGamma = 0;
-
-        // Friction (Sensitivity) parameters for each axis
-        this.friction = {
-            x: 1.0,       // Default friction for X-axis
-            y: 1.0,       // Default friction for Y-axis
-            distance: 1.0 // Default friction for Distance
-        };
-
-        // Bind toggle handlers for event listeners.
-        this.handleToggleChange = this.handleToggleChange.bind(this);
-
-        // Bind handleDeviceOrientation and handleDeviceMotion once to maintain reference
-        this.boundHandleDeviceOrientation = this.handleDeviceOrientation.bind(this);
-        this.boundHandleDeviceMotion = this.handleDeviceMotion.bind(this);
-
-        // Initialize toggles for controlling sensor axes.
+        // Initialize toggles and calibration UI
         this.initializeToggles();
-        this.initializeCalibrationButton();
+        this.initializeCalibrationUI();
 
-        // Determine whether internal or external sensors are usable
-        this.useInternalSensors = INTERNAL_SENSORS_USABLE;
-        this.useExternalSensors = EXTERNAL_SENSORS_USABLE;
-
-        // Initialize sensors based on availability
-        if (this.useInternalSensors) {
-            this.initializeInternalSensors();
-        } else if (this.useExternalSensors) {
-            this.initializeExternalSensors();
-        } else {
-            console.warn('SensorController: No usable sensors detected.');
-        }
-
-        // Initiate calibration
+        // Start calibration
         this.calibrateDevice();
-
-        // Initialize friction calibration UI
-        this.initializeFrictionCalibration();
     }
 
     /**
-     * Initializes the toggles for sensor axes (x, y, z, distance) and binds their change events.
-     * Assumes toggles are custom web components with a 'state' attribute.
-     * Logs the initial state of each toggle for debugging purposes.
+     * Initializes the toggles for sensor axes (x, y, distance) and binds their change events.
      */
     initializeToggles() {
-        ['toggleSensorX', 'toggleSensorY', 'toggleSensorZ', 'toggleSensorDistance'].forEach((id) => {
+        ['toggleSensorX', 'toggleSensorY', 'toggleSensorDistance'].forEach(id => {
             const toggle = document.getElementById(id);
             const axis = id.replace('toggleSensor', '').toLowerCase();
 
             if (toggle) {
-                console.debug(`[Init Debug] Toggle ID: ${id}, Axis: ${axis}, Initial state: ${toggle.state}`);
-
-                // Bind change event to the toggle.
                 toggle.addEventListener('change', () => this.handleToggleChange(toggle, axis));
             } else {
                 console.warn(`SensorController: Toggle element '${id}' not found.`);
@@ -122,133 +70,97 @@ export class SensorController {
     }
 
     /**
-     * Checks if the device supports orientation sensors.
-     * @static
-     * @returns {boolean} True if `DeviceOrientationEvent` is supported, false otherwise.
+     * Initializes the calibration UI elements and binds event listeners.
      */
-    static isSupported() {
-        return typeof DeviceOrientationEvent !== 'undefined';
-    }
+    initializeCalibrationUI() {
+        // Example: Friction sliders
+        const frictionSliders = [
+            { id: 'frictionX', axis: 'x' },
+            { id: 'frictionY', axis: 'y' },
+            { id: 'frictionDistance', axis: 'distance' }
+        ];
 
-    /**
-     * Initializes internal sensors.
-     * Placeholder for any internal sensor initialization logic.
-     */
-    initializeInternalSensors() {
-        console.log('SensorController: Initializing internal sensors.');
-        // Add internal sensor initialization logic here if needed.
-    }
+        frictionSliders.forEach(sliderInfo => {
+            const slider = document.getElementById(sliderInfo.id);
+            const valueDisplay = document.getElementById(`${sliderInfo.id}Value`);
 
-    /**
-     * Initializes external sensors.
-     * Placeholder for any external sensor initialization logic.
-     */
-    initializeExternalSensors() {
-        console.log('SensorController: Initializing external sensors.');
-        // Add external sensor initialization logic here if needed.
-    }
-
-    /**
-     * Requests user permission to access orientation sensors (iOS 13+ only).
-     * @async
-     * @returns {Promise<boolean>} Resolves to `true` if permission is granted, `false` otherwise.
-     */
-    async requestPermission() {
-        if (
-            typeof DeviceOrientationEvent !== 'undefined' &&
-            typeof DeviceOrientationEvent.requestPermission === 'function'
-        ) {
-            try {
-                const response = await DeviceOrientationEvent.requestPermission();
-                return response === 'granted';
-            } catch (error) {
-                console.error('SensorController: Error requesting permission:', error);
-                return false;
+            if (slider && valueDisplay) {
+                slider.addEventListener('input', () => {
+                    const value = parseFloat(slider.value);
+                    valueDisplay.textContent = value.toFixed(1);
+                    this.friction[sliderInfo.axis] = value;
+                });
+            } else {
+                console.warn(`SensorController: Friction slider or display for '${sliderInfo.id}' not found.`);
             }
+        });
+
+        // Calibration button
+        const calibrateButton = document.getElementById('sensor-calibration');
+        if (calibrateButton) {
+            calibrateButton.addEventListener('click', () => this.calibrateDevice());
+        } else {
+            console.warn('SensorController: Calibration button not found.');
         }
-        return true; // Assume permission is granted on non-iOS devices.
     }
 
     /**
-     * Activates the device orientation and motion sensors if supported and permission is granted.
-     * Binds the `deviceorientation` and `devicemotion` events to listen for changes.
-     * @async
+     * Handles toggle changes to activate or deactivate axes.
+     * @param {HTMLElement} toggle - The toggle element.
+     * @param {string} axis - The axis ('x', 'y', or 'distance').
      */
-    async activateSensors() {
-        if (!SensorController.isSupported()) {
-            console.warn('SensorController: Device orientation not supported by this browser/device.');
-            return;
-        }
+    handleToggleChange(toggle, axis) {
+        this.activeAxes[axis] = toggle.checked;
+        console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${toggle.checked ? 'active' : 'inactive'}.`);
 
-        const permissionGranted = await this.requestPermission();
-        if (!permissionGranted) {
-            console.warn('SensorController: Permission to access sensors denied.');
-            return;
+        // Start or stop sensors based on active axes
+        if (Object.values(this.activeAxes).some(val => val)) {
+            this.startSensors();
+        } else {
+            this.stopSensors();
         }
-
-        this.startListening();
-        this.isSensorActive = true;
-        console.log('SensorController: Sensors activated.');
     }
 
     /**
-     * Starts listening for `deviceorientation` and `devicemotion` events to capture orientation and motion changes.
-     * Ensures that only one listener is active at a time.
-     * @private
+     * Starts listening to device sensors.
      */
-    startListening() {
-        if (!this.isSensorActive) {
-            window.addEventListener('deviceorientation', this.boundHandleDeviceOrientation, true);
-            window.addEventListener('devicemotion', this.boundHandleDeviceMotion, true);
-            console.log('SensorController: Started listening to deviceorientation and devicemotion events.');
-        }
+    startSensors() {
+        window.addEventListener('deviceorientation', this.handleDeviceOrientation, true);
+        window.addEventListener('devicemotion', this.handleDeviceMotion, true);
+        console.log('SensorController: Started listening to device sensors.');
     }
 
     /**
-     * Stops listening for `deviceorientation` and `devicemotion` events.
-     * Resets the `isSensorActive` flag.
-     * @public
+     * Stops listening to device sensors.
      */
-    stopListening() {
-        if (this.isSensorActive) {
-            window.removeEventListener('deviceorientation', this.boundHandleDeviceOrientation, true);
-            window.removeEventListener('devicemotion', this.boundHandleDeviceMotion, true);
-            this.isSensorActive = false;
-            console.log('SensorController: Stopped listening to deviceorientation and devicemotion events.');
-        }
+    stopSensors() {
+        window.removeEventListener('deviceorientation', this.handleDeviceOrientation, true);
+        window.removeEventListener('devicemotion', this.handleDeviceMotion, true);
+        console.log('SensorController: Stopped listening to device sensors.');
     }
 
     /**
-     * Calibrates the device by setting initial reference points for orientation and acceleration.
-     * Prompts the user to hold the device steady near their body.
-     * @private
+     * Calibrates the device by setting the current orientation as the reference.
      */
     calibrateDevice() {
-        console.log('SensorController: Starting calibration. Please hold the device steady near your body.');
+        console.log('SensorController: Starting calibration. Please hold the device steady.');
 
-        // Listen for a short duration to capture initial orientation and acceleration
+        // Temporary handlers to capture calibration data
         const calibrationDuration = 2000; // 2 seconds
         let orientationSum = { alpha: 0, beta: 0, gamma: 0 };
-        let accelerationSum = 0;
         let count = 0;
 
-        const handleOrientation = (event) => {
+        const captureOrientation = (event) => {
             orientationSum.alpha += event.alpha || 0;
             orientationSum.beta += event.beta || 0;
             orientationSum.gamma += event.gamma || 0;
             count++;
         };
 
-        const handleMotion = (event) => {
-            accelerationSum += event.accelerationIncludingGravity.y || 0;
-        };
-
-        window.addEventListener('deviceorientation', handleOrientation);
-        window.addEventListener('devicemotion', handleMotion);
+        window.addEventListener('deviceorientation', captureOrientation, true);
 
         setTimeout(() => {
-            window.removeEventListener('deviceorientation', handleOrientation);
-            window.removeEventListener('devicemotion', handleMotion);
+            window.removeEventListener('deviceorientation', captureOrientation, true);
 
             if (count === 0) {
                 console.warn('SensorController: Calibration failed. No sensor data received.');
@@ -256,325 +168,131 @@ export class SensorController {
                 return;
             }
 
-            // Average the collected data
-            this.initialAlpha = orientationSum.alpha / count;
-            this.initialBeta = orientationSum.beta / count;
-            this.initialGamma = orientationSum.gamma / count;
-            this.initialAccelerationY = accelerationSum / count;
-            this.calibrated = true;
+            // Calculate average orientation
+            this.referenceEuler.set(
+                MathUtils.degToRad((orientationSum.beta / count)),
+                MathUtils.degToRad((orientationSum.alpha / count)),
+                MathUtils.degToRad((orientationSum.gamma / count)),
+                'ZXY'
+            );
+
+            this.quaternion.setFromEuler(this.referenceEuler);
+            this.isCalibrated = true;
 
             console.log('SensorController: Calibration complete.');
-            console.log(`Initial Yaw (alpha): ${this.initialAlpha.toFixed(2)}°`);
-            console.log(`Initial Pitch (beta): ${this.initialBeta.toFixed(2)}°`);
-            console.log(`Initial Roll (gamma): ${this.initialGamma.toFixed(2)}°`);
-            console.log(`Initial Acceleration Y: ${this.initialAccelerationY.toFixed(2)} m/s²`);
-
-            // Reset translation parameters
-            this.velocityY = 0;
-            this.positionY = 0;
-            this.lastTimestamp = null;
+            console.log(`Reference Yaw (alpha): ${(orientationSum.alpha / count).toFixed(2)}°`);
+            console.log(`Reference Pitch (beta): ${(orientationSum.beta / count).toFixed(2)}°`);
+            console.log(`Reference Roll (gamma): ${(orientationSum.gamma / count).toFixed(2)}°`);
         }, calibrationDuration);
     }
 
     /**
-     * Handles `deviceorientation` events, converts orientation data to a quaternion,
-     * and maps the quaternion to normalized parameters for active axes.
-     * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
+     * Handles device orientation events.
+     * @param {DeviceOrientationEvent} event 
      */
     handleDeviceOrientation(event) {
-        if (!this.calibrated) {
-            // Ignore orientation events until calibration is complete
+        if (!this.isCalibrated || !this.activeAxes.x && !this.activeAxes.y) return;
+
+        const { alpha, beta, gamma } = event;
+
+        if (alpha === null || beta === null || gamma === null) {
+            console.warn('SensorController: Incomplete orientation data received.');
             return;
         }
 
-        try {
-            const { alpha, beta, gamma } = event;
+        // Calculate rotation relative to calibration
+        const relativeAlpha = MathUtils.degToRad((alpha || 0) - MathUtils.radToDeg(this.referenceEuler.y));
+        const relativeBeta = MathUtils.degToRad((beta || 0) - MathUtils.radToDeg(this.referenceEuler.x));
+        const relativeGamma = MathUtils.degToRad((gamma || 0) - MathUtils.radToDeg(this.referenceEuler.z));
 
-            // Calculate relative angles based on calibration
-            let relativeAlpha = (alpha || 0) - this.initialAlpha;
-            let relativeBeta = (beta || 0) - this.initialBeta;
-            let relativeGamma = (gamma || 0) - this.initialGamma;
+        // Create quaternion from relative rotation
+        const relativeEuler = new Euler(relativeBeta, relativeAlpha, relativeGamma, 'ZXY');
+        const relativeQuaternion = new Quaternion().setFromEuler(relativeEuler);
 
-            // Accumulate angles
-            this.cumulativeAlpha += relativeAlpha;
-            this.cumulativeBeta += relativeBeta;
-            this.cumulativeGamma += relativeGamma;
-
-            // Clamp cumulative angles to -180° to +180°
-            this.cumulativeAlpha = MathUtils.clamp(this.cumulativeAlpha, -180, 180);
-            this.cumulativeBeta = MathUtils.clamp(this.cumulativeBeta, -180, 180);
-            this.cumulativeGamma = MathUtils.clamp(this.cumulativeGamma, -180, 180);
-
-            // Apply friction (sensitivity) by scaling the cumulative angles
-            const scaledAlpha = this.cumulativeAlpha / this.friction.x;
-            const scaledBeta = this.cumulativeBeta / this.friction.y;
-            const scaledGamma = this.cumulativeGamma / this.friction.y; // Assuming friction.y applies to both pitch and roll
-
-            // Convert degrees to radians
-            const euler = new Euler(
-                MathUtils.degToRad(scaledBeta),
-                MathUtils.degToRad(scaledAlpha),
-                MathUtils.degToRad(scaledGamma),
+        // Apply friction (sensitivity)
+        relativeQuaternion.multiply(new Quaternion().setFromEuler(
+            new Euler(
+                relativeBeta / this.friction.y,
+                relativeAlpha / this.friction.x,
+                relativeGamma / this.friction.y,
                 'ZXY'
-            );
-            this.quaternion.setFromEuler(euler);
+            )
+        ));
 
-            this.throttleUpdate(this.quaternion);
-        } catch (error) {
-            console.error('SensorController: Error in handleDeviceOrientation:', error);
+        // Update the main quaternion
+        this.quaternion.copy(relativeQuaternion);
+
+        // Convert to Euler angles for easy interpretation
+        this.quaternion.toEuler(this.euler, 'ZXY');
+
+        // Clamp angles between -180° and +180°
+        this.euler.x = MathUtils.clamp(this.euler.x, MathUtils.degToRad(-180), MathUtils.degToRad(180));
+        this.euler.y = MathUtils.clamp(this.euler.y, MathUtils.degToRad(-180), MathUtils.degToRad(180));
+
+        // Normalize angles to [0, 360)
+        const yaw = (MathUtils.radToDeg(this.euler.y) + 360) % 360;
+        const pitch = MathUtils.radToDeg(this.euler.x);
+        const roll = MathUtils.radToDeg(this.euler.z);
+
+        // Normalize to [0,1]
+        const yawNorm = yaw / 360;
+        const pitchNorm = (pitch + 180) / 360; // From [-180, 180] to [0,1]
+        const rollNorm = (roll + 180) / 360;
+
+        // Update User Manager
+        if (this.activeAxes.x) {
+            this.user1Manager.setNormalizedValue('x', yawNorm);
         }
+        if (this.activeAxes.y) {
+            this.user1Manager.setNormalizedValue('y', pitchNorm);
+        }
+
+        console.log(`SensorController: Yaw: ${yaw.toFixed(2)}°, Pitch: ${pitch.toFixed(2)}°, Roll: ${roll.toFixed(2)}°`);
     }
 
     /**
-     * Handles `devicemotion` events to calculate translation distance based on Y-axis acceleration.
-     * @param {DeviceMotionEvent} event - The motion event containing acceleration data.
+     * Handles device motion events to calculate distance based on Y-axis acceleration.
+     * @param {DeviceMotionEvent} event 
      */
     handleDeviceMotion(event) {
-        if (!this.calibrated) {
-            // Ignore motion events until calibration is complete
+        if (!this.isCalibrated || !this.activeAxes.distance) return;
+
+        const { accelerationIncludingGravity } = event;
+        if (!accelerationIncludingGravity) {
+            console.warn('SensorController: Incomplete motion data received.');
             return;
         }
 
-        try {
-            const currentTime = event.timeStamp;
-            const deltaTime = this.lastTimestamp ? (currentTime - this.lastTimestamp) / 1000 : 0; // Convert ms to seconds
-            this.lastTimestamp = currentTime;
+        const accY = accelerationIncludingGravity.y || 0;
 
-            // Get Y-axis acceleration and remove the initial calibration offset
-            const accY = event.accelerationIncludingGravity.y || 0;
-            const deltaAccY = accY - this.initialAccelerationY;
+        // Simple filtering: Moving average or low-pass filter
+        const alphaFilter = 0.8;
+        const filteredAccY = alphaFilter * accY + (1 - alphaFilter) * (this.previousAccY || 0);
+        this.previousAccY = filteredAccY;
 
-            // Apply a simple low-pass filter to reduce noise
-            const alphaFilter = 0.8; // Smoothing factor
-            const filteredAccY = alphaFilter * deltaAccY + (1 - alphaFilter) * (this.previousAccY || 0);
-            this.previousAccY = filteredAccY;
+        // Integrate acceleration to get velocity
+        this.velocityY += filteredAccY * 0.033; // Assuming ~30Hz (33ms) updates
 
-            // Integrate acceleration to get velocity
-            this.velocityY += filteredAccY * deltaTime;
+        // Integrate velocity to get position
+        this.positionY += this.velocityY * 0.033;
 
-            // Integrate velocity to get position
-            this.positionY += this.velocityY * deltaTime;
+        // Apply friction (sensitivity)
+        const adjustedPositionY = this.positionY / this.friction.distance;
 
-            // Normalize distance (0 near, 1 at 0.8 meters), adjusted by friction
-            const normalizedDistance = Math.min(Math.abs(this.positionY) / (0.8 * this.friction.distance), 1);
+        // Clamp distance between 0 (near) and 1 (max)
+        const distanceNorm = MathUtils.clamp(Math.abs(adjustedPositionY) / 0.8, 0, 1);
 
-            // Update user manager if 'distance' axis is active
-            if (this.activeAxes.distance) {
-                this.user1Manager.setNormalizedValue('distance', normalizedDistance);
-            }
+        // Update User Manager
+        this.user1Manager.setNormalizedValue('distance', distanceNorm);
 
-            // Detect if device is stationary to reset velocity and position
-            if (Math.abs(filteredAccY) < 0.05 && Math.abs(this.velocityY) < 0.05) { // Thresholds for stationarity
-                this.velocityY = 0;
-                this.positionY = 0;
-                console.log('SensorController: Device is stationary. Resetting velocity and position to prevent drift.');
-            }
-
-            // Optionally, expose the distance for debugging
-            // console.log(`Estimated Distance: ${normalizedDistance} (0: near, 1: 80cm)`);
-        } catch (error) {
-            console.error('SensorController: Error in handleDeviceMotion:', error);
-        }
-    }
-
-    /**
-     * Maps a quaternion to normalized parameters and updates the `user1Manager`.
-     * @param {THREE.Quaternion} q - The quaternion representing the current device orientation.
-     * @private
-     */
-    updateParameters(q) {
-        try {
-            this.rotatedVector.copy(this.referenceVector).applyQuaternion(q);
-
-            const mapTo01 = (v) => (v + 1) / 2;
-
-            const xNorm = MathUtils.clamp(mapTo01(this.rotatedVector.x), 0, 1);
-            const yNorm = MathUtils.clamp(mapTo01(this.rotatedVector.y), 0, 1);
-            const zNorm = MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
-
-            // Update movementData object
-            const euler = new Euler().setFromQuaternion(q, 'ZXY');
-            this.movementData = {
-                yaw: ((MathUtils.radToDeg(euler.y) + 360) % 360), // Normalize to [0, 360)
-                pitch: MathUtils.clamp(MathUtils.radToDeg(euler.x), -90, 90),
-                roll: MathUtils.radToDeg(euler.z),
-                distance: this.activeAxes.distance ? Math.min(Math.abs(this.positionY) / 0.8, 1) : 0
-            };
-
-            console.log(`SensorController: Yaw: ${this.movementData.yaw.toFixed(2)}°, Pitch: ${this.movementData.pitch.toFixed(2)}°, Roll: ${this.movementData.roll.toFixed(2)}°, Distance: ${this.movementData.distance.toFixed(3)}`);
-
-            // Update user manager based on active axes
-            if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
-            if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
-            if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
-            if (this.activeAxes.distance) this.user1Manager.setNormalizedValue('distance', this.movementData.distance);
-        } catch (error) {
-            console.error('SensorController: Error in updateParameters:', error);
-        }
-    }
-
-    /**
-     * Handles changes to toggle states for sensor axes.
-     * Updates the `activeAxes` state and manages sensor activation/deactivation.
-     * @param {HTMLElement} toggle - The toggle element.
-     * @param {string} axis - The axis ('x', 'y', 'z', or 'distance') corresponding to the toggle.
-     */
-    handleToggleChange(toggle, axis) {
-        const isActive = toggle.state;
-
-        console.debug(`[Toggle Debug] Toggle ID: ${toggle.id}, Axis: ${axis}, State: ${isActive}`);
-
-        if (axis in this.activeAxes || axis === 'distance') {
-            if (axis === 'distance') {
-                this.activeAxes.distance = isActive;
-            } else {
-                this.activeAxes[axis] = isActive;
-            }
-            console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${isActive ? 'active' : 'inactive'}.`);
-
-            if (isActive) {
-                if (!this.isSensorActive) this.activateSensors();
-            } else {
-                const anyActive = Object.values(this.activeAxes).some(val => val);
-                if (!anyActive && this.isSensorActive) this.stopListening();
-            }
+        // Reset if stationary to prevent drift
+        if (Math.abs(filteredAccY) < 0.05 && Math.abs(this.velocityY) < 0.05) {
+            this.velocityY = 0;
+            this.positionY = 0;
+            console.log('SensorController: Device is stationary. Resetting distance to prevent drift.');
         }
 
-        console.debug(`[Toggle Debug] ActiveAxes After:`, this.activeAxes);
-    }
-
-    /**
-     * Throttles a function call to a specified limit.
-     * Prevents excessive executions of expensive operations.
-     * @param {Function} func - The function to throttle.
-     * @param {number} limit - The time in milliseconds to throttle executions.
-     * @returns {Function} The throttled function.
-     */
-    throttle(func, limit) {
-        let inThrottle;
-        return function (...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => (inThrottle = false), limit);
-            }
-        };
-    }
-
-    /**
-     * Loads dynamic SVG icons for the calibration button.
-     * Ensures the SVG is fetched and injected dynamically.
-     * @public
-     */
-    loadCalibrationButtonSVG() {
-        const calibrationButtonIcon = document.querySelector('#sensor-calibration .button-icon');
-        if (!calibrationButtonIcon) {
-            console.warn('SensorController: Calibration button icon element not found.');
-            return;
-        }
-        console.log('SensorController: LOADING.');
-
-        const src = calibrationButtonIcon.getAttribute('data-src');
-        if (src) {
-            this.fetchAndSetSVG(src, calibrationButtonIcon, true);
-        }
-    }
-
-    /**
-     * Fetches and sets SVG content into a specified element.
-     * @param {string} src - URL of the SVG file to fetch.
-     * @param {HTMLElement} element - DOM element to insert the fetched SVG into.
-     * @param {boolean} [isInline=true] - Whether to insert the SVG inline.
-     * @private
-     */
-    fetchAndSetSVG(src, element, isInline = true) {
-        if (!isInline) return;
-        console.log('SensorController: Calibration fetchAndSetSVG.');
-
-        fetch(src)
-            .then(response => {
-                if (!response.ok) throw new Error(`Failed to load SVG: ${src}`);
-                return response.text();
-            })
-            .then(svgContent => {
-                const parser = new DOMParser();
-                const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-                const svgElement = svgDoc.documentElement;
-
-                if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
-                    svgElement.setAttribute('fill', 'currentColor');
-                    svgElement.setAttribute('role', 'img');
-                    svgElement.classList.add('icon-svg');
-                    element.innerHTML = ''; // Clear existing content
-                    element.appendChild(svgElement); // Insert the SVG
-                } else {
-                    console.error(`Invalid SVG content fetched from: ${src}`);
-                }
-            })
-            .catch(error => console.error(`Error loading SVG from ${src}:`, error));
-    }
-
-    /**
-     * Initializes the sensor calibration button and SVG loading.
-     * Call this method after the DOM is fully loaded.
-     * @public
-     */
-    initializeCalibrationButton() {
-        const calibrationButton = document.getElementById('sensor-calibration');
-        if (!calibrationButton) {
-            console.warn('SensorController: Calibration button not found.');
-            return;
-        }
-
-        // Attach an event listener for calibration
-        calibrationButton.addEventListener('click', () => {
-            console.log('SensorController: Calibration button clicked.');
-            this.calibrateDevice();
-        });
-
-        // Load the SVG dynamically
-        this.loadCalibrationButtonSVG();
-    }
-
-    /**
-     * Initializes friction calibration sliders and binds event listeners.
-     * Call this method after the DOM is fully loaded.
-     * @public
-     */
-    initializeFrictionCalibration() {
-        const frictionXSlider = document.getElementById('frictionX');
-        const frictionYSlider = document.getElementById('frictionY');
-        const frictionDistanceSlider = document.getElementById('frictionDistance');
-
-        const frictionXValue = document.getElementById('frictionXValue');
-        const frictionYValue = document.getElementById('frictionYValue');
-        const frictionDistanceValue = document.getElementById('frictionDistanceValue');
-
-        if (frictionXSlider && frictionXValue) {
-            frictionXSlider.addEventListener('input', () => {
-                const value = parseFloat(frictionXSlider.value);
-                frictionXValue.textContent = value.toFixed(1);
-                this.setFriction({ x: value });
-            });
-        }
-
-        if (frictionYSlider && frictionYValue) {
-            frictionYSlider.addEventListener('input', () => {
-                const value = parseFloat(frictionYSlider.value);
-                frictionYValue.textContent = value.toFixed(1);
-                this.setFriction({ y: value });
-            });
-        }
-
-        if (frictionDistanceSlider && frictionDistanceValue) {
-            frictionDistanceSlider.addEventListener('input', () => {
-                const value = parseFloat(frictionDistanceSlider.value);
-                frictionDistanceValue.textContent = value.toFixed(1);
-                this.setFriction({ distance: value });
-            });
-        }
-
-        console.log('SensorController: Friction calibration sliders initialized.');
+        console.log(`SensorController: Distance: ${distanceNorm.toFixed(3)}`);
     }
 
     /**
