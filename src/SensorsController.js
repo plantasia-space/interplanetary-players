@@ -57,6 +57,11 @@ export class SensorController {
         this.calibrated = false;
         this.previousAccY = 0; // Initialize previous acceleration Y
 
+        // Cumulative rotation angles
+        this.cumulativeAlpha = 0;
+        this.cumulativeBeta = 0;
+        this.cumulativeGamma = 0;
+
         // Friction (Sensitivity) parameters for each axis
         this.friction = {
             x: 1.0,       // Default friction for X-axis
@@ -90,6 +95,9 @@ export class SensorController {
 
         // Initiate calibration
         this.calibrateDevice();
+
+        // Initialize friction calibration UI
+        this.initializeFrictionCalibration();
     }
 
     /**
@@ -287,15 +295,20 @@ export class SensorController {
             let relativeBeta = (beta || 0) - this.initialBeta;
             let relativeGamma = (gamma || 0) - this.initialGamma;
 
-            // Normalize angles to be within -180° to +180°
-            relativeAlpha = MathUtils.clamp(relativeAlpha, -180, 180);
-            relativeBeta = MathUtils.clamp(relativeBeta, -180, 180);
-            relativeGamma = MathUtils.clamp(relativeGamma, -180, 180);
+            // Accumulate angles
+            this.cumulativeAlpha += relativeAlpha;
+            this.cumulativeBeta += relativeBeta;
+            this.cumulativeGamma += relativeGamma;
 
-            // Apply friction (sensitivity) by scaling the relative angles
-            const scaledAlpha = relativeAlpha / this.friction.x;
-            const scaledBeta = relativeBeta / this.friction.y;
-            const scaledGamma = relativeGamma / this.friction.y; // Assuming friction.y applies to pitch and roll
+            // Clamp cumulative angles to -180° to +180°
+            this.cumulativeAlpha = MathUtils.clamp(this.cumulativeAlpha, -180, 180);
+            this.cumulativeBeta = MathUtils.clamp(this.cumulativeBeta, -180, 180);
+            this.cumulativeGamma = MathUtils.clamp(this.cumulativeGamma, -180, 180);
+
+            // Apply friction (sensitivity) by scaling the cumulative angles
+            const scaledAlpha = this.cumulativeAlpha / this.friction.x;
+            const scaledBeta = this.cumulativeBeta / this.friction.y;
+            const scaledGamma = this.cumulativeGamma / this.friction.y; // Assuming friction.y applies to both pitch and roll
 
             // Convert degrees to radians
             const euler = new Euler(
@@ -350,10 +363,11 @@ export class SensorController {
                 this.user1Manager.setNormalizedValue('distance', normalizedDistance);
             }
 
-            // Optionally, reset position and velocity if device is stationary (to prevent drift)
-            if (Math.abs(filteredAccY) < 0.05) { // Threshold for considering the device as stationary
-                this.velocityY *= 0.9; // Dampen velocity
-                this.positionY *= 0.9; // Dampen position
+            // Detect if device is stationary to reset velocity and position
+            if (Math.abs(filteredAccY) < 0.05 && Math.abs(this.velocityY) < 0.05) { // Thresholds for stationarity
+                this.velocityY = 0;
+                this.positionY = 0;
+                console.log('SensorController: Device is stationary. Resetting velocity and position to prevent drift.');
             }
 
             // Optionally, expose the distance for debugging
@@ -520,6 +534,47 @@ export class SensorController {
 
         // Load the SVG dynamically
         this.loadCalibrationButtonSVG();
+    }
+
+    /**
+     * Initializes friction calibration sliders and binds event listeners.
+     * Call this method after the DOM is fully loaded.
+     * @public
+     */
+    initializeFrictionCalibration() {
+        const frictionXSlider = document.getElementById('frictionX');
+        const frictionYSlider = document.getElementById('frictionY');
+        const frictionDistanceSlider = document.getElementById('frictionDistance');
+
+        const frictionXValue = document.getElementById('frictionXValue');
+        const frictionYValue = document.getElementById('frictionYValue');
+        const frictionDistanceValue = document.getElementById('frictionDistanceValue');
+
+        if (frictionXSlider && frictionXValue) {
+            frictionXSlider.addEventListener('input', () => {
+                const value = parseFloat(frictionXSlider.value);
+                frictionXValue.textContent = value.toFixed(1);
+                this.setFriction({ x: value });
+            });
+        }
+
+        if (frictionYSlider && frictionYValue) {
+            frictionYSlider.addEventListener('input', () => {
+                const value = parseFloat(frictionYSlider.value);
+                frictionYValue.textContent = value.toFixed(1);
+                this.setFriction({ y: value });
+            });
+        }
+
+        if (frictionDistanceSlider && frictionDistanceValue) {
+            frictionDistanceSlider.addEventListener('input', () => {
+                const value = parseFloat(frictionDistanceSlider.value);
+                frictionDistanceValue.textContent = value.toFixed(1);
+                this.setFriction({ distance: value });
+            });
+        }
+
+        console.log('SensorController: Friction calibration sliders initialized.');
     }
 
     /**
