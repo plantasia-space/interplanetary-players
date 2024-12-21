@@ -261,55 +261,40 @@ export class SensorController {
         }, calibrationDuration);
     }
 
+    /**
+     * Handles `deviceorientation` events, converts orientation data to a quaternion,
+     * and maps the quaternion to normalized parameters for active axes.
+     * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
+     */
+    handleDeviceOrientation(event) {
+        if (!this.calibrated) {
+            // Ignore orientation events until calibration is complete
+            return;
+        }
 
-/**
- * Handles `deviceorientation` events, converts orientation data to a quaternion,
- * and maps the quaternion to normalized parameters for active axes.
- * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
- */
-/**
- * Handles `deviceorientation` events, converts orientation data to a quaternion,
- * clamps values, and maps them to normalized parameters.
- * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
- */
-handleDeviceOrientation(event) {
-    if (!this.calibrated) {
-        // Ignore orientation events until calibration is complete
-        return;
+        try {
+            const { alpha, beta, gamma } = event;
+
+            // Calculate relative angles based on calibration
+            const relativeAlpha = (alpha || 0) - this.initialAlpha;
+            const relativeBeta = (beta || 0) - this.initialBeta;
+            const relativeGamma = (gamma || 0) - this.initialGamma;
+
+            // Convert degrees to radians
+            const euler = new Euler(
+                MathUtils.degToRad(relativeBeta),
+                MathUtils.degToRad(relativeAlpha),
+                MathUtils.degToRad(relativeGamma),
+                'ZXY'
+            );
+            this.quaternion.setFromEuler(euler);
+
+            this.throttleUpdate(this.quaternion);
+        } catch (error) {
+            console.error('SensorController: Error in handleDeviceOrientation:', error);
+        }
     }
 
-    try {
-        const { alpha, beta, gamma } = event;
-
-        // Calculate relative angles based on calibration
-        let relativeAlpha = (alpha || 0) - this.initialAlpha;
-        let relativeBeta = (beta || 0) - this.initialBeta;
-        let relativeGamma = (gamma || 0) - this.initialGamma;
-
-        // Clamp angles to avoid jumps or wrap-arounds
-        relativeAlpha = MathUtils.clamp(relativeAlpha, -180, 180);
-        relativeBeta = MathUtils.clamp(relativeBeta, -90, 90); // Typical pitch range
-        relativeGamma = MathUtils.clamp(relativeGamma, -180, 180);
-
-        // Create Euler angles
-        const euler = new Euler(
-            MathUtils.degToRad(relativeBeta),
-            MathUtils.degToRad(relativeAlpha),
-            MathUtils.degToRad(relativeGamma),
-            'ZXY'
-        );
-
-        // Apply the rotation to quaternion
-        this.quaternion.setFromEuler(euler);
-
-        // Update parameters
-        this.throttleUpdate(this.quaternion);
-
-        console.log(`Orientation -> Alpha: ${relativeAlpha.toFixed(2)}, Beta: ${relativeBeta.toFixed(2)}, Gamma: ${relativeGamma.toFixed(2)}`);
-    } catch (error) {
-        console.error('SensorController: Error in handleDeviceOrientation:', error);
-    }
-}
     /**
      * Handles `devicemotion` events to calculate translation distance based on Y-axis acceleration.
      * @param {DeviceMotionEvent} event - The motion event containing acceleration data.
