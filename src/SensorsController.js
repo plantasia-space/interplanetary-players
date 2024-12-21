@@ -12,7 +12,7 @@ import notifications from './AppNotifications.js';
 /**
  * @class SensorController
  * @description Manages device orientation and motion sensor inputs and maps them to user parameters.
- * Handles toggle-based activation/deactivation of sensor axes (x, y, z).
+ * Handles toggle-based activation/deactivation of sensor axes (x, y, z, distance).
  * Integrates with a user-defined `User1Manager` for real-time updates.
  */
 export class SensorController {
@@ -46,7 +46,7 @@ export class SensorController {
         this.quaternion = new Quaternion();
         this.referenceVector = new Vector3(1, 0, 0); // Fixed reference axis for mapping.
         this.rotatedVector = new Vector3(); // Stores the rotated vector after quaternion transformation.
-        this.activeAxes = { x: false, y: false, z: false };
+        this.activeAxes = { x: false, y: false, z: false, distance: false };
         this.throttleUpdate = this.throttle(this.updateParameters.bind(this), 33); // ~30 FPS
 
         // Translation properties
@@ -55,6 +55,7 @@ export class SensorController {
         this.initialAccelerationY = 0;
         this.lastTimestamp = null;
         this.calibrated = false;
+        this.previousAccY = 0; // Initialize previous acceleration Y
 
         // Bind toggle handlers for event listeners.
         this.handleToggleChange = this.handleToggleChange.bind(this);
@@ -85,12 +86,12 @@ export class SensorController {
     }
 
     /**
-     * Initializes the toggles for sensor axes (x, y, z) and binds their change events.
+     * Initializes the toggles for sensor axes (x, y, z, distance) and binds their change events.
      * Assumes toggles are custom web components with a 'state' attribute.
      * Logs the initial state of each toggle for debugging purposes.
      */
     initializeToggles() {
-        ['toggleSensorX', 'toggleSensorY', 'toggleSensorZ'].forEach((id) => {
+        ['toggleSensorX', 'toggleSensorY', 'toggleSensorZ', 'toggleSensorDistance'].forEach((id) => {
             const toggle = document.getElementById(id);
             const axis = id.replace('toggleSensor', '').toLowerCase();
 
@@ -236,19 +237,22 @@ export class SensorController {
 
             if (count === 0) {
                 console.warn('SensorController: Calibration failed. No sensor data received.');
+                notifications.showToast('Calibration failed. No sensor data received.', 'error');
                 return;
             }
 
             // Average the collected data
             this.initialAlpha = orientationSum.alpha / count;
             this.initialBeta = orientationSum.beta / count;
+            this.initialGamma = orientationSum.gamma / count;
             this.initialAccelerationY = accelerationSum / count;
             this.calibrated = true;
 
             console.log('SensorController: Calibration complete.');
-            console.log(`Initial Yaw (alpha): ${this.initialAlpha}°`);
-            console.log(`Initial Pitch (beta): ${this.initialBeta}°`);
-            console.log(`Initial Acceleration Y: ${this.initialAccelerationY} m/s²`);
+            console.log(`Initial Yaw (alpha): ${this.initialAlpha.toFixed(2)}°`);
+            console.log(`Initial Pitch (beta): ${this.initialBeta.toFixed(2)}°`);
+            console.log(`Initial Roll (gamma): ${this.initialGamma.toFixed(2)}°`);
+            console.log(`Initial Acceleration Y: ${this.initialAccelerationY.toFixed(2)} m/s²`);
 
             // Reset translation parameters
             this.velocityY = 0;
@@ -274,12 +278,13 @@ export class SensorController {
             // Calculate relative angles based on calibration
             const relativeAlpha = (alpha || 0) - this.initialAlpha;
             const relativeBeta = (beta || 0) - this.initialBeta;
+            const relativeGamma = (gamma || 0) - this.initialGamma;
 
             // Convert degrees to radians
             const euler = new Euler(
                 MathUtils.degToRad(relativeBeta),
                 MathUtils.degToRad(relativeAlpha),
-                MathUtils.degToRad(gamma || 0),
+                MathUtils.degToRad(relativeGamma),
                 'ZXY'
             );
             this.quaternion.setFromEuler(euler);
@@ -311,7 +316,7 @@ export class SensorController {
 
             // Apply a simple low-pass filter to reduce noise
             const alpha = 0.8; // Smoothing factor
-            const filteredAccY = alpha * deltaAccY + (1 - alpha) * this.previousAccY || 0;
+            const filteredAccY = alpha * deltaAccY + (1 - alpha) * (this.previousAccY || 0);
             this.previousAccY = filteredAccY;
 
             // Integrate acceleration to get velocity
@@ -357,13 +362,15 @@ export class SensorController {
             const zNorm = MathUtils.clamp(mapTo01(this.rotatedVector.z), 0, 1);
 
             // Update movementData object
+            const euler = new Euler().setFromQuaternion(q, 'ZXY');
             this.movementData = {
-                yaw: ((MathUtils.radToDeg(this.quaternion.toEuler(new Euler()).y) + 360) % 360), // Normalize to [0, 360)
-                pitch: MathUtils.clamp(MathUtils.radToDeg(this.quaternion.toEuler(new Euler()).x), -90, 90),
-                distance: Math.min(Math.abs(this.positionY) / 0.8, 1)
+                yaw: ((MathUtils.radToDeg(euler.y) + 360) % 360), // Normalize to [0, 360)
+                pitch: MathUtils.clamp(MathUtils.radToDeg(euler.x), -90, 90),
+                roll: MathUtils.radToDeg(euler.z),
+                distance: this.activeAxes.distance ? Math.min(Math.abs(this.positionY) / 0.8, 1) : 0
             };
 
-            console.log(`SensorController: Yaw: ${this.movementData.yaw.toFixed(2)}°, Pitch: ${this.movementData.pitch.toFixed(2)}°, Distance: ${this.movementData.distance.toFixed(3)}`);
+            console.log(`SensorController: Yaw: ${this.movementData.yaw.toFixed(2)}°, Pitch: ${this.movementData.pitch.toFixed(2)}°, Roll: ${this.movementData.roll.toFixed(2)}°, Distance: ${this.movementData.distance.toFixed(3)}`);
 
             // Update user manager based on active axes
             if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
@@ -423,81 +430,78 @@ export class SensorController {
         };
     }
 
+    /**
+     * Loads dynamic SVG icons for the calibration button.
+     * Ensures the SVG is fetched and injected dynamically.
+     * @public
+     */
+    loadCalibrationButtonSVG() {
+        const calibrationButtonIcon = document.querySelector('#sensor-calibration .button-icon');
+        if (!calibrationButtonIcon) {
+            console.warn('SensorController: Calibration button icon element not found.');
+            return;
+        }
+        console.log('SensorController: LOADING.');
 
+        const src = calibrationButtonIcon.getAttribute('data-src');
+        if (src) {
+            this.fetchAndSetSVG(src, calibrationButtonIcon, true);
+        }
+    }
 
     /**
- * Loads dynamic SVG icons for the calibration button.
- * Ensures the SVG is fetched and injected dynamically.
- * @public
- */
-loadCalibrationButtonSVG() {
-    const calibrationButtonIcon = document.querySelector('#sensor-calibration .button-icon');
-    if (!calibrationButtonIcon) {
-        console.warn('SensorController: Calibration button icon element not found.');
-        return;
-    }
-    console.log('SensorController: LOADING.');
+     * Fetches and sets SVG content into a specified element.
+     * @param {string} src - URL of the SVG file to fetch.
+     * @param {HTMLElement} element - DOM element to insert the fetched SVG into.
+     * @param {boolean} [isInline=true] - Whether to insert the SVG inline.
+     * @private
+     */
+    fetchAndSetSVG(src, element, isInline = true) {
+        if (!isInline) return;
+        console.log('SensorController: Calibration fetchAndSetSVG.');
 
-    const src = calibrationButtonIcon.getAttribute('data-src');
-    if (src) {
-        this.fetchAndSetSVG(src, calibrationButtonIcon, true);
-    }
-}
+        fetch(src)
+            .then(response => {
+                if (!response.ok) throw new Error(`Failed to load SVG: ${src}`);
+                return response.text();
+            })
+            .then(svgContent => {
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+                const svgElement = svgDoc.documentElement;
 
-/**
- * Fetches and sets SVG content into a specified element.
- * @param {string} src - URL of the SVG file to fetch.
- * @param {HTMLElement} element - DOM element to insert the fetched SVG into.
- * @param {boolean} [isInline=true] - Whether to insert the SVG inline.
- * @private
- */
-fetchAndSetSVG(src, element, isInline = true) {
-    if (!isInline) return;
-    console.log('SensorController: Calibration fetchAndSetSVG.');
-
-    fetch(src)
-        .then(response => {
-            if (!response.ok) throw new Error(`Failed to load SVG: ${src}`);
-            return response.text();
-        })
-        .then(svgContent => {
-            const parser = new DOMParser();
-            const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-            const svgElement = svgDoc.documentElement;
-
-            if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
-                svgElement.setAttribute('fill', 'currentColor');
-                svgElement.setAttribute('role', 'img');
-                svgElement.classList.add('icon-svg');
-                element.innerHTML = ''; // Clear existing content
-                element.appendChild(svgElement); // Insert the SVG
-            } else {
-                console.error(`Invalid SVG content fetched from: ${src}`);
-            }
-        })
-        .catch(error => console.error(`Error loading SVG from ${src}:`, error));
-}
-
-/**
- * Initializes the sensor calibration button and SVG loading.
- * Call this method after the DOM is fully loaded.
- * @public
- */
-initializeCalibrationButton() {
-    const calibrationButton = document.getElementById('sensor-calibration');
-    if (!calibrationButton) {
-        console.warn('SensorController: Calibration button not found.');
-        return;
+                if (svgElement && svgElement.tagName.toLowerCase() === 'svg') {
+                    svgElement.setAttribute('fill', 'currentColor');
+                    svgElement.setAttribute('role', 'img');
+                    svgElement.classList.add('icon-svg');
+                    element.innerHTML = ''; // Clear existing content
+                    element.appendChild(svgElement); // Insert the SVG
+                } else {
+                    console.error(`Invalid SVG content fetched from: ${src}`);
+                }
+            })
+            .catch(error => console.error(`Error loading SVG from ${src}:`, error));
     }
 
-    // Attach an event listener for calibration
-    calibrationButton.addEventListener('click', () => {
-        console.log('SensorController: Calibration button clicked.');
-        this.calibrateDevice();
-    });
+    /**
+     * Initializes the sensor calibration button and SVG loading.
+     * Call this method after the DOM is fully loaded.
+     * @public
+     */
+    initializeCalibrationButton() {
+        const calibrationButton = document.getElementById('sensor-calibration');
+        if (!calibrationButton) {
+            console.warn('SensorController: Calibration button not found.');
+            return;
+        }
 
-    // Load the SVG dynamically
-    this.loadCalibrationButtonSVG();
-}
+        // Attach an event listener for calibration
+        calibrationButton.addEventListener('click', () => {
+            console.log('SensorController: Calibration button clicked.');
+            this.calibrateDevice();
+        });
 
+        // Load the SVG dynamically
+        this.loadCalibrationButtonSVG();
+    }
 }
