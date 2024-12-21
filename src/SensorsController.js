@@ -261,14 +261,15 @@ export class SensorController {
         }, calibrationDuration);
     }
 
-    /**
-     * Handles `deviceorientation` events, converts orientation data to a quaternion,
-     * and maps the quaternion to normalized parameters for active axes.
-     * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
-     */
+
 /**
  * Handles `deviceorientation` events, converts orientation data to a quaternion,
  * and maps the quaternion to normalized parameters for active axes.
+ * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
+ */
+/**
+ * Handles `deviceorientation` events, converts orientation data to a quaternion,
+ * clamps values, and maps them to normalized parameters.
  * @param {DeviceOrientationEvent} event - The orientation event containing `alpha`, `beta`, and `gamma` angles.
  */
 handleDeviceOrientation(event) {
@@ -285,34 +286,26 @@ handleDeviceOrientation(event) {
         let relativeBeta = (beta || 0) - this.initialBeta;
         let relativeGamma = (gamma || 0) - this.initialGamma;
 
-        // Track cumulative changes to prevent jumps
-        this.cumulativeAlpha = this.cumulativeAlpha || 0;
-        this.cumulativeBeta = this.cumulativeBeta || 0;
-        this.cumulativeGamma = this.cumulativeGamma || 0;
+        // Clamp angles to avoid jumps or wrap-arounds
+        relativeAlpha = MathUtils.clamp(relativeAlpha, -180, 180);
+        relativeBeta = MathUtils.clamp(relativeBeta, -90, 90); // Typical pitch range
+        relativeGamma = MathUtils.clamp(relativeGamma, -180, 180);
 
-        this.cumulativeAlpha += relativeAlpha * 0.1; // Apply smoothing
-        this.cumulativeBeta += relativeBeta * 0.1;   // Apply smoothing
-        this.cumulativeGamma += relativeGamma * 0.1; // Apply smoothing
-
-        // Clamp the cumulative values to prevent jumps
-        this.cumulativeAlpha = MathUtils.clamp(this.cumulativeAlpha, -180, 180);
-        this.cumulativeBeta = MathUtils.clamp(this.cumulativeBeta, -90, 90); // Beta typically has a smaller range
-        this.cumulativeGamma = MathUtils.clamp(this.cumulativeGamma, -180, 180);
-
-        // Convert degrees to radians for Euler
+        // Create Euler angles
         const euler = new Euler(
-            MathUtils.degToRad(this.cumulativeBeta),
-            MathUtils.degToRad(this.cumulativeAlpha),
-            MathUtils.degToRad(this.cumulativeGamma),
+            MathUtils.degToRad(relativeBeta),
+            MathUtils.degToRad(relativeAlpha),
+            MathUtils.degToRad(relativeGamma),
             'ZXY'
         );
 
+        // Apply the rotation to quaternion
         this.quaternion.setFromEuler(euler);
 
-        // Update parameters with throttling
+        // Update parameters
         this.throttleUpdate(this.quaternion);
 
-        console.log(`Orientation -> Alpha: ${this.cumulativeAlpha.toFixed(2)}, Beta: ${this.cumulativeBeta.toFixed(2)}, Gamma: ${this.cumulativeGamma.toFixed(2)}`);
+        console.log(`Orientation -> Alpha: ${relativeAlpha.toFixed(2)}, Beta: ${relativeBeta.toFixed(2)}, Gamma: ${relativeGamma.toFixed(2)}`);
     } catch (error) {
         console.error('SensorController: Error in handleDeviceOrientation:', error);
     }
