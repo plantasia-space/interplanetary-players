@@ -49,6 +49,16 @@ export class SensorController {
         this.currentPitch = 0.5; // Normalized [0,1], 0.5 is center
         this.currentRoll = 0.5;  // Normalized [0,1], 0.5 is center
 
+
+        this.lastAlpha = null; 
+        this.accYaw = 0; // in degrees, can clamp to ±180
+
+        this.lastBeta = null;
+        this.accPitch = 0; // in degrees, can clamp to ±90
+
+        this.lastGamma = null;
+        this.accRoll = 0; // in degrees, can clamp to ±90
+
         // Motion tracking
         this.velocityY = 0;
         this.positionY = 0;
@@ -209,18 +219,21 @@ export class SensorController {
      * @private
      */
     calibrateDevice() {
-        console.log('SensorController: Starting calibration. Please hold the device steady near your body.');
-
-        // Set normalized values to 0.5
+        // ...
+        this.accYaw = 0;
+        this.accPitch = 0;
+        this.accRoll = 0;
+        this.lastAlpha = null;
+        this.lastBeta = null;
+        this.lastGamma = null;
+    
+        // Also reset normalized “current” values
         this.currentYaw = 0.5;
         this.currentPitch = 0.5;
         this.currentRoll = 0.5;
-
-        this.initialAccelerationY = 0; // Reset acceleration
-
+    
         this.calibrated = true;
-
-        console.log('SensorController: Calibration complete. All normalized values set to 0.5.');
+        console.log('Calibration complete. Accumulated angles and last angles reset.');
     }
 
 /**
@@ -230,76 +243,114 @@ export class SensorController {
  * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
  */
 handleDeviceOrientation(event) {
-    if (!this.calibrated) return; // Ignore until calibration is complete
+    if (!this.calibrated) return;
 
-    try {
-        // Early return if no axes are active
-        if (!this.activeAxes.x && !this.activeAxes.y && !this.activeAxes.z) {
-            return;
+    const { alpha = 0, beta = 0, gamma = 0 } = event;
+
+    // 1) Handle Yaw (alpha)
+    if (this.activeAxes.x) {
+        // If first time, just set lastAlpha to current alpha
+        if (this.lastAlpha === null) {
+            this.lastAlpha = alpha;
         }
 
-        const { alpha = 0, beta = 0, gamma = 0 } = event;
+        // Calculate deltaAlpha
+        let deltaAlpha = alpha - this.lastAlpha;
 
-        // --- Yaw (alpha) ---
-        if (this.activeAxes.x) {
-            let relativeYaw = alpha - (this.initialAlpha || 0);
-
-            // 1) CLAMP to [-180, 180]
-            relativeYaw = MathUtils.clamp(relativeYaw, -180, 180);
-
-            // 2) Normalize from [-180, 180] to [0, 1]
-            const newYaw = this.normalizeAxis(relativeYaw, -180, 180);
-
-            // 3) Apply axis limit logic (stick at 0 or 1 until direction changes)
-            this.currentYaw = this.applyAxisLimit(this.currentYaw, newYaw, 'yaw');
-
-            // 4) Optional: Dead zone near 0 or 1
-            this.currentYaw = this.applyDeadZone(this.currentYaw);
-
-            // 5) Update user manager
-            this.user1Manager.setNormalizedValue('x', this.currentYaw);
+        // Correct for crossing 360 -> 0 or 0 -> 360
+        // Example: if alpha goes from 359 to 0, naive delta is -359, 
+        // but real delta is +1 degree.
+        if (deltaAlpha > 180) {
+            deltaAlpha -= 360;
+        } else if (deltaAlpha < -180) {
+            deltaAlpha += 360;
         }
 
-        // --- Pitch (beta) ---
-        if (this.activeAxes.y) {
-            let relativePitch = beta - (this.initialBeta || 0);
+        // Accumulate
+        this.accYaw += deltaAlpha;
 
-            // Clamp
-            relativePitch = MathUtils.clamp(relativePitch, -90, 90);
+        // Update lastAlpha
+        this.lastAlpha = alpha;
 
-            // Normalize
-            const newPitch = this.normalizeAxis(relativePitch, -90, 90);
+        // 2) Clamp accumulated yaw to desired range
+        // e.g., ±180 degrees if you want a single half-turn each way
+        // or ±360 if you want a single full turn each way
+        const minYaw = -180;
+        const maxYaw = 180;
+        if (this.accYaw > maxYaw) this.accYaw = maxYaw;
+        if (this.accYaw < minYaw) this.accYaw = minYaw;
 
-            this.currentPitch = this.applyAxisLimit(this.currentPitch, newPitch, 'pitch');
-            this.currentPitch = this.applyDeadZone(this.currentPitch);
-            this.user1Manager.setNormalizedValue('y', this.currentPitch);
-        }
+        // 3) Convert to normalized [0..1], 
+        // where -180 => 0, 0 => 0.5, +180 => 1, for example:
+        const normalizedYaw = this.mapRange(this.accYaw, minYaw, maxYaw, 0, 1);
 
-        // --- Roll (gamma) ---
-        if (this.activeAxes.z) {
-            let relativeRoll = gamma - (this.initialRoll || 0);
+        // 4) Optionally apply a deadzone if needed
+        const finalYaw = this.applyDeadZone(normalizedYaw);
 
-            // Clamp
-            relativeRoll = MathUtils.clamp(relativeRoll, -90, 90);
-
-            // Normalize
-            const newRoll = this.normalizeAxis(relativeRoll, -90, 90);
-
-            this.currentRoll = this.applyAxisLimit(this.currentRoll, newRoll, 'roll');
-            this.currentRoll = this.applyDeadZone(this.currentRoll);
-            this.user1Manager.setNormalizedValue('z', this.currentRoll);
-        }
-
-        // Debug log only when an axis is active
-        console.log(
-            `Yaw: ${this.currentYaw?.toFixed(2) || '-'}, ` +
-            `Pitch: ${this.currentPitch?.toFixed(2) || '-'}, ` +
-            `Roll: ${this.currentRoll?.toFixed(2) || '-'}`
-        );
-    } catch (error) {
-        console.error('SensorController: Error in handleDeviceOrientation:', error);
+        // 5) Assign to currentYaw for debugging or your user1Manager
+        this.currentYaw = finalYaw;
+        this.user1Manager.setNormalizedValue("x", finalYaw);
     }
+
+
+    // 1) Handle Pitch (beta)
+    if (this.activeAxes.y) {
+        if (this.lastBeta === null) {
+            this.lastBeta = beta;
+        }
+
+        let deltaBeta = beta - this.lastBeta;
+        // Similar correction for crossing -180..180 if device does that
+        if (deltaBeta > 180) deltaBeta -= 360;
+        else if (deltaBeta < -180) deltaBeta += 360;
+
+        this.accPitch += deltaBeta;
+        this.lastBeta = beta;
+
+        // If you only want ±90 for pitch
+        const minPitch = -90;
+        const maxPitch = 90;
+        if (this.accPitch > maxPitch) this.accPitch = maxPitch;
+        if (this.accPitch < minPitch) this.accPitch = minPitch;
+
+        const normalizedPitch = this.mapRange(this.accPitch, minPitch, maxPitch, 0, 1);
+        const finalPitch = this.applyDeadZone(normalizedPitch);
+
+        this.currentPitch = finalPitch;
+        this.user1Manager.setNormalizedValue("y", finalPitch);
+    }
+
+
+    // 1) Handle Roll (gamma)
+    if (this.activeAxes.z) {
+        if (this.lastGamma === null) {
+            this.lastGamma = gamma;
+        }
+
+        let deltaGamma = gamma - this.lastGamma;
+        if (deltaGamma > 180) deltaGamma -= 360;
+        else if (deltaGamma < -180) deltaGamma += 360;
+
+        this.accRoll += deltaGamma;
+        this.lastGamma = gamma;
+
+        // ±90 for roll, or choose your limit
+        const minRoll = -90;
+        const maxRoll = 90;
+        if (this.accRoll > maxRoll) this.accRoll = maxRoll;
+        if (this.accRoll < minRoll) this.accRoll = minRoll;
+
+        const normalizedRoll = this.mapRange(this.accRoll, minRoll, maxRoll, 0, 1);
+        const finalRoll = this.applyDeadZone(normalizedRoll);
+
+        this.currentRoll = finalRoll;
+        this.user1Manager.setNormalizedValue("z", finalRoll);
+    }
+
+    // Debug
+    console.log(`Yaw: ${this.currentYaw.toFixed(2)}, Pitch: ${this.currentPitch.toFixed(2)}, Roll: ${this.currentRoll.toFixed(2)}`);
 }
+
 /**
  * Applies a dead zone near 0 and 1 to prevent jitter.
  * @param {number} value - Normalized axis value.
@@ -310,6 +361,15 @@ applyDeadZone(value, threshold = 0.05) {
     if (Math.abs(value - 1) < threshold) return 1; // Stick to upper limit
     if (Math.abs(value - 0) < threshold) return 0; // Stick to lower limit
     return value; // Otherwise, return the value unchanged
+}
+/**
+ * mapRange converts a value from one range to another.
+ * e.g. mapRange(yaw, -180, 180, 0, 1).
+ */
+mapRange(value, inMin, inMax, outMin, outMax) {
+    return (
+        ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin
+    );
 }
 
     /**
