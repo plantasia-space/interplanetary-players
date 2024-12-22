@@ -288,17 +288,28 @@ export class SensorController {
      * @returns {number} Updated axis value after applying stick limits.
      */
     applyAxisLimit(current, newValue, axis) {
+        if (!this.direction) this.direction = { yaw: 0, pitch: 0, roll: 0 };
+
         const direction = newValue > current ? 1 : (newValue < current ? -1 : 0);
 
-        // Determine if the new value is moving towards the limit
-        if (direction > 0 && current < 1) {
-            return Math.min(newValue, 1);
-        } else if (direction < 0 && current > 0) {
-            return Math.max(newValue, 0);
+        // Track the direction for the specific axis
+        if (axis in this.direction) {
+            if (direction !== 0) {
+                this.direction[axis] = direction;
+            }
         }
 
-        // If not moving towards the limit, keep the current value
-        return current;
+        // Stick to the limit based on direction
+        if (current === 1 && this.direction[axis] === 1) {
+            return 1; // Stay at max limit if still moving in the same direction
+        }
+
+        if (current === 0 && this.direction[axis] === -1) {
+            return 0; // Stay at min limit if still moving in the same direction
+        }
+
+        // Update normally if direction reverses or value is within range
+        return MathUtils.clamp(newValue, 0, 1);
     }
 
     /**
