@@ -422,10 +422,7 @@ export class ParameterManager {
 
         const clampedRawValue = Math.min(param.max, Math.max(param.min, transformedRawValue)); // Clamp rawValue to the range
         const updatedNormalizedValue = this.normalize(clampedRawValue, param.min, param.max);
-        console.debug(
-          `[setNormalizedValue] rootParam: '${parameterName}', source: ${sourceController?.constructor.name}, ` +
-          `rawValue: ${param.rawValue}, normalizedValue: ${param.normalizedValue}, isBidirectional: ${param.isBidirectional}`
-        );
+
 
         if (param.rawValue !== clampedRawValue || param.normalizedValue !== normalizedValue) {
           param.rawValue = clampedRawValue;
@@ -434,8 +431,6 @@ export class ParameterManager {
           param.lastUpdateTimestamp = now;
           param.lastController = sourceController;
 
-          //console.debug(`[setNormalizedValue] Updated '${parameterName}' to rawValue=${param.rawValue}, normalizedValue=${param.normalizedValue}`);
-          console.log("getIt0");
 
           // Notify subscribers
           param.subscribers.forEach(({ controller }) => {
