@@ -119,38 +119,49 @@ ModeManagerInstance.registerMode('SENSORS', {
 
         if (ModeManagerInstance.user1Manager) {
             const sensorController = SensorController.getInstance(ModeManagerInstance.user1Manager);
+            const webRTCManager = WebRTCManager.getInstance((data) => {
+                sensorController.setExternalSensorData(data);
+            });
 
+            // Check if internal sensors are available
             if (INTERNAL_SENSORS_USABLE && SensorController.isSupported()) {
                 console.log('[ModeManager] Activating internal sensors...');
                 const permissionGranted = await sensorController.requestPermission();
+
                 if (permissionGranted) {
                     await sensorController.activateSensors();
-                    notifications.showToast('Sensors mode activated. Receiving device orientation data.', 'success');
+                    sensorController.switchSensorSource(false); // Use internal sensors
+                    notifications.showToast('Internal sensors activated.', 'success');
                 } else {
                     console.warn('[ModeManager] Permission denied for internal sensors.');
-                    notifications.showToast('Permission denied for sensors.', 'error');
+                    notifications.showToast('Permission denied for internal sensors.', 'error');
                 }
-            } else if (EXTERNAL_SENSORS_USABLE) {
-                console.log('[ModeManager] No internal sensors detected, switching to external sensors.');
-                const webRTCManager = WebRTCManager.getInstance();
+            } 
+            // Fallback to external sensors if internal are not available
+            else if (EXTERNAL_SENSORS_USABLE) {
+                console.log('[ModeManager] Switching to external sensors via WebRTC...');
+                sensorController.switchSensorSource(true); // Use external sensors
                 if (webRTCManager) {
                     webRTCManager.generateConnectionModal();
-                    notifications.showToast('No internal sensors. Using external sensors via QR code.', 'info');
+                    notifications.showToast('Using external sensors via QR code.', 'info');
                 } else {
                     console.error('[ModeManager] Failed to initialize WebRTCManager.');
                     notifications.showToast('Error initializing WebRTC Manager.', 'error');
                 }
-            } else {
+            } 
+            // No sensors available
+            else {
                 console.warn('[ModeManager] No sensors available.');
                 notifications.showToast(
-                    'No sensors available. Please connect an external device via the "Connect External Sensor" option.',
+                    'No sensors detected. Please connect an external device via QR code.',
                     'warning'
                 );
             }
 
-                document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-                    button.style.display = 'block';
-                });
+            // Show sensor controls on UI
+            document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+                button.style.display = 'block';
+            });
 
             // Save reference to the active sensor controller instance
             ModeManagerInstance.sensorControllerInstance = sensorController;
@@ -163,7 +174,7 @@ ModeManagerInstance.registerMode('SENSORS', {
     onExit: () => {
         console.log('[ModeManager] Exiting SENSORS mode...');
 
-        const sensorController = ModeManagerInstance.sensorControllerInstance;
+/*         const sensorController = ModeManagerInstance.sensorControllerInstance;
 
         if (sensorController) {
             if (INTERNAL_SENSORS_USABLE) {
@@ -177,7 +188,7 @@ ModeManagerInstance.registerMode('SENSORS', {
             console.log('[ModeManager] Sensors deactivated.');
         }
 
-        notifications.showToast('Exited Sensors mode.');
+        notifications.showToast('Exited Sensors mode.'); */
         document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
             button.style.display = 'none';
         });

@@ -3,7 +3,7 @@
 import { UNIQUE_ID } from './Constants.js';
 import QRCode from 'qrcode';
 import notifications from './AppNotifications.js';
-
+import { SensorController } from './SensorsController.js'; // Import the class
 
 /**
  * @class WebRTCManager
@@ -284,12 +284,13 @@ handleConnectionButtonClick() {
         };
     
         this.dataChannel.onmessage = (event) => {
-            console.log(`[WebRTCManager] DataChannel message received: ${event.data}`);
+           // console.log('[WebRTCManager] Raw DataChannel message:', event.data);
             try {
                 const message = JSON.parse(event.data);
+               // console.log('[WebRTCManager] Parsed DataChannel message:', message);
                 this.handleDataChannelMessage(message);
             } catch (error) {
-                console.error(`[WebRTCManager] Error parsing DataChannel message: ${event.data}`, error);
+                console.error('[WebRTCManager] Error parsing DataChannel message:', error);
             }
         };
     
@@ -396,31 +397,59 @@ initializeConnectionButton() {
      * Handles incoming messages on the DataChannel.
      * @param {Object} message - The received message object.
      */
-    handleDataChannelMessage(message) {
-        switch (message.type) {
-            case 'pong':
-                console.log('[WebRTCManager] Pong received from mobile:', message.message);
-                // Reset the ping timeout
-                if (this.pingTimeout) {
-                    clearTimeout(this.pingTimeout);
-                    this.pingTimeout = null;
-                }
-                break;
-            case 'sensorData':
-                console.log('[WebRTCManager] Sensor Data received:', message.payload);
-                // Invoke callback to handle sensor data
-                if (this.onSensorData) {
-                    this.onSensorData(message.payload);
-                }
-                break;
-            case 'ack':
-                console.log('[WebRTCManager] Acknowledgment received from mobile:', message.message);
-                break;
-            default:
-                console.warn('[WebRTCManager] Unknown DataChannel message type:', message.type);
-        }
+handleDataChannelMessage(message) {
+    console.log('[WebRTCManager] Message type:', message.type);
+    switch (message.type) {
+        case 'sensorData':
+            //console.log('[WebRTCManager] Sensor Data payload received:', message.payload);
+            this.processExternalSensorData(message.payload);
+            break;
+
+        case 'pong':
+            //console.log('[WebRTCManager] Pong received:', message.message);
+            if (this.pingTimeout) {
+                clearTimeout(this.pingTimeout);
+                this.pingTimeout = null;
+            }
+            break;
+
+        case 'ack':
+            //console.log('[WebRTCManager] Acknowledgment received:', message.message);
+            break;
+
+        default:
+            console.warn('[WebRTCManager] Unknown message type:', message.type);
+    }
+}
+
+/**
+ * Processes incoming external sensor data and forwards it to SensorController.
+ * @param {Object} payload - The raw sensor data payload.
+ */
+processExternalSensorData(payload) {
+    if (!payload || typeof payload !== 'object') {
+        console.warn('[WebRTCManager] Invalid sensor data payload:', payload);
+        return;
     }
 
+    const { alpha, beta, gamma } = payload;
+
+    const sensorData = {
+        alpha: typeof alpha === 'number' ? alpha : 0,
+        beta: typeof beta === 'number' ? beta : 0,
+        gamma: typeof gamma === 'number' ? gamma : 0
+    };
+
+    //console.log('[WebRTCManager] Received Raw Sensor Data -> Alpha:', alpha, 'Beta:', beta, 'Gamma:', gamma);
+
+    try {
+        const sensorController = SensorController.getInstance();
+        sensorController.setExternalSensorData(sensorData);
+        //console.log('[WebRTCManager] Sensor Data successfully passed to SensorController');
+    } catch (error) {
+        console.error('[WebRTCManager] Failed to update SensorController:', error.message);
+    }
+}
     /**
      * Reconnects to the signaling server in case of disconnection.
      */

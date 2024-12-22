@@ -245,82 +245,80 @@ export class SensorController {
      * Skips processing for inactive axes for efficiency.
      * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
      */
-    handleDeviceOrientation(event) {
-        if (!this.calibrated) return;
-      
-        // If no axes are active, skip
-        if (!this.activeAxes.x && !this.activeAxes.y && !this.activeAxes.z) return;
-      
-        // Read raw angles (defaults to 0 if undefined)
-        const { alpha = 0, beta = 0, gamma = 0 } = event;
-      
-        // --------------------------------------------------
-        // Yaw (X-axis)
-        // --------------------------------------------------
-        let newYaw = this.currentYaw; // keep old value if inactive
-        if (this.activeAxes.x) {
-          // 1. relativeYaw: from [-180..180]
-          let relativeYaw = alpha - this.initialAlpha;
-          relativeYaw = (relativeYaw + 360) % 360;  // bring to [0..360)
-          if (relativeYaw > 180) relativeYaw -= 360; // now [-180..180]
-      
-          // 2. map to [0..1], -180 => 0, 0 => 0.5, 180 => 1
-          const yawNorm = this.mapRange(relativeYaw, -180, 180, 0, 1);
-      
-          // 3. optional: smoothing or clamp
-          newYaw = this.smoothValue(this.currentYaw, yawNorm, 0.8);
-          // or: newYaw = this.clampDelta(this.currentYaw, yawNorm, 0.1);
-      
-          // 4. store
-          this.currentYaw = newYaw;
-          this.user1Manager.setNormalizedValue('x', newYaw);
-        }
-      
-        // --------------------------------------------------
-        // Pitch (Y-axis)
-        // --------------------------------------------------
-        let newPitch = this.currentPitch;
-        if (this.activeAxes.y) {
-          // 1. relativePitch: just subtract initialBeta
-          let relativePitch = beta - this.initialBeta;
-          // clamp pitch to [-90..90]
-          relativePitch = Math.max(Math.min(relativePitch, 90), -90);
-      
-          // 2. map to [0..1], -90 => 0, 0 => 0.5, 90 => 1
-          const pitchNorm = this.mapRange(relativePitch, -90, 90, 0, 1);
-      
-          // 3. optional: smoothing/clamp
-          newPitch = this.smoothValue(this.currentPitch, pitchNorm, 0.8);
-          this.currentPitch = newPitch;
-          this.user1Manager.setNormalizedValue('y', newPitch);
-        }
-      
-        // --------------------------------------------------
-        // Roll (Z-axis)
-        // --------------------------------------------------
-        let newRoll = this.currentRoll;
-        if (this.activeAxes.z) {
-          // 1. relativeRoll: subtract initialGamma
-          let relativeRoll = gamma - this.initialGamma;
-          // clamp roll to [-90..90]
-          relativeRoll = Math.max(Math.min(relativeRoll, 90), -90);
-      
-          // 2. map to [0..1], -90 => 0, 0 => 0.5, 90 => 1
-          const rollNorm = this.mapRange(relativeRoll, -90, 90, 0, 1);
-      
-          // 3. optional: smoothing/clamp
-          newRoll = this.smoothValue(this.currentRoll, rollNorm, 0.8);
-          this.currentRoll = newRoll;
-          this.user1Manager.setNormalizedValue('z', newRoll);
-        }
-      
-        // Debug
-        console.log(
-          `Yaw: ${this.currentYaw.toFixed(2)}, ` +
-          `Pitch: ${this.currentPitch.toFixed(2)}, ` +
-          `Roll: ${this.currentRoll.toFixed(2)}`
-        );
-      }
+/**
+ * Handles `deviceorientation` events from internal sensors.
+ * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
+ */
+handleDeviceOrientation(event) {
+    this.processSensorData(event, false);
+}
+
+/**
+ * Processes sensor data (internal or external) and updates user parameters.
+ * This method serves as the single point for all sensor updates.
+ * @param {Object} event - Sensor data (alpha, beta, gamma).
+ * @param {boolean} isExternal - Whether the data is from an external source.
+ */
+processSensorData(event, isExternal = false) {
+    if (!this.calibrated) return;
+
+    const { alpha = 0, beta = 0, gamma = 0 } = event;
+
+    if (!this.activeAxes.x && !this.activeAxes.y && !this.activeAxes.z) return;
+
+    console.log(`[SensorController] Processing ${isExternal ? 'External' : 'Internal'} Sensor Data`, { alpha, beta, gamma });
+
+    // --------------------------------------------------
+    // Yaw (X-axis)
+    // --------------------------------------------------
+    let newYaw = this.currentYaw;
+    if (this.activeAxes.x) {
+        let relativeYaw = alpha - (this.initialAlpha || 0);
+        relativeYaw = (relativeYaw + 360) % 360;
+        if (relativeYaw > 180) relativeYaw -= 360;
+
+        const yawNorm = this.mapRange(relativeYaw, -180, 180, 0, 1);
+        newYaw = this.smoothValue(this.currentYaw, yawNorm, 0.8);
+        this.currentYaw = newYaw;
+        this.user1Manager.setNormalizedValue('x', newYaw);
+    }
+
+    // --------------------------------------------------
+    // Pitch (Y-axis)
+    // --------------------------------------------------
+    let newPitch = this.currentPitch;
+    if (this.activeAxes.y) {
+        let relativePitch = beta - (this.initialBeta || 0);
+        relativePitch = Math.max(Math.min(relativePitch, 90), -90);
+
+        const pitchNorm = this.mapRange(relativePitch, -90, 90, 0, 1);
+        newPitch = this.smoothValue(this.currentPitch, pitchNorm, 0.8);
+        this.currentPitch = newPitch;
+        this.user1Manager.setNormalizedValue('y', newPitch);
+    }
+
+    // --------------------------------------------------
+    // Roll (Z-axis)
+    // --------------------------------------------------
+    let newRoll = this.currentRoll;
+    if (this.activeAxes.z) {
+        let relativeRoll = gamma - (this.initialGamma || 0);
+        relativeRoll = Math.max(Math.min(relativeRoll, 90), -90);
+
+        const rollNorm = this.mapRange(relativeRoll, -90, 90, 0, 1);
+        newRoll = this.smoothValue(this.currentRoll, rollNorm, 0.8);
+        this.currentRoll = newRoll;
+        this.user1Manager.setNormalizedValue('z', newRoll);
+    }
+
+    console.log(
+        `[SensorController] ${isExternal ? 'External' : 'Internal'} Data Applied -> ` +
+        `Yaw: ${this.currentYaw.toFixed(2)}, ` +
+        `Pitch: ${this.currentPitch.toFixed(2)}, ` +
+        `Roll: ${this.currentRoll.toFixed(2)}`
+    );
+}
+
 
 
     /**
@@ -592,4 +590,37 @@ mapRange(val, inMin, inMax, outMin, outMax) {
         // Load the SVG dynamically
         this.loadCalibrationButtonSVG();
     }
+
+/**
+ * Sets sensor values externally (e.g., via WebRTC).
+ * @param {Object} data - Sensor data from external device.
+ * @param {number} data.alpha - Rotation around Z axis (degrees).
+ * @param {number} data.beta - Rotation around X axis (degrees).
+ * @param {number} data.gamma - Rotation around Y axis (degrees).
+ */
+setExternalSensorData(data) {
+    if (this.useExternalSensors) {
+        this.processSensorData(data, true);
+    } else {
+        console.warn('[SensorController] External sensors are not enabled.');
+    }
+}
+/**
+ * Switch between internal and external sensor sources.
+ * @param {boolean} useExternal - If true, use external sensors; otherwise, use internal.
+ */
+switchSensorSource(useExternal) {
+    this.useExternalSensors = useExternal;
+    this.useInternalSensors = !useExternal;
+
+    if (useExternal) {
+        console.log('[SensorController] Switched to external sensor input.');
+        this.stopListening(); // Stop internal sensor listeners
+    } else {
+        console.log('[SensorController] Switched to internal sensor input.');
+        this.startListening(); // Start internal sensor listeners
+    }
+}
+
+
 }
