@@ -219,23 +219,49 @@ export class SensorController {
      * @private
      */
     calibrateDevice() {
-        // ...
-        this.accYaw = 0;
-        this.accPitch = 0;
-        this.accRoll = 0;
-        this.lastAlpha = null;
-        this.lastBeta = null;
-        this.lastGamma = null;
+        console.log('SensorController: Starting calibration.');
     
-        // Also reset normalized “current” values
-        this.currentYaw = 0.5;
-        this.currentPitch = 0.5;
-        this.currentRoll = 0.5;
+        // We read alpha, beta, gamma from a quick orientation event or from the last known orientation.
+        // Or you can forcibly read a single deviceorientation event here for calibration.
+    
+        this.lastAlpha = 0;
+        this.lastBeta = 0;
+        this.lastGamma = 0;
+    
+        // Suppose we had stored the current alpha/beta/gamma from the latest orientation event:
+        const alpha = this.currentAlpha || 0;
+        const beta = this.currentBeta || 0;
+        const gamma = this.currentGamma || 0;
+    
+        // Create the calibration quaternion
+        this.calibrationQuaternion = eulerToQuaternion(alpha, beta, gamma);
     
         this.calibrated = true;
-        console.log('Calibration complete. Accumulated angles and last angles reset.');
+        console.log('Calibration complete. Stored calibration quaternion.');
     }
-
+// From the spec or typical references, orientation is applied in the order Z->X->Y:
+function eulerToQuaternion(alpha, beta, gamma) {
+    // Convert degrees to radians
+    const _x = THREE.MathUtils.degToRad(beta || 0);
+    const _y = THREE.MathUtils.degToRad(gamma || 0);
+    const _z = THREE.MathUtils.degToRad(alpha || 0);
+  
+    const cX = Math.cos(_x / 2);
+    const cY = Math.cos(_y / 2);
+    const cZ = Math.cos(_z / 2);
+    const sX = Math.sin(_x / 2);
+    const sY = Math.sin(_y / 2);
+    const sZ = Math.sin(_z / 2);
+  
+    // Based on the ‘Z-X-Y’ intrinsic Tait-Bryan angles
+    // w, x, y, z
+    const w = cZ * cX * cY + sZ * sX * sY;
+    const x = cZ * sX * cY + sZ * cX * sY;
+    const y = cZ * cX * sY - sZ * sX * cY;
+    const z = sZ * cX * cY - cZ * sX * sY;
+  
+    return new THREE.Quaternion(x, y, z, w);
+  }
 /**
  * Handles `deviceorientation` events, maps yaw, pitch, and roll directly to normalized X, Y, Z.
  * Prevents overshooting and sticks to limits until direction changes.
@@ -244,111 +270,70 @@ export class SensorController {
  */
 handleDeviceOrientation(event) {
     if (!this.calibrated) return;
+    if (!this.activeAxes.x && !this.activeAxes.y && !this.activeAxes.z) return;
 
+    // 1) Read alpha/beta/gamma from event
     const { alpha = 0, beta = 0, gamma = 0 } = event;
+    
+    // (Optional) store them if you want to see them in calibration
+    this.currentAlpha = alpha;
+    this.currentBeta = beta;
+    this.currentGamma = gamma;
 
-    // 1) Handle Yaw (alpha)
+    // 2) Convert to a quaternion
+    const currentQ = eulerToQuaternion(alpha, beta, gamma);
+
+    // 3) Compute the relative quaternion from calibration
+    // Q_relative = Q_cal^-1 * Q_current
+    const qRelative = this.calibrationQuaternion.clone().invert().multiply(currentQ);
+
+    // 4) Convert that relative quaternion to Euler angles (Z-X-Y or whatever order matches the eulerToQuaternion)
+    // Let's do THREE.Euler with 'ZXY' or your chosen order
+    const euler = new THREE.Euler();
+    // NOTE: The 'ZXY' or 'YXZ' or 'ZYX' etc. must match the original creation order if you want correct angles.
+    euler.setFromQuaternion(qRelative, 'ZXY'); 
+      // or 'YXZ', 'XYZ', etc. depends on how you originally converted your alpha,beta,gamma to quaternion
+
+    // Now euler.x, euler.y, euler.z are in radians.
+    // Typically:
+    // euler.x ~ pitch
+    // euler.y ~ roll
+    // euler.z ~ yaw
+    // But this can vary based on the chosen order. 
+    // You might log them to see which axis corresponds to "turn left/right" vs. "tilt up/down".
+
+    let yawDeg   = THREE.MathUtils.radToDeg(euler.z);
+    let pitchDeg = THREE.MathUtils.radToDeg(euler.x);
+    let rollDeg  = THREE.MathUtils.radToDeg(euler.y);
+
+    // 5) Clamp angles as you like (±180, ±90, etc.)
+    // Example: yaw => ±180, pitch => ±90, roll => ±90
+    yawDeg   = MathUtils.clamp(yawDeg,   -180, 180);
+    pitchDeg = MathUtils.clamp(pitchDeg, -90,  90);
+    rollDeg  = MathUtils.clamp(rollDeg,  -90,  90);
+
+    // 6) Convert to [0..1]
+    // e.g. -180 => 0, +180 => 1, 0 => 0.5 for yaw
+    const yawNorm   = this.mapRange(yawDeg,   -180, 180, 0, 1);
+    const pitchNorm = this.mapRange(pitchDeg, -90,  90,  0, 1);
+    const rollNorm  = this.mapRange(rollDeg,  -90,  90,  0, 1);
+
+    // 7) If axis active, set the user1Manager
     if (this.activeAxes.x) {
-        // If first time, just set lastAlpha to current alpha
-        if (this.lastAlpha === null) {
-            this.lastAlpha = alpha;
-        }
-
-        // Calculate deltaAlpha
-        let deltaAlpha = alpha - this.lastAlpha;
-
-        // Correct for crossing 360 -> 0 or 0 -> 360
-        // Example: if alpha goes from 359 to 0, naive delta is -359, 
-        // but real delta is +1 degree.
-        if (deltaAlpha > 180) {
-            deltaAlpha -= 360;
-        } else if (deltaAlpha < -180) {
-            deltaAlpha += 360;
-        }
-
-        // Accumulate
-        this.accYaw += deltaAlpha;
-
-        // Update lastAlpha
-        this.lastAlpha = alpha;
-
-        // 2) Clamp accumulated yaw to desired range
-        // e.g., ±180 degrees if you want a single half-turn each way
-        // or ±360 if you want a single full turn each way
-        const minYaw = -180;
-        const maxYaw = 180;
-        if (this.accYaw > maxYaw) this.accYaw = maxYaw;
-        if (this.accYaw < minYaw) this.accYaw = minYaw;
-
-        // 3) Convert to normalized [0..1], 
-        // where -180 => 0, 0 => 0.5, +180 => 1, for example:
-        const normalizedYaw = this.mapRange(this.accYaw, minYaw, maxYaw, 0, 1);
-
-        // 4) Optionally apply a deadzone if needed
-        const finalYaw = this.applyDeadZone(normalizedYaw);
-
-        // 5) Assign to currentYaw for debugging or your user1Manager
-        this.currentYaw = finalYaw;
-        this.user1Manager.setNormalizedValue("x", finalYaw);
+        this.user1Manager.setNormalizedValue('x', yawNorm);
+        this.currentYaw = yawNorm;
     }
-
-
-    // 1) Handle Pitch (beta)
     if (this.activeAxes.y) {
-        if (this.lastBeta === null) {
-            this.lastBeta = beta;
-        }
-
-        let deltaBeta = beta - this.lastBeta;
-        // Similar correction for crossing -180..180 if device does that
-        if (deltaBeta > 180) deltaBeta -= 360;
-        else if (deltaBeta < -180) deltaBeta += 360;
-
-        this.accPitch += deltaBeta;
-        this.lastBeta = beta;
-
-        // If you only want ±90 for pitch
-        const minPitch = -90;
-        const maxPitch = 90;
-        if (this.accPitch > maxPitch) this.accPitch = maxPitch;
-        if (this.accPitch < minPitch) this.accPitch = minPitch;
-
-        const normalizedPitch = this.mapRange(this.accPitch, minPitch, maxPitch, 0, 1);
-        const finalPitch = this.applyDeadZone(normalizedPitch);
-
-        this.currentPitch = finalPitch;
-        this.user1Manager.setNormalizedValue("y", finalPitch);
+        this.user1Manager.setNormalizedValue('y', pitchNorm);
+        this.currentPitch = pitchNorm;
     }
-
-
-    // 1) Handle Roll (gamma)
     if (this.activeAxes.z) {
-        if (this.lastGamma === null) {
-            this.lastGamma = gamma;
-        }
-
-        let deltaGamma = gamma - this.lastGamma;
-        if (deltaGamma > 180) deltaGamma -= 360;
-        else if (deltaGamma < -180) deltaGamma += 360;
-
-        this.accRoll += deltaGamma;
-        this.lastGamma = gamma;
-
-        // ±90 for roll, or choose your limit
-        const minRoll = -90;
-        const maxRoll = 90;
-        if (this.accRoll > maxRoll) this.accRoll = maxRoll;
-        if (this.accRoll < minRoll) this.accRoll = minRoll;
-
-        const normalizedRoll = this.mapRange(this.accRoll, minRoll, maxRoll, 0, 1);
-        const finalRoll = this.applyDeadZone(normalizedRoll);
-
-        this.currentRoll = finalRoll;
-        this.user1Manager.setNormalizedValue("z", finalRoll);
+        this.user1Manager.setNormalizedValue('z', rollNorm);
+        this.currentRoll = rollNorm;
     }
 
-    // Debug
-    console.log(`Yaw: ${this.currentYaw.toFixed(2)}, Pitch: ${this.currentPitch.toFixed(2)}, Roll: ${this.currentRoll.toFixed(2)}`);
+    // Debug 
+    console.log(`Yaw: ${yawNorm.toFixed(2)}, Pitch: ${pitchNorm.toFixed(2)}, Roll: ${rollNorm.toFixed(2)}`);
 }
 
 /**
