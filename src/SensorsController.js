@@ -223,49 +223,81 @@ export class SensorController {
         console.log('SensorController: Calibration complete. All normalized values set to 0.5.');
     }
 
-    /**
-     * Handles `deviceorientation` events, maps yaw, pitch, and roll directly to normalized X, Y, Z.
-     * Prevents overshooting and sticks to limits until direction changes.
-     * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
-     */
-    handleDeviceOrientation(event) {
-        if (!this.calibrated) return; // Ignore until calibration is complete
+/**
+ * Handles `deviceorientation` events, maps yaw, pitch, and roll directly to normalized X, Y, Z.
+ * Prevents overshooting and sticks to limits until direction changes.
+ * Skips processing for inactive axes for efficiency.
+ * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
+ */
+handleDeviceOrientation(event) {
+    if (!this.calibrated) return; // Ignore until calibration is complete
 
-        try {
-            const { alpha = 0, beta = 0, gamma = 0 } = event; // Default to 0 if undefined
+    try {
+        // Early return if no axes are active
+        if (!this.activeAxes.x && !this.activeAxes.y && !this.activeAxes.z) {
+            return;
+        }
 
-            // Calculate relative angles
-            let relativeYaw = alpha - (this.initialAlpha || 0);
-            let relativePitch = beta - (this.initialBeta || 0);
-            let relativeRoll = gamma - (this.initialRoll || 0);
+        const { alpha = 0, beta = 0, gamma = 0 } = event; // Default to 0 if undefined
 
-            // Normalize relative angles
+        // Pre-calculate only active axes to avoid unnecessary math
+        let relativeYaw, relativePitch, relativeRoll;
+
+        if (this.activeAxes.x) {
+            relativeYaw = alpha - (this.initialAlpha || 0);
             relativeYaw = (relativeYaw + 360) % 360; // Normalize between 0 and 360
             if (relativeYaw > 180) relativeYaw -= 360; // Normalize to [-180, 180]
-
-            // Assuming maximum rotation to one side is 180 degrees
-            const normalizedYaw = this.normalizeAxis(relativeYaw, -180, 180);
-            const normalizedPitch = this.normalizeAxis(relativePitch, -90, 90);
-            const normalizedRoll = this.normalizeAxis(relativeRoll, -90, 90);
-
-            // Stick to limits until direction reverses
-            this.currentYaw = this.applyAxisLimit(this.currentYaw, normalizedYaw, 'yaw');
-            this.currentPitch = this.applyAxisLimit(this.currentPitch, normalizedPitch, 'pitch');
-            this.currentRoll = this.applyAxisLimit(this.currentRoll, normalizedRoll, 'roll');
-
-            // Map to user parameters
-            if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', this.currentYaw);
-            if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', this.currentPitch);
-            if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', this.currentRoll);
-
-            console.log(
-                `Yaw: ${this.currentYaw.toFixed(2)}, Pitch: ${this.currentPitch.toFixed(2)}, Roll: ${this.currentRoll.toFixed(2)}`
+            this.currentYaw = this.applyAxisLimit(
+                this.currentYaw,
+                this.normalizeAxis(relativeYaw, -180, 180),
+                'yaw'
             );
-
-        } catch (error) {
-            console.error('SensorController: Error in handleDeviceOrientation:', error);
+            this.currentYaw = this.applyDeadZone(this.currentYaw);
+            this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
+
+        if (this.activeAxes.y) {
+            relativePitch = beta - (this.initialBeta || 0);
+            this.currentPitch = this.applyAxisLimit(
+                this.currentPitch,
+                this.normalizeAxis(relativePitch, -90, 90),
+                'pitch'
+            );
+            this.currentPitch = this.applyDeadZone(this.currentPitch);
+            this.user1Manager.setNormalizedValue('y', this.currentPitch);
+        }
+
+        if (this.activeAxes.z) {
+            relativeRoll = gamma - (this.initialRoll || 0);
+            this.currentRoll = this.applyAxisLimit(
+                this.currentRoll,
+                this.normalizeAxis(relativeRoll, -90, 90),
+                'roll'
+            );
+            this.currentRoll = this.applyDeadZone(this.currentRoll);
+            this.user1Manager.setNormalizedValue('z', this.currentRoll);
+        }
+
+        // Debug log only when an axis is active
+        console.log(
+            `Yaw: ${this.currentYaw?.toFixed(2) || '-'}, Pitch: ${this.currentPitch?.toFixed(2) || '-'}, Roll: ${this.currentRoll?.toFixed(2) || '-'}`
+        );
+    } catch (error) {
+        console.error('SensorController: Error in handleDeviceOrientation:', error);
     }
+}
+
+/**
+ * Applies a dead zone near 0 and 1 to prevent jitter.
+ * @param {number} value - Normalized axis value.
+ * @param {number} threshold - Dead zone threshold (default: 0.05).
+ * @returns {number} Adjusted value after applying dead zone.
+ */
+applyDeadZone(value, threshold = 0.05) {
+    if (Math.abs(value - 1) < threshold) return 1; // Stick to upper limit
+    if (Math.abs(value - 0) < threshold) return 0; // Stick to lower limit
+    return value; // Otherwise, return the value unchanged
+}
 
     /**
      * Normalize an axis value to a range between 0 and 1.
@@ -338,7 +370,7 @@ export class SensorController {
 
             // Integrate acceleration to get velocity
             this.velocityY += filteredAccY * deltaTime;
-
+this.currentYaw
             // Integrate velocity to get position
             this.positionY += this.velocityY * deltaTime;
 
