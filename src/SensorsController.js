@@ -280,60 +280,114 @@ handleDeviceOrientation(event) {
     this.currentBeta = beta;
     this.currentGamma = gamma;
 
-    // 2) Convert to a quaternion
+    // 2) Convert to a quaternion (based on your 'Z->X->Y' eulerToQuaternion)
     const currentQ = eulerToQuaternion(alpha, beta, gamma);
 
     // 3) Compute the relative quaternion from calibration
-    // Q_relative = Q_cal^-1 * Q_current
+    //    Q_relative = Q_cal^-1 * Q_current
     const qRelative = this.calibrationQuaternion.clone().invert().multiply(currentQ);
 
-    // 4) Convert that relative quaternion to Euler angles (Z-X-Y or whatever order matches the eulerToQuaternion)
-    // Let's do THREE.Euler with 'ZXY' or your chosen order
+    // 4) Convert that relative quaternion to Euler angles 
+    //    (order must match the original eulerToQuaternion if you want correct axes).
     const euler = new THREE.Euler();
-    // NOTE: The 'ZXY' or 'YXZ' or 'ZYX' etc. must match the original creation order if you want correct angles.
-    euler.setFromQuaternion(qRelative, 'ZXY'); 
-      // or 'YXZ', 'XYZ', etc. depends on how you originally converted your alpha,beta,gamma to quaternion
+    euler.setFromQuaternion(qRelative, 'ZXY');
 
-    // Now euler.x, euler.y, euler.z are in radians.
-    // Typically:
-    // euler.x ~ pitch
-    // euler.y ~ roll
-    // euler.z ~ yaw
-    // But this can vary based on the chosen order. 
-    // You might log them to see which axis corresponds to "turn left/right" vs. "tilt up/down".
-
+    // euler.x ~ pitch, euler.y ~ roll, euler.z ~ yaw (given 'ZXY')
     let yawDeg   = THREE.MathUtils.radToDeg(euler.z);
     let pitchDeg = THREE.MathUtils.radToDeg(euler.x);
     let rollDeg  = THREE.MathUtils.radToDeg(euler.y);
 
-    // 5) Clamp angles as you like (±180, ±90, etc.)
-    // Example: yaw => ±180, pitch => ±90, roll => ±90
-    yawDeg   = MathUtils.clamp(yawDeg,   -180, 180);
-    pitchDeg = MathUtils.clamp(pitchDeg, -90,  90);
-    rollDeg  = MathUtils.clamp(rollDeg,  -90,  90);
+    // 5) Clamp angles to your desired range
+    yawDeg   = MathUtils.clamp(yawDeg,   -180,  180);
+    pitchDeg = MathUtils.clamp(pitchDeg, -90,   90);
+    rollDeg  = MathUtils.clamp(rollDeg,  -90,   90);
 
     // 6) Convert to [0..1]
-    // e.g. -180 => 0, +180 => 1, 0 => 0.5 for yaw
+    //    e.g. -180 => 0, +180 => 1,  0 => 0.5 for yaw
     const yawNorm   = this.mapRange(yawDeg,   -180, 180, 0, 1);
-    const pitchNorm = this.mapRange(pitchDeg, -90,  90,  0, 1);
-    const rollNorm  = this.mapRange(rollDeg,  -90,  90,  0, 1);
+    const pitchNorm = this.mapRange(pitchDeg, -90,   90, 0, 1);
+    const rollNorm  = this.mapRange(rollDeg,  -90,   90, 0, 1);
 
-    // 7) If axis active, set the user1Manager
+    // Optional: Limit how fast normalized values can change per update
+    const MAX_DELTA = 0.1;  // e.g. allow up to ±0.1 change per frame
+
+    // 7) If axis active, apply clampDelta, dead zone, and set user1Manager
     if (this.activeAxes.x) {
-        this.user1Manager.setNormalizedValue('x', yawNorm);
-        this.currentYaw = yawNorm;
+        // Limit jump
+        let stableYaw = this.clampDelta(this.currentYaw, yawNorm, MAX_DELTA);
+        // Dead zone near 0 or 1
+        stableYaw = this.applyDeadZone(stableYaw, 0.05);
+        // Update manager
+        this.user1Manager.setNormalizedValue('x', stableYaw);
+        this.currentYaw = stableYaw;
     }
+
     if (this.activeAxes.y) {
-        this.user1Manager.setNormalizedValue('y', pitchNorm);
-        this.currentPitch = pitchNorm;
+        let stablePitch = this.clampDelta(this.currentPitch, pitchNorm, MAX_DELTA);
+        stablePitch = this.applyDeadZone(stablePitch, 0.05);
+        this.user1Manager.setNormalizedValue('y', stablePitch);
+        this.currentPitch = stablePitch;
     }
+
     if (this.activeAxes.z) {
-        this.user1Manager.setNormalizedValue('z', rollNorm);
-        this.currentRoll = rollNorm;
+        let stableRoll = this.clampDelta(this.currentRoll, rollNorm, MAX_DELTA);
+        stableRoll = this.applyDeadZone(stableRoll, 0.05);
+        this.user1Manager.setNormalizedValue('z', stableRoll);
+        this.currentRoll = stableRoll;
     }
 
     // Debug 
-    console.log(`Yaw: ${yawNorm.toFixed(2)}, Pitch: ${pitchNorm.toFixed(2)}, Roll: ${rollNorm.toFixed(2)}`);
+    console.log(
+      `Yaw: ${this.currentYaw.toFixed(2)}, ` +
+      `Pitch: ${this.currentPitch.toFixed(2)}, ` +
+      `Roll: ${this.currentRoll.toFixed(2)}`
+    );
+}
+
+/** Utility: convert degrees-based euler (Z->X->Y) to quaternion. 
+  * Make sure this matches your chosen Euler order. */
+function eulerToQuaternion(alpha, beta, gamma) {
+    // Convert degrees to radians
+    const _x = THREE.MathUtils.degToRad(beta || 0);
+    const _y = THREE.MathUtils.degToRad(gamma || 0);
+    const _z = THREE.MathUtils.degToRad(alpha || 0);
+  
+    const cX = Math.cos(_x / 2);
+    const cY = Math.cos(_y / 2);
+    const cZ = Math.cos(_z / 2);
+    const sX = Math.sin(_x / 2);
+    const sY = Math.sin(_y / 2);
+    const sZ = Math.sin(_z / 2);
+  
+    // For Z->X->Y order
+    const w = cZ * cX * cY + sZ * sX * sY;
+    const x = cZ * sX * cY + sZ * cX * sY;
+    const y = cZ * cX * sY - sZ * sX * cY;
+    const z = sZ * cX * cY - cZ * sX * sY;
+  
+    return new THREE.Quaternion(x, y, z, w);
+}
+
+/** Utility: map a value from [inMin..inMax] to [outMin..outMax]. */
+mapRange(value, inMin, inMax, outMin, outMax) {
+    return (
+      ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin
+    );
+}
+
+/**
+ * Utility: Clamps the change in value so it can't exceed maxDelta in one update.
+ * @param {number} currentVal - The current normalized value [0..1].
+ * @param {number} newVal - The new normalized value [0..1].
+ * @param {number} maxDelta - The maximum change allowed per update.
+ */
+clampDelta(currentVal, newVal, maxDelta) {
+    const delta = newVal - currentVal;
+    if (Math.abs(delta) > maxDelta) {
+      // Limit to ±maxDelta
+      return currentVal + Math.sign(delta) * maxDelta;
+    }
+    return newVal;
 }
 
 /**
@@ -343,21 +397,12 @@ handleDeviceOrientation(event) {
  * @returns {number} Adjusted value after applying dead zone.
  */
 applyDeadZone(value, threshold = 0.05) {
-    if (Math.abs(value - 1) < threshold) return 1; // Stick to upper limit
-    if (Math.abs(value - 0) < threshold) return 0; // Stick to lower limit
+    if (Math.abs(value - 1) < threshold) return 1; // Snap to 1
+    if (Math.abs(value - 0) < threshold) return 0; // Snap to 0
     return value; // Otherwise, return the value unchanged
 }
-/**
- * mapRange converts a value from one range to another.
- * e.g. mapRange(yaw, -180, 180, 0, 1).
- */
-mapRange(value, inMin, inMax, outMin, outMax) {
-    return (
-        ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin
-    );
-}
 
-    /**
+/**
      * Normalize an axis value to a range between 0 and 1.
      * Calibration centers the value at 0.5.
      * @param {number} value - Current axis value.
