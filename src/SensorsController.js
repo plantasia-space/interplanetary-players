@@ -212,7 +212,7 @@ export class SensorController {
         console.log('SensorController: Starting calibration. Please hold the device steady near your body.');
 
         // Listen for a short duration to capture initial orientation and acceleration
-        const calibrationDuration = 2000; // 2 seconds
+        const calibrationDuration = 1000; // 2 seconds
         let orientationSum = { alpha: 0, beta: 0, gamma: 0 };
         let accelerationSum = 0;
         let count = 0;
@@ -375,8 +375,8 @@ export class SensorController {
             // Update user manager based on active axes
             if (this.activeAxes.x) this.user1Manager.setNormalizedValue('x', xNorm);
             if (this.activeAxes.y) this.user1Manager.setNormalizedValue('y', yNorm);
-            if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', zNorm);
-            if (this.activeAxes.distance) this.user1Manager.setNormalizedValue('distance', this.movementData.distance);
+            if (this.activeAxes.z) this.user1Manager.setNormalizedValue('z', this.movementData.distance);
+           // if (this.activeAxes.distance) this.user1Manager.setNormalizedValue('distance', this.movementData.distance);
         } catch (error) {
             console.error('SensorController: Error in updateParameters:', error);
         }
