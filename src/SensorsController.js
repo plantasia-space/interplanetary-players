@@ -238,55 +238,68 @@ handleDeviceOrientation(event) {
             return;
         }
 
-        const { alpha = 0, beta = 0, gamma = 0 } = event; // Default to 0 if undefined
+        const { alpha = 0, beta = 0, gamma = 0 } = event;
 
-        // Pre-calculate only active axes to avoid unnecessary math
-        let relativeYaw, relativePitch, relativeRoll;
-
+        // --- Yaw (alpha) ---
         if (this.activeAxes.x) {
-            relativeYaw = alpha - (this.initialAlpha || 0);
-            relativeYaw = (relativeYaw + 360) % 360; // Normalize between 0 and 360
-            if (relativeYaw > 180) relativeYaw -= 360; // Normalize to [-180, 180]
-            this.currentYaw = this.applyAxisLimit(
-                this.currentYaw,
-                this.normalizeAxis(relativeYaw, -180, 180),
-                'yaw'
-            );
+            let relativeYaw = alpha - (this.initialAlpha || 0);
+
+            // 1) CLAMP to [-180, 180]
+            relativeYaw = MathUtils.clamp(relativeYaw, -180, 180);
+
+            // 2) Normalize from [-180, 180] to [0, 1]
+            const newYaw = this.normalizeAxis(relativeYaw, -180, 180);
+
+            // 3) Apply axis limit logic (stick at 0 or 1 until direction changes)
+            this.currentYaw = this.applyAxisLimit(this.currentYaw, newYaw, 'yaw');
+
+            // 4) Optional: Dead zone near 0 or 1
             this.currentYaw = this.applyDeadZone(this.currentYaw);
+
+            // 5) Update user manager
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
 
+        // --- Pitch (beta) ---
         if (this.activeAxes.y) {
-            relativePitch = beta - (this.initialBeta || 0);
-            this.currentPitch = this.applyAxisLimit(
-                this.currentPitch,
-                this.normalizeAxis(relativePitch, -90, 90),
-                'pitch'
-            );
+            let relativePitch = beta - (this.initialBeta || 0);
+
+            // Clamp
+            relativePitch = MathUtils.clamp(relativePitch, -90, 90);
+
+            // Normalize
+            const newPitch = this.normalizeAxis(relativePitch, -90, 90);
+
+            this.currentPitch = this.applyAxisLimit(this.currentPitch, newPitch, 'pitch');
             this.currentPitch = this.applyDeadZone(this.currentPitch);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
 
+        // --- Roll (gamma) ---
         if (this.activeAxes.z) {
-            relativeRoll = gamma - (this.initialRoll || 0);
-            this.currentRoll = this.applyAxisLimit(
-                this.currentRoll,
-                this.normalizeAxis(relativeRoll, -90, 90),
-                'roll'
-            );
+            let relativeRoll = gamma - (this.initialRoll || 0);
+
+            // Clamp
+            relativeRoll = MathUtils.clamp(relativeRoll, -90, 90);
+
+            // Normalize
+            const newRoll = this.normalizeAxis(relativeRoll, -90, 90);
+
+            this.currentRoll = this.applyAxisLimit(this.currentRoll, newRoll, 'roll');
             this.currentRoll = this.applyDeadZone(this.currentRoll);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
 
         // Debug log only when an axis is active
         console.log(
-            `Yaw: ${this.currentYaw?.toFixed(2) || '-'}, Pitch: ${this.currentPitch?.toFixed(2) || '-'}, Roll: ${this.currentRoll?.toFixed(2) || '-'}`
+            `Yaw: ${this.currentYaw?.toFixed(2) || '-'}, ` +
+            `Pitch: ${this.currentPitch?.toFixed(2) || '-'}, ` +
+            `Roll: ${this.currentRoll?.toFixed(2) || '-'}`
         );
     } catch (error) {
         console.error('SensorController: Error in handleDeviceOrientation:', error);
     }
 }
-
 /**
  * Applies a dead zone near 0 and 1 to prevent jitter.
  * @param {number} value - Normalized axis value.
