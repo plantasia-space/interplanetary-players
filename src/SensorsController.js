@@ -271,13 +271,16 @@ export class SensorController {
             'ZXY'                      // Align with DeviceOrientationEvent
         );
     
-        const quaternion = new Quaternion().setFromEuler(euler).normalize();
+        const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
     
-        // Convert Quaternion back to Euler angles for extracting yaw, pitch, and roll
-        const extractedEuler = new Euler().setFromQuaternion(quaternion, 'ZXY');
-        const yaw = extractedEuler.y;    // Yaw (rotation around Y-axis)
-        const pitch = extractedEuler.x;  // Pitch (rotation around X-axis)
-        const roll = extractedEuler.z;   // Roll (rotation around Z-axis)
+        // Use slerp to interpolate between the current and new quaternion for smooth transitions
+        this.currentQuaternion.slerp(newQuaternion, 0.8); // Adjust the interpolation factor (e.g., 0.8 for smoothness)
+    
+        // Convert the interpolated quaternion back to Euler angles
+        const interpolatedEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY');
+        const yaw = interpolatedEuler.y;    // Yaw (rotation around Y-axis)
+        const pitch = interpolatedEuler.x;  // Pitch (rotation around X-axis)
+        const roll = interpolatedEuler.z;   // Roll (rotation around Z-axis)
     
         // Normalize angles to [0, 1] range
         const normalizedYaw = this.mapRange(yaw, -Math.PI, Math.PI, 0, 1);
@@ -318,22 +321,22 @@ export class SensorController {
         return MathUtils.clamp(value, min, max);
     }
 
-    /**
-     * Maps a value from one range to another.
-     * @param {number} val - The value to map.
-     * @param {number} inMin - Input range minimum.
-     * @param {number} inMax - Input range maximum.
-     * @param {number} outMin - Output range minimum.
-     * @param {number} outMax - Output range maximum.
-     * @returns {number} The mapped value.
-     */
-    mapRange(val, inMin, inMax, outMin, outMax) {
-        return MathUtils.clamp(
-            ((val - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin,
-            outMin,
-            outMax
-        );
-    }
+        /**
+         * Maps a value from one range to another.
+         * @param {number} val - The value to map.
+         * @param {number} inMin - Input range minimum.
+         * @param {number} inMax - Input range maximum.
+         * @param {number} outMin - Output range minimum.
+         * @param {number} outMax - Output range maximum.
+         * @returns {number} The mapped value.
+         */
+        mapRange(val, inMin, inMax, outMin, outMax) {
+            return MathUtils.clamp(
+                ((val - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin,
+                outMin,
+                outMax
+            );
+        }
 
     /**
      * smoothValue - applies exponential smoothing factor 'alpha' in range (0..1).
