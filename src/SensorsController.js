@@ -311,12 +311,12 @@ processSensorData(event, isExternal = false) {
         this.user1Manager.setNormalizedValue('z', newRoll);
     }
 
-    console.log(
+/*     console.log(
         `[SensorController] ${isExternal ? 'External' : 'Internal'} Data Applied -> ` +
         `Yaw: ${this.currentYaw.toFixed(2)}, ` +
         `Pitch: ${this.currentPitch.toFixed(2)}, ` +
         `Roll: ${this.currentRoll.toFixed(2)}`
-    );
+    ); */
 }
 
 

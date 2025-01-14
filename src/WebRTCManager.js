@@ -78,7 +78,7 @@ export class WebRTCManager {
                         console.log(`[WebRTCManager] Registered with server. Client ID: ${message.clientId}`);
                         this.clientId = message.clientId;
                         // Automatically generate the QR code after registration
-                        this.generateConnectionModal();
+                        //this.generateConnectionModal();
                         break;
 
                         case 'mobileConnected':
@@ -172,7 +172,7 @@ export class WebRTCManager {
         } else if (this.useExternalSensors) {
             console.log('SensorController: No internal sensors detected, showing connection modal.');
             const webRTCManager = WebRTCManager.getInstance(); // Import and use WebRTCManager
-            webRTCManager.generateConnectionModal(); // Trigger modal for external sensor pairing
+           // webRTCManager.generateConnectionModal(); // Trigger modal for external sensor pairing
         } else {
             console.warn('SensorController: No usable sensors detected.');
             notifications.showToast('No sensors available for connection.', 'warning');
