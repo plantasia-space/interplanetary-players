@@ -1,6 +1,6 @@
 // WebRTCManager.js
 
-import { UNIQUE_ID } from './Constants.js';
+import { UNIQUE_ID, isMobileDevice } from './Constants.js';
 import QRCode from 'qrcode';
 import notifications from './AppNotifications.js';
 import { SensorController } from './SensorsController.js'; // Import the class
@@ -325,7 +325,16 @@ initializeConnectionButton() {
         return;
     }
 
-    // Ensure the click event listener is attached
+    // Use the isMobileDevice function from constants.js
+    if (isMobileDevice()) {
+        console.log('[WebRTCManager] Mobile device detected. Hiding connection button.');
+        this.statusButton.style.display = 'none'; // Hide the button on mobile
+        return; // Exit early for mobile devices
+    }
+
+    console.log('[WebRTCManager] Desktop device detected. Initializing connection button.');
+
+    // Attach event listener for desktop
     this.statusButton.removeEventListener('click', this.handleConnectionButtonClick.bind(this));
     this.statusButton.addEventListener('click', this.handleConnectionButtonClick.bind(this));
 
