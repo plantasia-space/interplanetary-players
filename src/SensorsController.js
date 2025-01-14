@@ -254,8 +254,8 @@ handleDeviceOrientation(event) {
 }
 
 /**
- * Processes sensor data (internal or external) and updates user parameters.
- * This method serves as the single point for all sensor updates.
+ * Processes sensor data and maps it to normalized x, y, z values using quaternions.
+ * Ensures smooth, continuous mapping without gimbal lock or jumps.
  * @param {Object} event - Sensor data (alpha, beta, gamma).
  * @param {boolean} isExternal - Whether the data is from an external source.
  */
@@ -264,61 +264,37 @@ processSensorData(event, isExternal = false) {
 
     const { alpha = 0, beta = 0, gamma = 0 } = event;
 
-    if (!this.activeAxes.x && !this.activeAxes.y && !this.activeAxes.z) return;
+    // Convert Euler angles to a Quaternion
+    const quaternion = this.eulerToQuaternion(alpha, beta, gamma);
 
-    console.log(`[SensorController] Processing ${isExternal ? 'External' : 'Internal'} Sensor Data`, { alpha, beta, gamma });
+    // Normalize quaternion components to the [0, 1] range
+    const normalizedX = this.mapRange(quaternion.x, -1, 1, 0, 1);
+    const normalizedY = this.mapRange(quaternion.y, -1, 1, 0, 1);
+    const normalizedZ = this.mapRange(quaternion.z, -1, 1, 0, 1);
 
-    // --------------------------------------------------
-    // Yaw (X-axis)
-    // --------------------------------------------------
-    let newYaw = this.currentYaw;
+    // Apply continuity and update user manager
     if (this.activeAxes.x) {
-        let relativeYaw = alpha - (this.initialAlpha || 0);
-        relativeYaw = (relativeYaw + 360) % 360;
-        if (relativeYaw > 180) relativeYaw -= 360;
-
-        const yawNorm = this.mapRange(relativeYaw, -180, 180, 0, 1);
-        newYaw = this.smoothValue(this.currentYaw, yawNorm, 0.8);
-        this.currentYaw = newYaw;
-        this.user1Manager.setNormalizedValue('x', newYaw);
+        this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
+        this.user1Manager.setNormalizedValue('x', this.currentYaw);
     }
 
-    // --------------------------------------------------
-    // Pitch (Y-axis)
-    // --------------------------------------------------
-    let newPitch = this.currentPitch;
     if (this.activeAxes.y) {
-        let relativePitch = beta - (this.initialBeta || 0);
-        relativePitch = Math.max(Math.min(relativePitch, 90), -90);
-
-        const pitchNorm = this.mapRange(relativePitch, -90, 90, 0, 1);
-        newPitch = this.smoothValue(this.currentPitch, pitchNorm, 0.8);
-        this.currentPitch = newPitch;
-        this.user1Manager.setNormalizedValue('y', newPitch);
+        this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
+        this.user1Manager.setNormalizedValue('y', this.currentPitch);
     }
 
-    // --------------------------------------------------
-    // Roll (Z-axis)
-    // --------------------------------------------------
-    let newRoll = this.currentRoll;
     if (this.activeAxes.z) {
-        let relativeRoll = gamma - (this.initialGamma || 0);
-        relativeRoll = Math.max(Math.min(relativeRoll, 90), -90);
-
-        const rollNorm = this.mapRange(relativeRoll, -90, 90, 0, 1);
-        newRoll = this.smoothValue(this.currentRoll, rollNorm, 0.8);
-        this.currentRoll = newRoll;
-        this.user1Manager.setNormalizedValue('z', newRoll);
+        this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
+        this.user1Manager.setNormalizedValue('z', this.currentRoll);
     }
 
-/*     console.log(
-        `[SensorController] ${isExternal ? 'External' : 'Internal'} Data Applied -> ` +
-        `Yaw: ${this.currentYaw.toFixed(2)}, ` +
-        `Pitch: ${this.currentPitch.toFixed(2)}, ` +
-        `Roll: ${this.currentRoll.toFixed(2)}`
-    ); */
+    console.log(
+        `[SensorController] Processed Sensor Data -> ` +
+        `X: ${this.currentYaw.toFixed(2)}, ` +
+        `Y: ${this.currentPitch.toFixed(2)}, ` +
+        `Z: ${this.currentRoll.toFixed(2)}`
+    );
 }
-
 
 
     /**
@@ -329,27 +305,24 @@ processSensorData(event, isExternal = false) {
      * @returns {Quaternion} The resulting quaternion.
      */
     eulerToQuaternion(alpha, beta, gamma) {
-        // Convert degrees to radians
-        const _x = MathUtils.degToRad(beta || 0);
-        const _y = MathUtils.degToRad(gamma || 0);
-        const _z = MathUtils.degToRad(alpha || 0);
-      
+        const _x = MathUtils.degToRad(beta || 0); // Convert beta (X-axis rotation) to radians
+        const _y = MathUtils.degToRad(gamma || 0); // Convert gamma (Y-axis rotation) to radians
+        const _z = MathUtils.degToRad(alpha || 0); // Convert alpha (Z-axis rotation) to radians
+    
         const cX = Math.cos(_x / 2);
         const cY = Math.cos(_y / 2);
         const cZ = Math.cos(_z / 2);
         const sX = Math.sin(_x / 2);
         const sY = Math.sin(_y / 2);
         const sZ = Math.sin(_z / 2);
-      
-        // For Z->X->Y order
-        const w = cZ * cX * cY + sZ * sX * sY;
-        const x = cZ * sX * cY + sZ * cX * sY;
-        const y = cZ * cX * sY - sZ * sX * cY;
-        const z = sZ * cX * cY - cZ * sX * sY;
-      
-        return new Quaternion(x, y, z, w);
+    
+        return new Quaternion(
+            cZ * sX * cY + sZ * cX * sY, // x
+            cZ * cX * sY - sZ * sX * cY, // y
+            sZ * cX * cY - cZ * sX * sY, // z
+            cZ * cX * cY + sZ * sX * sY  // w
+        );
     }
-
     /**
      * Clamps a value from one range to another.
      * @param {number} value - The value to clamp.
