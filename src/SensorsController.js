@@ -44,19 +44,9 @@ export class SensorController {
         this.activeAxes = { x: false, y: false, z: false, distance: false };
         this.throttleUpdate = this.throttle(this.updateParameters.bind(this), 33); // ~30 FPS
 
-        // Rotation tracking
-        this.currentYaw = 0.5;   // Normalized [0,1], 0.5 is center
-        this.currentPitch = 0.5; // Normalized [0,1], 0.5 is center
-        this.currentRoll = 0.5;  // Normalized [0,1], 0.5 is center
-
-        this.lastAlpha = null; 
-        this.accYaw = 0; // in degrees, can clamp to ±180
-
-        this.lastBeta = null;
-        this.accPitch = 0; // in degrees, can clamp to ±90
-
-        this.lastGamma = null;
-        this.accRoll = 0; // in degrees, can clamp to ±90
+        // Quaternion tracking
+        this.currentQuaternion = new Quaternion(); // Represents the current orientation
+        this.targetQuaternion = new Quaternion();  // Represents the desired orientation after sensor update
 
         // Motion tracking
         this.velocityY = 0;
@@ -213,92 +203,119 @@ export class SensorController {
     }
 
     /**
-     * Calibrates the device by setting initial reference points for orientation and acceleration.
+     * Calibrates the device by setting the initial reference quaternion.
      * Prompts the user to hold the device steady near their body.
      * @private
      */
     calibrateDevice() {
-        console.log('Starting simplified calibration.');
-      
-        // We reset to 0.5
-        this.currentYaw = 0.5;
-        this.currentPitch = 0.5;
-        this.currentRoll = 0.5;
-      
-        // Then read one orientation event
+        console.log('Starting calibration.');
+
+        // Reset quaternions to identity
+        this.currentQuaternion.identity();
+        this.targetQuaternion.identity();
+
+        // Read one orientation event to set the initial quaternion
         const onCalibrate = (event) => {
-          this.initialAlpha = event.alpha || 0;
-          this.initialBeta  = event.beta || 0;
-          this.initialGamma = event.gamma || 0;
-      
-          this.calibrated = true;
-          console.log('Calibration done. initialAlpha:', this.initialAlpha, 
-                      'initialBeta:', this.initialBeta, 'initialGamma:', this.initialGamma);
-      
-          window.removeEventListener('deviceorientation', onCalibrate);
+            const { alpha = 0, beta = 0, gamma = 0 } = event;
+            this.initialQuaternion = this.eulerToQuaternion(alpha, beta, gamma);
+            this.currentQuaternion.copy(this.initialQuaternion);
+            this.targetQuaternion.copy(this.initialQuaternion);
+            this.calibrated = true;
+            console.log('Calibration done. Initial Quaternion:', this.initialQuaternion);
+
+            window.removeEventListener('deviceorientation', onCalibrate);
+
+            // Start the update loop
+            this.update();
         };
+
         window.addEventListener('deviceorientation', onCalibrate, { once: true });
-      }
+    }
+
     /**
-     * Handles `deviceorientation` events, maps yaw, pitch, and roll directly to normalized X, Y, Z.
-     * Prevents overshooting and sticks to limits until direction changes.
-     * Skips processing for inactive axes for efficiency.
+     * Handles `deviceorientation` events from internal sensors.
      * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
      */
-/**
- * Handles `deviceorientation` events from internal sensors.
- * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
- */
-handleDeviceOrientation(event) {
-    this.processSensorData(event, false);
-}
-
-/**
- * Processes sensor data and maps it to normalized x, y, z values using quaternions.
- * Ensures smooth, continuous mapping without gimbal lock or jumps.
- * @param {Object} event - Sensor data (alpha, beta, gamma).
- * @param {boolean} isExternal - Whether the data is from an external source.
- */
-processSensorData(event, isExternal = false) {
-    if (!this.calibrated) return;
-
-    const { alpha = 0, beta = 0, gamma = 0 } = event;
-
-    // Convert Euler angles to a Quaternion
-    const quaternion = this.eulerToQuaternion(alpha, beta, gamma);
-
-    // Normalize quaternion components to the [0, 1] range
-    const normalizedX = this.mapRange(quaternion.x, -1, 1, 0, 1);
-    const normalizedY = this.mapRange(quaternion.y, -1, 1, 0, 1);
-    const normalizedZ = this.mapRange(quaternion.z, -1, 1, 0, 1);
-
-    // Apply continuity and update user manager
-    if (this.activeAxes.x) {
-        this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
-        this.user1Manager.setNormalizedValue('x', this.currentYaw);
+    handleDeviceOrientation(event) {
+        this.processSensorData(event, false);
     }
-
-    if (this.activeAxes.y) {
-        this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
-        this.user1Manager.setNormalizedValue('y', this.currentPitch);
-    }
-
-    if (this.activeAxes.z) {
-        this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
-        this.user1Manager.setNormalizedValue('z', this.currentRoll);
-    }
-
-    console.log(
-        `[SensorController] Processed Sensor Data -> ` +
-        `X: ${this.currentYaw.toFixed(2)}, ` +
-        `Y: ${this.currentPitch.toFixed(2)}, ` +
-        `Z: ${this.currentRoll.toFixed(2)}`
-    );
-}
-
 
     /**
-     * Converts Euler angles (Z -> X -> Y) in degrees to a Quaternion.
+     * Processes sensor data and sets the target quaternion for SLERP-based interpolation.
+     * @param {Object} event - Sensor data (alpha, beta, gamma).
+     * @param {boolean} isExternal - Whether the data is from an external source.
+     */
+    processSensorData(event, isExternal = false) {
+        if (!this.calibrated) return;
+
+        const { alpha = 0, beta = 0, gamma = 0 } = event;
+
+        // Convert Euler angles to a Quaternion
+        const currentQuaternion = this.eulerToQuaternion(alpha, beta, gamma);
+
+        // Compute relative rotation: relativeQuaternion = initialQuaternion.inverse() * currentQuaternion
+        const relativeQuaternion = this.initialQuaternion.clone().inverse().multiply(currentQuaternion).normalize();
+
+        // Set target quaternion using SLERP
+        this.targetQuaternion.copy(relativeQuaternion);
+
+        console.log(
+            `[SensorController] Set Target Quaternion -> x: ${this.targetQuaternion.x.toFixed(4)}, ` +
+            `y: ${this.targetQuaternion.y.toFixed(4)}, z: ${this.targetQuaternion.z.toFixed(4)}, w: ${this.targetQuaternion.w.toFixed(4)}`
+        );
+    }
+
+    /**
+     * Continuously updates the current quaternion towards the target quaternion using SLERP.
+     * Converts the interpolated quaternion to Euler angles and maps them to normalized values.
+     */
+    update() {
+        if (!this.calibrated) return;
+
+        // Perform SLERP with a t-value representing the interpolation factor
+        // t should be between 0 and 1. Adjust speed by changing the factor.
+        const slerpFactor = 0.05; // Adjust for smoother (lower) or faster (higher) transitions
+        this.currentQuaternion.slerp(this.targetQuaternion, slerpFactor);
+
+        // Convert current quaternion back to Euler angles
+        const relativeEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'YXZ'); // YXZ order
+
+        // Extract yaw, pitch, and roll in radians
+        const yaw = relativeEuler.y;   // Rotation around Y-axis
+        const pitch = relativeEuler.x; // Rotation around X-axis
+        const roll = relativeEuler.z;  // Rotation around Z-axis
+
+        // Map angles from radians to a normalized [0, 1] range
+        const normalizedYaw = this.mapRange(yaw, -Math.PI, Math.PI, 0, 1);
+        const normalizedPitch = this.mapRange(pitch, -Math.PI / 2, Math.PI / 2, 0, 1); // Typically, pitch is limited to [-90°, 90°]
+        const normalizedRoll = this.mapRange(roll, -Math.PI, Math.PI, 0, 1);
+
+        // Update user manager with normalized values
+        if (this.activeAxes.x) {
+            this.user1Manager.setNormalizedValue('x', normalizedYaw);
+        }
+
+        if (this.activeAxes.y) {
+            this.user1Manager.setNormalizedValue('y', normalizedPitch);
+        }
+
+        if (this.activeAxes.z) {
+            this.user1Manager.setNormalizedValue('z', normalizedRoll);
+        }
+
+        console.log(
+            `[SensorController] Updated Orientation -> ` +
+            `Yaw: ${(yaw * 180 / Math.PI).toFixed(2)}°, ` +
+            `Pitch: ${(pitch * 180 / Math.PI).toFixed(2)}°, ` +
+            `Roll: ${(roll * 180 / Math.PI).toFixed(2)}°`
+        );
+
+        // Schedule the next update
+        requestAnimationFrame(this.update);
+    }
+
+    /**
+     * Converts Euler angles (Y -> X -> Z) in degrees to a Quaternion.
      * @param {number} alpha - Rotation around Z axis in degrees.
      * @param {number} beta - Rotation around X axis in degrees.
      * @param {number} gamma - Rotation around Y axis in degrees.
@@ -308,21 +325,13 @@ processSensorData(event, isExternal = false) {
         const _x = MathUtils.degToRad(beta || 0); // Convert beta (X-axis rotation) to radians
         const _y = MathUtils.degToRad(gamma || 0); // Convert gamma (Y-axis rotation) to radians
         const _z = MathUtils.degToRad(alpha || 0); // Convert alpha (Z-axis rotation) to radians
-    
-        const cX = Math.cos(_x / 2);
-        const cY = Math.cos(_y / 2);
-        const cZ = Math.cos(_z / 2);
-        const sX = Math.sin(_x / 2);
-        const sY = Math.sin(_y / 2);
-        const sZ = Math.sin(_z / 2);
-    
-        return new Quaternion(
-            cZ * sX * cY + sZ * cX * sY, // x
-            cZ * cX * sY - sZ * sX * cY, // y
-            sZ * cX * cY - cZ * sX * sY, // z
-            cZ * cX * cY + sZ * sX * sY  // w
-        );
+
+        const quaternion = new Quaternion();
+        quaternion.setFromEuler(new Euler(_x, _y, _z, 'YXZ')); // YXZ order for device orientation
+
+        return quaternion.normalize(); // Ensure the quaternion is normalized
     }
+
     /**
      * Clamps a value from one range to another.
      * @param {number} value - The value to clamp.
@@ -334,33 +343,33 @@ processSensorData(event, isExternal = false) {
         return MathUtils.clamp(value, min, max);
     }
 
-/**
- * mapRange - maps 'val' in [inMin..inMax] to [outMin..outMax].
- */
-mapRange(val, inMin, inMax, outMin, outMax) {
-    return (
-      ((val - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin
-    );
-  }
-  
-  /**
-   * smoothValue - applies exponential smoothing factor 'alpha' in range (0..1).
-   * Higher alpha => more weight on the old value => smoother, slower to update.
-   */
-  smoothValue(oldVal, newVal, alpha = 0.8) {
-    return alpha * oldVal + (1 - alpha) * newVal;
-  }
-  
-  /**
-   * clampDelta - ensures we don't jump more than 'maxDelta' in one step.
-   */
-  clampDelta(oldVal, newVal, maxDelta = 0.1) {
-    const delta = newVal - oldVal;
-    if (Math.abs(delta) > maxDelta) {
-      return oldVal + Math.sign(delta) * maxDelta;
+    /**
+     * mapRange - maps 'val' in [inMin..inMax] to [outMin..outMax].
+     */
+    mapRange(val, inMin, inMax, outMin, outMax) {
+        return (
+            ((val - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin
+        );
     }
-    return newVal;
-  }
+
+    /**
+     * smoothValue - applies exponential smoothing factor 'alpha' in range (0..1).
+     * Higher alpha => more weight on the old value => smoother, slower to update.
+     */
+    smoothValue(oldVal, newVal, alpha = 0.7) { // Adjusted alpha for better responsiveness
+        return alpha * oldVal + (1 - alpha) * newVal;
+    }
+
+    /**
+     * clampDelta - ensures we don't jump more than 'maxDelta' in one step.
+     */
+    clampDelta(oldVal, newVal, maxDelta = 0.1) {
+        const delta = newVal - oldVal;
+        if (Math.abs(delta) > maxDelta) {
+            return oldVal + Math.sign(delta) * maxDelta;
+        }
+        return newVal;
+    }
 
     /**
      * Applies a dead zone near 0 and 1 to prevent jitter.
@@ -410,7 +419,7 @@ mapRange(val, inMin, inMax, outMin, outMax) {
             // Update user manager if 'distance' axis is active
             if (this.activeAxes.distance) {
                 // Assuming 0.5 is center for distance as well
-                const distanceNorm = Math.min(Math.max(normalizedDistance, 0), 1);
+                const distanceNorm = this.mapRange(normalizedDistance, 0, 1, 0, 1);
                 this.user1Manager.setNormalizedValue('distance', distanceNorm);
             }
 
@@ -433,7 +442,7 @@ mapRange(val, inMin, inMax, outMin, outMax) {
      */
     updateParameters() {
         try {
-            // Since we're directly mapping normalized values in handleDeviceOrientation,
+            // Since we're directly mapping normalized values in the update loop,
             // this method can be simplified or removed if not needed.
             // If additional processing is required, implement here.
         } catch (error) {
@@ -564,36 +573,35 @@ mapRange(val, inMin, inMax, outMin, outMax) {
         this.loadCalibrationButtonSVG();
     }
 
-/**
- * Sets sensor values externally (e.g., via WebRTC).
- * @param {Object} data - Sensor data from external device.
- * @param {number} data.alpha - Rotation around Z axis (degrees).
- * @param {number} data.beta - Rotation around X axis (degrees).
- * @param {number} data.gamma - Rotation around Y axis (degrees).
- */
-setExternalSensorData(data) {
-    if (this.useExternalSensors) {
-        this.processSensorData(data, true);
-    } else {
-        console.warn('[SensorController] External sensors are not enabled.');
+    /**
+     * Sets sensor values externally (e.g., via WebRTC).
+     * @param {Object} data - Sensor data from external device.
+     * @param {number} data.alpha - Rotation around Z axis (degrees).
+     * @param {number} data.beta - Rotation around X axis (degrees).
+     * @param {number} data.gamma - Rotation around Y axis (degrees).
+     */
+    setExternalSensorData(data) {
+        if (this.useExternalSensors) {
+            this.processSensorData(data, true);
+        } else {
+            console.warn('[SensorController] External sensors are not enabled.');
+        }
     }
-}
-/**
- * Switch between internal and external sensor sources.
- * @param {boolean} useExternal - If true, use external sensors; otherwise, use internal.
- */
-switchSensorSource(useExternal) {
-    this.useExternalSensors = useExternal;
-    this.useInternalSensors = !useExternal;
 
-    if (useExternal) {
-        console.log('[SensorController] Switched to external sensor input.');
-        this.stopListening(); // Stop internal sensor listeners
-    } else {
-        console.log('[SensorController] Switched to internal sensor input.');
-        this.startListening(); // Start internal sensor listeners
+    /**
+     * Switch between internal and external sensor sources.
+     * @param {boolean} useExternal - If true, use external sensors; otherwise, use internal.
+     */
+    switchSensorSource(useExternal) {
+        this.useExternalSensors = useExternal;
+        this.useInternalSensors = !useExternal;
+
+        if (useExternal) {
+            console.log('[SensorController] Switched to external sensor input.');
+            this.stopListening(); // Stop internal sensor listeners
+        } else {
+            console.log('[SensorController] Switched to internal sensor input.');
+            this.startListening(); // Start internal sensor listeners
+        }
     }
-}
-
-
 }
