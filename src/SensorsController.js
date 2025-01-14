@@ -263,21 +263,23 @@ export class SensorController {
     
         const { alpha = 0, beta = 0, gamma = 0 } = event;
     
-        // Convert Euler angles to a Quaternion using three.js
+        // Convert Euler angles to radians and use ZXY rotation order
         const euler = new Euler(
             MathUtils.degToRad(beta),  // X-axis (beta)
             MathUtils.degToRad(gamma), // Y-axis (gamma)
             MathUtils.degToRad(alpha), // Z-axis (alpha)
-            'ZXY'                      // Align with DeviceOrientationEvent
+            'ZXY'                      // DeviceOrientationEvent alignment
         );
     
+        // Compute the new quaternion from Euler angles
         const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
     
-        // Use slerp to interpolate between the current and new quaternion for smooth transitions
-        this.currentQuaternion.slerp(newQuaternion, 0.8); // Adjust the interpolation factor (e.g., 0.8 for smoothness)
+        // Use spherical linear interpolation (slerp) to maintain continuity
+        this.currentQuaternion.slerp(newQuaternion, 0.5); // Adjust factor (0.5) for smoothness
     
-        // Convert the interpolated quaternion back to Euler angles
+        // Convert interpolated quaternion back to Euler angles
         const interpolatedEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY');
+    
         const yaw = interpolatedEuler.y;    // Yaw (rotation around Y-axis)
         const pitch = interpolatedEuler.x;  // Pitch (rotation around X-axis)
         const roll = interpolatedEuler.z;   // Roll (rotation around Z-axis)
@@ -289,17 +291,17 @@ export class SensorController {
     
         // Smooth the values and update user parameters
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedYaw, 0.8);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedYaw, 0.9);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
     
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedPitch, 0.8);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedPitch, 0.9);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
     
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedRoll, 0.8);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedRoll, 0.9);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
     
