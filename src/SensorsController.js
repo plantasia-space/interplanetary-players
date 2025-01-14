@@ -263,46 +263,39 @@ export class SensorController {
     
         const { alpha = 0, beta = 0, gamma = 0 } = event;
     
-        // Convert Euler angles (alpha, beta, gamma) to radians
-        const yaw = MathUtils.degToRad(alpha);  // Z-axis rotation
-        const pitch = MathUtils.degToRad(beta); // X-axis rotation
-        const roll = MathUtils.degToRad(gamma); // Y-axis rotation
+        // Convert to radians
+        const yaw = MathUtils.degToRad(alpha);   // Z-axis (Yaw)
+        const pitch = MathUtils.degToRad(beta);  // X-axis (Pitch)
+        const roll = MathUtils.degToRad(gamma);  // Y-axis (Roll)
     
-        // Create incremental quaternion rotation
-        const rotation = new Quaternion()
-            .setFromEuler(new Euler(pitch, yaw, roll, 'ZXY'))
-            .normalize();
+        // Update accumulated rotation (ensuring continuity)
+        this.accumulatedYaw += this.wrapAngle(yaw - (this.lastYaw || yaw));
+        this.accumulatedPitch += this.wrapAngle(pitch - (this.lastPitch || pitch));
+        this.accumulatedRoll += this.wrapAngle(roll - (this.lastRoll || roll));
     
-        // Apply the rotation to the orientation vectors
-        const forward = new THREE.Vector3(0, 0, -1); // Default forward vector
-        const up = new THREE.Vector3(0, 1, 0);       // Default up vector
+        // Save current angles for next update
+        this.lastYaw = yaw;
+        this.lastPitch = pitch;
+        this.lastRoll = roll;
     
-        forward.applyQuaternion(rotation).normalize();
-        up.applyQuaternion(rotation).normalize();
+        // Normalize to [0, 1]
+        const normalizedX = this.mapRange(this.accumulatedYaw, -Math.PI, Math.PI, 0, 1);
+        const normalizedY = this.mapRange(this.accumulatedPitch, -Math.PI / 2, Math.PI / 2, 0, 1);
+        const normalizedZ = this.mapRange(this.accumulatedRoll, -Math.PI, Math.PI, 0, 1);
     
-        // Calculate angles relative to the orientation
-        const xAngle = Math.atan2(forward.y, forward.z); // Rotation around X-axis
-        const yAngle = Math.asin(forward.x);            // Rotation around Y-axis
-        const zAngle = Math.atan2(up.x, up.z);          // Rotation around Z-axis
-    
-        // Normalize angles to [0, 1]
-        const normalizedX = this.mapRange(xAngle, -Math.PI, Math.PI, 0, 1);
-        const normalizedY = this.mapRange(yAngle, -Math.PI / 2, Math.PI / 2, 0, 1);
-        const normalizedZ = this.mapRange(zAngle, -Math.PI, Math.PI, 0, 1);
-    
-        // Smooth the values and update parameters
+        // Smooth values and update user manager
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.9);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
     
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.9);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
     
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.9);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
     
@@ -312,6 +305,17 @@ export class SensorController {
             `Y: ${this.currentPitch.toFixed(2)}, ` +
             `Z: ${this.currentRoll.toFixed(2)}`
         );
+    }
+    
+    /**
+     * Wraps angle differences to prevent jumps at boundaries (e.g., 360° -> 0° or -180° -> 180°).
+     * @param {number} angle - The angle difference.
+     * @returns {number} The wrapped angle.
+     */
+    wrapAngle(angle) {
+        while (angle > Math.PI) angle -= 2 * Math.PI;
+        while (angle < -Math.PI) angle += 2 * Math.PI;
+        return angle;
     }
     /**
      * Clamps a value from one range to another.
