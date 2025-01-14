@@ -263,55 +263,52 @@ export class SensorController {
     
         const { alpha = 0, beta = 0, gamma = 0 } = event;
     
-        // Convert Euler angles to radians and use ZXY rotation order
+        // Convert Euler angles to Quaternion
         const euler = new Euler(
-            MathUtils.degToRad(beta),  // X-axis (beta)
-            MathUtils.degToRad(gamma), // Y-axis (gamma)
-            MathUtils.degToRad(alpha), // Z-axis (alpha)
-            'ZXY'                      // DeviceOrientationEvent alignment
+            MathUtils.degToRad(beta), // X-axis (Pitch)
+            MathUtils.degToRad(gamma), // Y-axis (Roll)
+            MathUtils.degToRad(alpha), // Z-axis (Yaw)
+            'ZXY' // Rotation order for device orientation
         );
-    
-        // Compute the new quaternion from Euler angles
         const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
     
-        // Use spherical linear interpolation (slerp) to maintain continuity
-        this.currentQuaternion.slerp(newQuaternion, 0.5); // Adjust factor (0.5) for smoothness
+        // Ensure continuity with dot product
+        if (this.currentQuaternion.dot(newQuaternion) < 0) {
+            newQuaternion.negate(); // Flip the quaternion
+        }
     
-        // Convert interpolated quaternion back to Euler angles
-        const interpolatedEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY');
+        // Interpolate for smooth transition
+        this.currentQuaternion.slerp(newQuaternion, 0.5);
     
-        const yaw = interpolatedEuler.y;    // Yaw (rotation around Y-axis)
-        const pitch = interpolatedEuler.x;  // Pitch (rotation around X-axis)
-        const roll = interpolatedEuler.z;   // Roll (rotation around Z-axis)
+        // Map Quaternion components directly to normalized parameters
+        const normalizedX = this.mapRange(this.currentQuaternion.x, -1, 1, 0, 1);
+        const normalizedY = this.mapRange(this.currentQuaternion.y, -1, 1, 0, 1);
+        const normalizedZ = this.mapRange(this.currentQuaternion.z, -1, 1, 0, 1);
     
-        // Normalize angles to [0, 1] range
-        const normalizedYaw = this.mapRange(yaw, -Math.PI, Math.PI, 0, 1);
-        const normalizedPitch = this.mapRange(pitch, -Math.PI / 2, Math.PI / 2, 0, 1);
-        const normalizedRoll = this.mapRange(roll, -Math.PI, Math.PI, 0, 1);
-    
-        // Smooth the values and update user parameters
+        // Update user manager with smoothed values
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedYaw, 0.9);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.9);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
     
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedPitch, 0.9);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.9);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
     
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedRoll, 0.9);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.9);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
     
         console.log(
             `[SensorController] Processed Sensor Data -> ` +
-            `X (Yaw): ${this.currentYaw.toFixed(2)}, ` +
-            `Y (Pitch): ${this.currentPitch.toFixed(2)}, ` +
-            `Z (Roll): ${this.currentRoll.toFixed(2)}`
+            `X: ${this.currentYaw.toFixed(2)}, ` +
+            `Y: ${this.currentPitch.toFixed(2)}, ` +
+            `Z: ${this.currentRoll.toFixed(2)}`
         );
     }
+    
     /**
      * Clamps a value from one range to another.
      * @param {number} value - The value to clamp.
