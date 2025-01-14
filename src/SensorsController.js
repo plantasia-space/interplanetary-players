@@ -260,49 +260,53 @@ export class SensorController {
             console.warn('[SensorController] Not calibrated yet. Ignoring sensor data.');
             return;
         }
-
+    
         const { alpha = 0, beta = 0, gamma = 0 } = event;
-
+    
         // Convert Euler angles to a Quaternion using three.js
         const euler = new Euler(
             MathUtils.degToRad(beta),  // X-axis (beta)
             MathUtils.degToRad(gamma), // Y-axis (gamma)
             MathUtils.degToRad(alpha), // Z-axis (alpha)
-            'ZXY'                       // Rotation order to align with DeviceOrientationEvent
+            'ZXY'                      // Align with DeviceOrientationEvent
         );
-
+    
         const quaternion = new Quaternion().setFromEuler(euler).normalize();
-        console.log('[SensorController] Converted to Quaternion:', quaternion);
-
-        // Map quaternion components from [-1,1] to [0,1]
-        const normalizedX = this.mapRange(quaternion.x, -1, 1, 0, 1);
-        const normalizedY = this.mapRange(quaternion.y, -1, 1, 0, 1);
-        const normalizedZ = this.mapRange(quaternion.z, -1, 1, 0, 1);
-
-        // Apply smoothing
+    
+        // Convert Quaternion back to Euler angles for extracting yaw, pitch, and roll
+        const extractedEuler = new Euler().setFromQuaternion(quaternion, 'ZXY');
+        const yaw = extractedEuler.y;    // Yaw (rotation around Y-axis)
+        const pitch = extractedEuler.x;  // Pitch (rotation around X-axis)
+        const roll = extractedEuler.z;   // Roll (rotation around Z-axis)
+    
+        // Normalize angles to [0, 1] range
+        const normalizedYaw = this.mapRange(yaw, -Math.PI, Math.PI, 0, 1);
+        const normalizedPitch = this.mapRange(pitch, -Math.PI / 2, Math.PI / 2, 0, 1);
+        const normalizedRoll = this.mapRange(roll, -Math.PI, Math.PI, 0, 1);
+    
+        // Smooth the values and update user parameters
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedYaw, 0.8);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
-
+    
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedPitch, 0.8);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
-
+    
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedRoll, 0.8);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
-
+    
         console.log(
             `[SensorController] Processed Sensor Data -> ` +
-            `X: ${this.currentYaw.toFixed(2)}, ` +
-            `Y: ${this.currentPitch.toFixed(2)}, ` +
-            `Z: ${this.currentRoll.toFixed(2)}`
+            `X (Yaw): ${this.currentYaw.toFixed(2)}, ` +
+            `Y (Pitch): ${this.currentPitch.toFixed(2)}, ` +
+            `Z (Roll): ${this.currentRoll.toFixed(2)}`
         );
     }
-
     /**
      * Clamps a value from one range to another.
      * @param {number} value - The value to clamp.
@@ -315,17 +319,19 @@ export class SensorController {
     }
 
     /**
-     * mapRange - maps 'val' in [inMin..inMax] to [outMin..outMax].
+     * Maps a value from one range to another.
      * @param {number} val - The value to map.
-     * @param {number} inMin - The input range minimum.
-     * @param {number} inMax - The input range maximum.
-     * @param {number} outMin - The output range minimum.
-     * @param {number} outMax - The output range maximum.
+     * @param {number} inMin - Input range minimum.
+     * @param {number} inMax - Input range maximum.
+     * @param {number} outMin - Output range minimum.
+     * @param {number} outMax - Output range maximum.
      * @returns {number} The mapped value.
      */
     mapRange(val, inMin, inMax, outMin, outMax) {
-        return (
-            ((val - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin
+        return MathUtils.clamp(
+            ((val - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin,
+            outMin,
+            outMax
         );
     }
 
