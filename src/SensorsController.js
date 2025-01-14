@@ -49,6 +49,9 @@ export class SensorController {
         this.currentPitch = 0.5; // Normalized [0,1], 0.5 is center
         this.currentRoll = 0.5;  // Normalized [0,1], 0.5 is center
 
+        // Quaternion tracking
+        this.currentQuaternion = new Quaternion(); // Represents the current orientation
+
         // Motion tracking
         this.velocityY = 0;
         this.positionY = 0;
@@ -265,7 +268,7 @@ export class SensorController {
             MathUtils.degToRad(beta),  // X-axis (beta)
             MathUtils.degToRad(gamma), // Y-axis (gamma)
             MathUtils.degToRad(alpha), // Z-axis (alpha)
-            'ZXY'                       // Rotation order
+            'ZXY'                       // Rotation order to align with DeviceOrientationEvent
         );
 
         const quaternion = new Quaternion().setFromEuler(euler).normalize();
@@ -524,6 +527,7 @@ export class SensorController {
             console.log('SensorController: Calibration button clicked.');
             calibrationButton.disabled = true; // Disable button during calibration
             this.calibrateDevice();
+
             // Re-enable the button after a short delay to prevent multiple calibrations
             setTimeout(() => {
                 calibrationButton.disabled = false;
