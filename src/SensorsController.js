@@ -255,7 +255,7 @@ export class SensorController {
      * @param {Object} event - Sensor data (alpha, beta, gamma).
      * @param {boolean} isExternal - Whether the data is from an external source.
      */
-    processSensorData(event, isExternal = false) {
+    processSensorData(event) {
         if (!this.calibrated) {
             console.warn('[SensorController] Not calibrated yet. Ignoring sensor data.');
             return;
@@ -263,53 +263,54 @@ export class SensorController {
     
         const { alpha = 0, beta = 0, gamma = 0 } = event;
     
-        // Convert Euler angles to radians and use ZXY rotation order
-        const euler = new Euler(
-            MathUtils.degToRad(beta),  // X-axis (beta)
-            MathUtils.degToRad(gamma), // Y-axis (gamma)
-            MathUtils.degToRad(alpha), // Z-axis (alpha)
-            'ZXY'                      // DeviceOrientationEvent alignment
-        );
+        // Convert Euler angles (alpha, beta, gamma) to radians
+        const yaw = MathUtils.degToRad(alpha);  // Z-axis rotation
+        const pitch = MathUtils.degToRad(beta); // X-axis rotation
+        const roll = MathUtils.degToRad(gamma); // Y-axis rotation
     
-        // Compute the new quaternion from Euler angles
-        const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
+        // Create incremental quaternion rotation
+        const rotation = new Quaternion()
+            .setFromEuler(new Euler(pitch, yaw, roll, 'ZXY'))
+            .normalize();
     
-        // Use spherical linear interpolation (slerp) to maintain continuity
-        this.currentQuaternion.slerp(newQuaternion, 0.5); // Adjust factor (0.5) for smoothness
+        // Apply the rotation to the orientation vectors
+        const forward = new THREE.Vector3(0, 0, -1); // Default forward vector
+        const up = new THREE.Vector3(0, 1, 0);       // Default up vector
     
-        // Convert interpolated quaternion back to Euler angles
-        const interpolatedEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY');
+        forward.applyQuaternion(rotation).normalize();
+        up.applyQuaternion(rotation).normalize();
     
-        const yaw = interpolatedEuler.y;    // Yaw (rotation around Y-axis)
-        const pitch = interpolatedEuler.x;  // Pitch (rotation around X-axis)
-        const roll = interpolatedEuler.z;   // Roll (rotation around Z-axis)
+        // Calculate angles relative to the orientation
+        const xAngle = Math.atan2(forward.y, forward.z); // Rotation around X-axis
+        const yAngle = Math.asin(forward.x);            // Rotation around Y-axis
+        const zAngle = Math.atan2(up.x, up.z);          // Rotation around Z-axis
     
-        // Normalize angles to [0, 1] range
-        const normalizedYaw = this.mapRange(yaw, -Math.PI, Math.PI, 0, 1);
-        const normalizedPitch = this.mapRange(pitch, -Math.PI / 2, Math.PI / 2, 0, 1);
-        const normalizedRoll = this.mapRange(roll, -Math.PI, Math.PI, 0, 1);
+        // Normalize angles to [0, 1]
+        const normalizedX = this.mapRange(xAngle, -Math.PI, Math.PI, 0, 1);
+        const normalizedY = this.mapRange(yAngle, -Math.PI / 2, Math.PI / 2, 0, 1);
+        const normalizedZ = this.mapRange(zAngle, -Math.PI, Math.PI, 0, 1);
     
-        // Smooth the values and update user parameters
+        // Smooth the values and update parameters
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedYaw, 0.9);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.9);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
     
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedPitch, 0.9);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.9);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
     
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedRoll, 0.9);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.9);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
     
         console.log(
             `[SensorController] Processed Sensor Data -> ` +
-            `X (Yaw): ${this.currentYaw.toFixed(2)}, ` +
-            `Y (Pitch): ${this.currentPitch.toFixed(2)}, ` +
-            `Z (Roll): ${this.currentRoll.toFixed(2)}`
+            `X: ${this.currentYaw.toFixed(2)}, ` +
+            `Y: ${this.currentPitch.toFixed(2)}, ` +
+            `Z: ${this.currentRoll.toFixed(2)}`
         );
     }
     /**
