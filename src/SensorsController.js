@@ -63,7 +63,7 @@ export class SensorController {
         this.boundHandleDeviceOrientation = this.handleDeviceOrientation.bind(this);
         this.boundHandleDeviceMotion = this.handleDeviceMotion.bind(this);
 
-        // Initialize toggles for controlling sensor axes.
+        // Initialize toggles and calibration button
         this.initializeToggles();
         this.initializeCalibrationButton();
 
@@ -80,8 +80,7 @@ export class SensorController {
             console.warn('SensorController: No usable sensors detected.');
         }
 
-        // Initiate calibration
-        this.calibrateDevice();
+        // Do NOT call this.calibrateDevice(); here to prevent automatic calibration
     }
 
     /**
@@ -207,29 +206,49 @@ export class SensorController {
      * Prompts the user to hold the device steady near their body.
      * @private
      */
-    calibrateDevice() {
-        console.log('Starting calibration.');
+    async calibrateDevice() {
+        console.log('SensorController: Starting calibration.');
 
-        // Reset quaternions to identity
-        this.currentQuaternion.identity();
-        this.targetQuaternion.identity();
+        return new Promise((resolve, reject) => {
+            // Reset quaternions to identity
+            this.currentQuaternion.identity();
+            this.targetQuaternion.identity();
 
-        // Read one orientation event to set the initial quaternion
-        const onCalibrate = (event) => {
-            const { alpha = 0, beta = 0, gamma = 0 } = event;
-            this.initialQuaternion = this.eulerToQuaternion(alpha, beta, gamma).normalize();
-            this.currentQuaternion.copy(this.initialQuaternion).normalize();
-            this.targetQuaternion.copy(this.initialQuaternion).normalize();
-            this.calibrated = true;
-            console.log('Calibration done. Initial Quaternion:', this.initialQuaternion);
+            // Read one orientation event to set the initial quaternion
+            const onCalibrate = (event) => {
+                try {
+                    console.log('[SensorController] Calibration event received:', event);
+                    const { alpha = 0, beta = 0, gamma = 0 } = event;
+                    this.initialQuaternion = this.eulerToQuaternion(alpha, beta, gamma).normalize();
+                    console.log('[SensorController] Initial Quaternion:', this.initialQuaternion);
+                    this.currentQuaternion.copy(this.initialQuaternion).normalize();
+                    this.targetQuaternion.copy(this.initialQuaternion).normalize();
+                    this.calibrated = true;
+                    console.log('[SensorController] Calibration completed.');
 
-            window.removeEventListener('deviceorientation', onCalibrate);
+                    window.removeEventListener('deviceorientation', onCalibrate);
 
-            // Start the update loop
-            this.update();
-        };
+                    // Start the update loop
+                    this.update();
 
-        window.addEventListener('deviceorientation', onCalibrate, { once: true });
+                    resolve();
+                } catch (error) {
+                    console.error('SensorController: Error during calibration:', error);
+                    reject(error);
+                }
+            };
+
+            window.addEventListener('deviceorientation', onCalibrate, { once: true });
+
+            // Optionally, set a timeout for calibration to avoid indefinite waiting
+            setTimeout(() => {
+                if (!this.calibrated) {
+                    console.warn('[SensorController] Calibration timed out.');
+                    window.removeEventListener('deviceorientation', onCalibrate);
+                    reject(new Error('Calibration timed out.'));
+                }
+            }, 5000); // 5 seconds timeout
+        });
     }
 
     /**
@@ -252,6 +271,8 @@ export class SensorController {
             return;
         }
 
+        console.log('[SensorController] Processing sensor data:', event);
+
         const { alpha = 0, beta = 0, gamma = 0 } = event;
 
         // Convert Euler angles to a Quaternion
@@ -259,6 +280,8 @@ export class SensorController {
 
         // Compute relative rotation: relativeQuaternion = initialQuaternion.inverse() * currentQuaternion
         const relativeQuaternion = this.initialQuaternion.clone().inverse().multiply(currentQuaternion).normalize();
+
+        console.log('[SensorController] Relative Quaternion:', relativeQuaternion);
 
         // Set target quaternion using SLERP
         this.targetQuaternion.copy(relativeQuaternion);
@@ -283,6 +306,8 @@ export class SensorController {
         const slerpFactor = 0.05; // Adjust for smoother (lower) or faster (higher) transitions
         this.currentQuaternion.slerp(this.targetQuaternion, slerpFactor);
         this.currentQuaternion.normalize(); // Ensure normalization after SLERP
+
+        console.log('[SensorController] SLERP performed. Current Quaternion:', this.currentQuaternion);
 
         // Convert current quaternion back to Euler angles
         const relativeEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY'); // Correct rotation order
@@ -336,6 +361,8 @@ export class SensorController {
         const quaternion = new Quaternion();
         quaternion.setFromEuler(new Euler(_x, _y, _z, 'ZXY')); // Correct rotation order
 
+        console.log(`[SensorController] Converted Euler to Quaternion -> alpha: ${alpha}, beta: ${beta}, gamma: ${gamma} | Quaternion:`, quaternion);
+        
         return quaternion.normalize(); // Ensure the quaternion is normalized
     }
 
@@ -516,7 +543,7 @@ export class SensorController {
             console.warn('SensorController: Calibration button icon element not found.');
             return;
         }
-        console.log('SensorController: LOADING.');
+        console.log('SensorController: LOADING SVG for calibration button.');
 
         const src = calibrationButtonIcon.getAttribute('data-src');
         if (src) {
@@ -533,7 +560,7 @@ export class SensorController {
      */
     fetchAndSetSVG(src, element, isInline = true) {
         if (!isInline) return;
-        console.log('SensorController: Calibration fetchAndSetSVG.');
+        console.log('SensorController: Fetching SVG for calibration button.');
 
         fetch(src)
             .then(response => {
@@ -551,11 +578,12 @@ export class SensorController {
                     svgElement.classList.add('icon-svg');
                     element.innerHTML = ''; // Clear existing content
                     element.appendChild(svgElement); // Insert the SVG
+                    console.log('SensorController: SVG loaded and injected.');
                 } else {
                     console.error(`Invalid SVG content fetched from: ${src}`);
                 }
             })
-            .catch(error => console.error(`Error loading SVG from ${src}:`, error));
+            .catch(error => console.error(`SensorController: Error loading SVG from ${src}:`, error));
     }
 
     /**
@@ -573,7 +601,12 @@ export class SensorController {
         // Attach an event listener for calibration
         calibrationButton.addEventListener('click', () => {
             console.log('SensorController: Calibration button clicked.');
-            this.calibrateDevice();
+            calibrationButton.disabled = true; // Disable button during calibration
+            this.calibrateDevice().then(() => {
+                calibrationButton.disabled = false; // Re-enable button after calibration
+            }).catch(() => {
+                calibrationButton.disabled = false; // Re-enable button if calibration fails
+            });
         });
 
         // Load the SVG dynamically
