@@ -218,6 +218,9 @@ export class SensorController {
         this.currentPitch = 0.5;
         this.currentRoll = 0.5;
 
+        // Provide visual feedback (optional)
+        notifications.show('Calibration in progress. Please hold your device steady.');
+
         // Read one orientation event to set the initial reference
         const onCalibrate = (event) => {
             console.log('[SensorController] Calibration event received:', event);
@@ -231,6 +234,9 @@ export class SensorController {
                 initialBeta: this.initialBeta,
                 initialGamma: this.initialGamma
             });
+
+            // Remove visual feedback
+            notifications.hide();
 
             window.removeEventListener('deviceorientation', onCalibrate);
         };
@@ -263,35 +269,41 @@ export class SensorController {
 
         const { alpha = 0, beta = 0, gamma = 0 } = event;
 
-        // Convert Euler angles to a Quaternion using three.js
+        // Convert Euler angles to a Quaternion using three.js with 'ZXY' rotation order
         const euler = new Euler(
-            MathUtils.degToRad(beta),  // X-axis (beta)
-            MathUtils.degToRad(gamma), // Y-axis (gamma)
-            MathUtils.degToRad(alpha), // Z-axis (alpha)
-            'ZXY'                       // Rotation order to align with DeviceOrientationEvent
+            MathUtils.degToRad(beta),   // X-axis (beta)
+            MathUtils.degToRad(gamma),  // Y-axis (gamma)
+            MathUtils.degToRad(alpha),  // Z-axis (alpha)
+            'ZXY'                        // Rotation order
         );
 
         const quaternion = new Quaternion().setFromEuler(euler).normalize();
         console.log('[SensorController] Converted to Quaternion:', quaternion);
 
-        // Map quaternion components from [-1,1] to [0,1]
-        const normalizedX = this.mapRange(quaternion.x, -1, 1, 0, 1);
-        const normalizedY = this.mapRange(quaternion.y, -1, 1, 0, 1);
-        const normalizedZ = this.mapRange(quaternion.z, -1, 1, 0, 1);
+        // Convert Quaternion back to Euler angles to extract yaw, pitch, roll
+        const extractedEuler = new Euler().setFromQuaternion(quaternion, 'ZXY');
+        const yawRad = extractedEuler.y;    // Yaw corresponds to Y-axis rotation
+        const pitchRad = extractedEuler.x;  // Pitch corresponds to X-axis rotation
+        const rollRad = extractedEuler.z;   // Roll corresponds to Z-axis rotation
+
+        // Normalize the angles to [0, 1]
+        const normalizedYaw = THREE.MathUtils.clamp((yawRad + Math.PI) / (2 * Math.PI), 0, 1);        // Yaw: -π to π mapped to 0 to 1
+        const normalizedPitch = THREE.MathUtils.clamp((pitchRad + Math.PI / 2) / Math.PI, 0, 1);      // Pitch: -π/2 to π/2 mapped to 0 to 1
+        const normalizedRoll = THREE.MathUtils.clamp((rollRad + Math.PI) / (2 * Math.PI), 0, 1);       // Roll: -π to π mapped to 0 to 1
 
         // Apply smoothing
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedYaw, 0.8);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
 
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedPitch, 0.8);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
 
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedRoll, 0.8);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
 
