@@ -44,9 +44,10 @@ export class SensorController {
         this.activeAxes = { x: false, y: false, z: false, distance: false };
         this.throttleUpdate = this.throttle(this.updateParameters.bind(this), 33); // ~30 FPS
 
-        // Quaternion tracking
-        this.currentQuaternion = new Quaternion(); // Represents the current orientation
-        this.targetQuaternion = new Quaternion();  // Represents the desired orientation after sensor update
+        // Current normalized values
+        this.currentYaw = 0.5;   // Normalized [0,1], 0.5 is center
+        this.currentPitch = 0.5; // Normalized [0,1], 0.5 is center
+        this.currentRoll = 0.5;  // Normalized [0,1], 0.5 is center
 
         // Motion tracking
         this.velocityY = 0;
@@ -54,7 +55,6 @@ export class SensorController {
         this.initialAccelerationY = 0;
         this.lastTimestamp = null;
         this.calibrated = false;
-        this.previousAccY = 0; // Initialize previous acceleration Y
 
         // Bind toggle handlers for event listeners.
         this.handleToggleChange = this.handleToggleChange.bind(this);
@@ -80,7 +80,8 @@ export class SensorController {
             console.warn('SensorController: No usable sensors detected.');
         }
 
-        // Do NOT call this.calibrateDevice(); here to prevent automatic calibration
+        // Initiate calibration
+        this.calibrateDevice();
     }
 
     /**
@@ -202,57 +203,42 @@ export class SensorController {
     }
 
     /**
-     * Calibrates the device by setting the initial reference quaternion.
+     * Calibrates the device by setting initial reference points for orientation.
      * Prompts the user to hold the device steady near their body.
      * @private
      */
-    async calibrateDevice() {
+    calibrateDevice() {
         console.log('SensorController: Starting calibration.');
 
-        return new Promise((resolve, reject) => {
-            // Reset quaternions to identity
-            this.currentQuaternion.identity();
-            this.targetQuaternion.identity();
+        // Reset normalized values to center
+        this.currentYaw = 0.5;
+        this.currentPitch = 0.5;
+        this.currentRoll = 0.5;
 
-            // Read one orientation event to set the initial quaternion
-            const onCalibrate = (event) => {
-                try {
-                    console.log('[SensorController] Calibration event received:', event);
-                    const { alpha = 0, beta = 0, gamma = 0 } = event;
-                    this.initialQuaternion = this.eulerToQuaternion(alpha, beta, gamma).normalize();
-                    console.log('[SensorController] Initial Quaternion:', this.initialQuaternion);
-                    this.currentQuaternion.copy(this.initialQuaternion).normalize();
-                    this.targetQuaternion.copy(this.initialQuaternion).normalize();
-                    this.calibrated = true;
-                    console.log('[SensorController] Calibration completed.');
+        // Read one orientation event to set the initial reference
+        const onCalibrate = (event) => {
+            console.log('[SensorController] Calibration event received:', event);
+            const { alpha = 0, beta = 0, gamma = 0 } = event;
+            this.initialAlpha = alpha;
+            this.initialBeta = beta;
+            this.initialGamma = gamma;
+            this.calibrated = true;
+            console.log('SensorController: Calibration completed.', {
+                initialAlpha: this.initialAlpha,
+                initialBeta: this.initialBeta,
+                initialGamma: this.initialGamma
+            });
 
-                    window.removeEventListener('deviceorientation', onCalibrate);
+            window.removeEventListener('deviceorientation', onCalibrate);
+        };
 
-                    // Start the update loop
-                    this.update();
-
-                    resolve();
-                } catch (error) {
-                    console.error('SensorController: Error during calibration:', error);
-                    reject(error);
-                }
-            };
-
-            window.addEventListener('deviceorientation', onCalibrate, { once: true });
-
-            // Optionally, set a timeout for calibration to avoid indefinite waiting
-            setTimeout(() => {
-                if (!this.calibrated) {
-                    console.warn('[SensorController] Calibration timed out.');
-                    window.removeEventListener('deviceorientation', onCalibrate);
-                    reject(new Error('Calibration timed out.'));
-                }
-            }, 5000); // 5 seconds timeout
-        });
+        window.addEventListener('deviceorientation', onCalibrate, { once: true });
     }
 
     /**
-     * Handles `deviceorientation` events from internal sensors.
+     * Handles `deviceorientation` events, maps yaw, pitch, and roll directly to normalized X, Y, Z.
+     * Prevents overshooting and sticks to limits until direction changes.
+     * Skips processing for inactive axes for efficiency.
      * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
      */
     handleDeviceOrientation(event) {
@@ -261,7 +247,8 @@ export class SensorController {
     }
 
     /**
-     * Processes sensor data and sets the target quaternion for SLERP-based interpolation.
+     * Processes sensor data and maps it to normalized x, y, z values using quaternions.
+     * Ensures smooth, continuous mapping without gimbal lock or jumps.
      * @param {Object} event - Sensor data (alpha, beta, gamma).
      * @param {boolean} isExternal - Whether the data is from an external source.
      */
@@ -271,99 +258,46 @@ export class SensorController {
             return;
         }
 
-        console.log('[SensorController] Processing sensor data:', event);
-
         const { alpha = 0, beta = 0, gamma = 0 } = event;
 
-        // Convert Euler angles to a Quaternion
-        const currentQuaternion = this.eulerToQuaternion(alpha, beta, gamma);
-
-        // Compute relative rotation: relativeQuaternion = initialQuaternion.inverse() * currentQuaternion
-        const relativeQuaternion = this.initialQuaternion.clone().inverse().multiply(currentQuaternion).normalize();
-
-        console.log('[SensorController] Relative Quaternion:', relativeQuaternion);
-
-        // Set target quaternion using SLERP
-        this.targetQuaternion.copy(relativeQuaternion);
-
-        console.log(
-            `[SensorController] Set Target Quaternion -> x: ${this.targetQuaternion.x.toFixed(4)}, ` +
-            `y: ${this.targetQuaternion.y.toFixed(4)}, z: ${this.targetQuaternion.z.toFixed(4)}, w: ${this.targetQuaternion.w.toFixed(4)}`
+        // Convert Euler angles to a Quaternion using three.js
+        const euler = new Euler(
+            MathUtils.degToRad(beta),  // X-axis (beta)
+            MathUtils.degToRad(gamma), // Y-axis (gamma)
+            MathUtils.degToRad(alpha), // Z-axis (alpha)
+            'ZXY'                       // Rotation order
         );
-    }
 
-    /**
-     * Continuously updates the current quaternion towards the target quaternion using SLERP.
-     * Converts the interpolated quaternion to Euler angles and maps them to normalized values.
-     */
-    update() {
-        if (!this.calibrated) {
-            console.warn('[SensorController] Update loop initiated before calibration.');
-            return;
-        }
+        const quaternion = new Quaternion().setFromEuler(euler).normalize();
+        console.log('[SensorController] Converted to Quaternion:', quaternion);
 
-        // Perform SLERP with a t-value representing the interpolation factor
-        const slerpFactor = 0.05; // Adjust for smoother (lower) or faster (higher) transitions
-        this.currentQuaternion.slerp(this.targetQuaternion, slerpFactor);
-        this.currentQuaternion.normalize(); // Ensure normalization after SLERP
+        // Map quaternion components from [-1,1] to [0,1]
+        const normalizedX = this.mapRange(quaternion.x, -1, 1, 0, 1);
+        const normalizedY = this.mapRange(quaternion.y, -1, 1, 0, 1);
+        const normalizedZ = this.mapRange(quaternion.z, -1, 1, 0, 1);
 
-        console.log('[SensorController] SLERP performed. Current Quaternion:', this.currentQuaternion);
-
-        // Convert current quaternion back to Euler angles
-        const relativeEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY'); // Correct rotation order
-
-        // Extract yaw, pitch, and roll in radians
-        const yaw = relativeEuler.y;   // Rotation around Y-axis
-        const pitch = relativeEuler.x; // Rotation around X-axis
-        const roll = relativeEuler.z;  // Rotation around Z-axis
-
-        // Map angles from radians to a normalized [0, 1] range
-        const normalizedYaw = this.mapRange(yaw, -Math.PI, Math.PI, 0, 1);
-        const normalizedPitch = this.mapRange(pitch, -Math.PI / 2, Math.PI / 2, 0, 1); // Typically, pitch is limited to [-90°, 90°]
-        const normalizedRoll = this.mapRange(roll, -Math.PI, Math.PI, 0, 1);
-
-        // Update user manager with normalized values
+        // Apply smoothing
         if (this.activeAxes.x) {
-            this.user1Manager.setNormalizedValue('x', normalizedYaw);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
+            this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
 
         if (this.activeAxes.y) {
-            this.user1Manager.setNormalizedValue('y', normalizedPitch);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
+            this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
 
         if (this.activeAxes.z) {
-            this.user1Manager.setNormalizedValue('z', normalizedRoll);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
+            this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
 
         console.log(
-            `[SensorController] Updated Orientation -> ` +
-            `Yaw: ${(yaw * 180 / Math.PI).toFixed(2)}°, ` +
-            `Pitch: ${(pitch * 180 / Math.PI).toFixed(2)}°, ` +
-            `Roll: ${(roll * 180 / Math.PI).toFixed(2)}°`
+            `[SensorController] Processed Sensor Data -> ` +
+            `X: ${this.currentYaw.toFixed(2)}, ` +
+            `Y: ${this.currentPitch.toFixed(2)}, ` +
+            `Z: ${this.currentRoll.toFixed(2)}`
         );
-
-        // Schedule the next update
-        requestAnimationFrame(this.update);
-    }
-
-    /**
-     * Converts Euler angles (Z -> X -> Y) in degrees to a Quaternion.
-     * @param {number} alpha - Rotation around Z axis in degrees.
-     * @param {number} beta - Rotation around X axis in degrees.
-     * @param {number} gamma - Rotation around Y axis in degrees.
-     * @returns {Quaternion} The resulting quaternion.
-     */
-    eulerToQuaternion(alpha, beta, gamma) {
-        const _x = MathUtils.degToRad(beta || 0); // X-axis rotation (beta)
-        const _y = MathUtils.degToRad(gamma || 0); // Y-axis rotation (gamma)
-        const _z = MathUtils.degToRad(alpha || 0); // Z-axis rotation (alpha)
-
-        const quaternion = new Quaternion();
-        quaternion.setFromEuler(new Euler(_x, _y, _z, 'ZXY')); // Correct rotation order
-
-        console.log(`[SensorController] Converted Euler to Quaternion -> alpha: ${alpha}, beta: ${beta}, gamma: ${gamma} | Quaternion:`, quaternion);
-        
-        return quaternion.normalize(); // Ensure the quaternion is normalized
     }
 
     /**
@@ -379,6 +313,12 @@ export class SensorController {
 
     /**
      * mapRange - maps 'val' in [inMin..inMax] to [outMin..outMax].
+     * @param {number} val - The value to map.
+     * @param {number} inMin - The input range minimum.
+     * @param {number} inMax - The input range maximum.
+     * @param {number} outMin - The output range minimum.
+     * @param {number} outMax - The output range maximum.
+     * @returns {number} The mapped value.
      */
     mapRange(val, inMin, inMax, outMin, outMax) {
         return (
@@ -389,32 +329,13 @@ export class SensorController {
     /**
      * smoothValue - applies exponential smoothing factor 'alpha' in range (0..1).
      * Higher alpha => more weight on the old value => smoother, slower to update.
+     * @param {number} oldVal - The previous value.
+     * @param {number} newVal - The new value to incorporate.
+     * @param {number} alpha - The smoothing factor.
+     * @returns {number} The smoothed value.
      */
-    smoothValue(oldVal, newVal, alpha = 0.7) { // Adjusted alpha for better responsiveness
+    smoothValue(oldVal, newVal, alpha = 0.8) {
         return alpha * oldVal + (1 - alpha) * newVal;
-    }
-
-    /**
-     * clampDelta - ensures we don't jump more than 'maxDelta' in one step.
-     */
-    clampDelta(oldVal, newVal, maxDelta = 0.1) {
-        const delta = newVal - oldVal;
-        if (Math.abs(delta) > maxDelta) {
-            return oldVal + Math.sign(delta) * maxDelta;
-        }
-        return newVal;
-    }
-
-    /**
-     * Applies a dead zone near 0 and 1 to prevent jitter.
-     * @param {number} value - Normalized axis value.
-     * @param {number} threshold - Dead zone threshold (default: 0.05).
-     * @returns {number} Adjusted value after applying dead zone.
-     */
-    applyDeadZone(value, threshold = 0.05) {
-        if (Math.abs(value - 1) < threshold) return 1; // Snap to 1
-        if (Math.abs(value - 0) < threshold) return 0; // Snap to 0
-        return value; // Otherwise, return the value unchanged
     }
 
     /**
@@ -476,7 +397,7 @@ export class SensorController {
      */
     updateParameters() {
         try {
-            // Since we're directly mapping normalized values in the update loop,
+            // Since we're directly mapping normalized values in processSensorData,
             // this method can be simplified or removed if not needed.
             // If additional processing is required, implement here.
         } catch (error) {
@@ -602,11 +523,11 @@ export class SensorController {
         calibrationButton.addEventListener('click', () => {
             console.log('SensorController: Calibration button clicked.');
             calibrationButton.disabled = true; // Disable button during calibration
-            this.calibrateDevice().then(() => {
-                calibrationButton.disabled = false; // Re-enable button after calibration
-            }).catch(() => {
-                calibrationButton.disabled = false; // Re-enable button if calibration fails
-            });
+            this.calibrateDevice();
+            // Re-enable the button after a short delay to prevent multiple calibrations
+            setTimeout(() => {
+                calibrationButton.disabled = false;
+            }, 6000); // 6 seconds (adjust based on calibration time)
         });
 
         // Load the SVG dynamically
