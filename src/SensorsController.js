@@ -217,9 +217,9 @@ export class SensorController {
         // Read one orientation event to set the initial quaternion
         const onCalibrate = (event) => {
             const { alpha = 0, beta = 0, gamma = 0 } = event;
-            this.initialQuaternion = this.eulerToQuaternion(alpha, beta, gamma);
-            this.currentQuaternion.copy(this.initialQuaternion);
-            this.targetQuaternion.copy(this.initialQuaternion);
+            this.initialQuaternion = this.eulerToQuaternion(alpha, beta, gamma).normalize();
+            this.currentQuaternion.copy(this.initialQuaternion).normalize();
+            this.targetQuaternion.copy(this.initialQuaternion).normalize();
             this.calibrated = true;
             console.log('Calibration done. Initial Quaternion:', this.initialQuaternion);
 
@@ -237,6 +237,7 @@ export class SensorController {
      * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
      */
     handleDeviceOrientation(event) {
+        console.log('[SensorController] Received deviceorientation event:', event);
         this.processSensorData(event, false);
     }
 
@@ -246,7 +247,10 @@ export class SensorController {
      * @param {boolean} isExternal - Whether the data is from an external source.
      */
     processSensorData(event, isExternal = false) {
-        if (!this.calibrated) return;
+        if (!this.calibrated) {
+            console.warn('[SensorController] Not calibrated yet. Ignoring sensor data.');
+            return;
+        }
 
         const { alpha = 0, beta = 0, gamma = 0 } = event;
 
@@ -270,15 +274,18 @@ export class SensorController {
      * Converts the interpolated quaternion to Euler angles and maps them to normalized values.
      */
     update() {
-        if (!this.calibrated) return;
+        if (!this.calibrated) {
+            console.warn('[SensorController] Update loop initiated before calibration.');
+            return;
+        }
 
         // Perform SLERP with a t-value representing the interpolation factor
-        // t should be between 0 and 1. Adjust speed by changing the factor.
         const slerpFactor = 0.05; // Adjust for smoother (lower) or faster (higher) transitions
         this.currentQuaternion.slerp(this.targetQuaternion, slerpFactor);
+        this.currentQuaternion.normalize(); // Ensure normalization after SLERP
 
         // Convert current quaternion back to Euler angles
-        const relativeEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'YXZ'); // YXZ order
+        const relativeEuler = new Euler().setFromQuaternion(this.currentQuaternion, 'ZXY'); // Correct rotation order
 
         // Extract yaw, pitch, and roll in radians
         const yaw = relativeEuler.y;   // Rotation around Y-axis
@@ -315,19 +322,19 @@ export class SensorController {
     }
 
     /**
-     * Converts Euler angles (Y -> X -> Z) in degrees to a Quaternion.
+     * Converts Euler angles (Z -> X -> Y) in degrees to a Quaternion.
      * @param {number} alpha - Rotation around Z axis in degrees.
      * @param {number} beta - Rotation around X axis in degrees.
      * @param {number} gamma - Rotation around Y axis in degrees.
      * @returns {Quaternion} The resulting quaternion.
      */
     eulerToQuaternion(alpha, beta, gamma) {
-        const _x = MathUtils.degToRad(beta || 0); // Convert beta (X-axis rotation) to radians
-        const _y = MathUtils.degToRad(gamma || 0); // Convert gamma (Y-axis rotation) to radians
-        const _z = MathUtils.degToRad(alpha || 0); // Convert alpha (Z-axis rotation) to radians
+        const _x = MathUtils.degToRad(beta || 0); // X-axis rotation (beta)
+        const _y = MathUtils.degToRad(gamma || 0); // Y-axis rotation (gamma)
+        const _z = MathUtils.degToRad(alpha || 0); // Z-axis rotation (alpha)
 
         const quaternion = new Quaternion();
-        quaternion.setFromEuler(new Euler(_x, _y, _z, 'YXZ')); // YXZ order for device orientation
+        quaternion.setFromEuler(new Euler(_x, _y, _z, 'ZXY')); // Correct rotation order
 
         return quaternion.normalize(); // Ensure the quaternion is normalized
     }
