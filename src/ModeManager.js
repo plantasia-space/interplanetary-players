@@ -123,24 +123,20 @@ ModeManagerInstance.registerMode('SENSORS', {
                 sensorController.setExternalSensorData(data);
             });
 
-            // Check if internal sensors are available
             if (INTERNAL_SENSORS_USABLE && SensorController.isSupported()) {
                 console.log('[ModeManager] Activating internal sensors...');
                 const permissionGranted = await sensorController.requestPermission();
-
                 if (permissionGranted) {
                     await sensorController.activateSensors();
-                    sensorController.switchSensorSource(false); // Use internal sensors
+                    sensorController.switchSensorSource(false); // Internal sensors
                     notifications.showToast('Internal sensors activated.', 'success');
                 } else {
                     console.warn('[ModeManager] Permission denied for internal sensors.');
                     notifications.showToast('Permission denied for internal sensors.', 'error');
                 }
-            } 
-            // Fallback to external sensors if internal are not available
-            else if (EXTERNAL_SENSORS_USABLE) {
+            } else if (!INTERNAL_SENSORS_USABLE && EXTERNAL_SENSORS_USABLE) {
                 console.log('[ModeManager] Switching to external sensors via WebRTC...');
-                sensorController.switchSensorSource(true); // Use external sensors
+                sensorController.switchSensorSource(true); // External sensors
                 if (webRTCManager) {
                     webRTCManager.generateConnectionModal();
                     notifications.showToast('Using external sensors via QR code.', 'info');
@@ -148,53 +144,28 @@ ModeManagerInstance.registerMode('SENSORS', {
                     console.error('[ModeManager] Failed to initialize WebRTCManager.');
                     notifications.showToast('Error initializing WebRTC Manager.', 'error');
                 }
-            } 
-            // No sensors available
-            else {
+            } else {
                 console.warn('[ModeManager] No sensors available.');
-                notifications.showToast(
-                    'No sensors detected. Please connect an external device via QR code.',
-                    'warning'
-                );
+                notifications.showToast('No sensors detected.', 'warning');
             }
 
-            // Show sensor controls on UI
             document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
                 button.style.display = 'block';
             });
 
-            // Save reference to the active sensor controller instance
             ModeManagerInstance.sensorControllerInstance = sensorController;
-
         } else {
             console.error('[ModeManager] user1Manager is not initialized.');
-            notifications.showToast('Sensors cannot be activated because user manager is not available.', 'error');
+            notifications.showToast('Sensors cannot be activated.', 'error');
         }
     },
     onExit: () => {
         console.log('[ModeManager] Exiting SENSORS mode...');
-
-/*         const sensorController = ModeManagerInstance.sensorControllerInstance;
-
-        if (sensorController) {
-            if (INTERNAL_SENSORS_USABLE) {
-                sensorController.stopListening();
-            } else if (EXTERNAL_SENSORS_USABLE) {
-                const webRTCManager = WebRTCManager.getInstance();
-                if (webRTCManager) {
-                    webRTCManager.cleanupConnection(); // Clean up WebRTC resources
-                }
-            }
-            console.log('[ModeManager] Sensors deactivated.');
-        }
-
-        notifications.showToast('Exited Sensors mode.'); */
         document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
             button.style.display = 'none';
         });
     }
 });
-
 ModeManagerInstance.registerMode('COSMIC_LFO', {
     onEnter: () => {
         console.log('[ModeManager] Entered COSMIC_LFO mode.');
