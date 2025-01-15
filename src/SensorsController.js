@@ -268,36 +268,36 @@ export class SensorController {
             MathUtils.degToRad(beta), // X-axis (Pitch)
             MathUtils.degToRad(gamma), // Y-axis (Roll)
             MathUtils.degToRad(alpha), // Z-axis (Yaw)
-            'ZXY' // Rotation order for device orientation
+            'YXZ' // Standard order for this application
         );
         const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
     
-        // Ensure continuity with dot product
+        // Ensure continuity by flipping the quaternion if needed
         if (this.currentQuaternion.dot(newQuaternion) < 0) {
-            newQuaternion.negate(); // Flip the quaternion
+            newQuaternion.negate(); // Flip the quaternion to maintain continuity
         }
     
-        // Interpolate for smooth transition
+        // Smoothly interpolate between quaternions
         this.currentQuaternion.slerp(newQuaternion, 0.5);
     
-        // Map Quaternion components directly to normalized parameters
+        // Map quaternion components to normalized values
         const normalizedX = this.mapRange(this.currentQuaternion.x, -1, 1, 0, 1);
         const normalizedY = this.mapRange(this.currentQuaternion.y, -1, 1, 0, 1);
         const normalizedZ = this.mapRange(this.currentQuaternion.z, -1, 1, 0, 1);
     
-        // Update user manager with smoothed values
+        // Update user parameters
         if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.9);
+            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
             this.user1Manager.setNormalizedValue('x', this.currentYaw);
         }
     
         if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.9);
+            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
             this.user1Manager.setNormalizedValue('y', this.currentPitch);
         }
     
         if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.9);
+            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
             this.user1Manager.setNormalizedValue('z', this.currentRoll);
         }
     
@@ -307,8 +307,7 @@ export class SensorController {
             `Y: ${this.currentPitch.toFixed(2)}, ` +
             `Z: ${this.currentRoll.toFixed(2)}`
         );
-    }
-    
+    }    
     /**
      * Clamps a value from one range to another.
      * @param {number} value - The value to clamp.
