@@ -245,7 +245,7 @@ export class SensorController {
      * @param {DeviceOrientationEvent} event - Orientation event containing `alpha`, `beta`, and `gamma`.
      */
     handleDeviceOrientation(event) {
-        console.log('[SensorController] Received deviceorientation event:', event);
+       // console.log('[SensorController] Received deviceorientation event:', event);
         this.processSensorData(event, false);
     }
 
