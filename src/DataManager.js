@@ -64,26 +64,45 @@ export class DataManager {
             console.error("[DataManager] TRACK_DATA is not available for placeholder configuration.");
             return;
         }
-
+    
         const { track, soundEngine, interplanetaryPlayer } = Constants.TRACK_DATA;
-
-        // Configure placeholders for different sections: monitorInfo, trackInfo, etc.
+    
+        // We'll safely dig into exoplanetData:
+        const exoData = interplanetaryPlayer?.exoplanetData;
+        const currentExo = exoData?.currentExoplanet;
+        const neighbor1 = exoData?.closestNeighbor1;
+        const neighbor2 = exoData?.closestNeighbor2;
+    
+        // Configure placeholders for different sections
         this.placeholderConfig = {
             monitorInfo: {
                 placeholder_1: "Distance:",
                 placeholder_2: "-",
-                placeholder_3: soundEngine?.soundEngineParams?.xParam?.label || "Unknown",
+              
+                // X param
+                placeholder_3: soundEngine?.soundEngineParams?.x?.label+":" || "Unknown",
                 placeholder_4: "-",
-                placeholder_5: soundEngine?.soundEngineParams?.yParam?.label || "Unknown",
+              
+                // Y param
+                placeholder_5: soundEngine?.soundEngineParams?.y?.label+":" || "Unknown",
                 placeholder_6: "-",
-                placeholder_7: soundEngine?.soundEngineParams?.zParam?.label || "Unknown",
+              
+                // Z param
+                placeholder_7: soundEngine?.soundEngineParams?.z?.label+":" || "Unknown",
                 placeholder_8: "-",
-                placeholder_9: "Orbit A",
-                placeholder_10: "-",
-                placeholder_11: "Orbit B",
-                placeholder_12: "-",
-                placeholder_13: "Orbit C",
-                placeholder_14: "-",
+              
+    
+                // Orbit A (current exoplanet)
+                placeholder_9: currentExo?.sciName+":" || "-",
+                placeholder_10: currentExo?.period_earthdays+" earth days" || "-",
+    
+                // Orbit B (closestNeighbor1)
+                placeholder_11: neighbor1?.sciName+":" || "-",
+                placeholder_12: neighbor1?.period_earthdays+" earth days" || "-",
+    
+                // Orbit C (closestNeighbor2)
+                placeholder_13: neighbor2?.sciName+":" || "-",
+                placeholder_14: neighbor2?.period_earthdays+" earth days" || "-",
             },
             trackInfo: {
                 placeholder_1: "Artist:",
@@ -91,7 +110,9 @@ export class DataManager {
                 placeholder_3: "Track name:",
                 placeholder_4: track?.trackName || "Unknown Track",
                 placeholder_5: "Release:",
-                placeholder_6: track?.releaseDate ? new Date(track.releaseDate).toLocaleDateString("en-GB") : "Unknown Date",
+                placeholder_6: track?.releaseDate
+                    ? new Date(track.releaseDate).toLocaleDateString("en-GB")
+                    : "Unknown Date",
                 placeholder_7: "Tags:",
                 placeholder_8: track?.tags || "No Tags",
                 placeholder_9: "Plays count:",
@@ -134,10 +155,9 @@ export class DataManager {
                 placeholder_14: "",
             },
         };
-
+    
         console.log("[DataManager] PlaceholderConfig updated:", this.placeholderConfig);
     }
-
     /**
      * Populates the UI placeholders with the configured data.
      * @public
