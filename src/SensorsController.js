@@ -370,16 +370,13 @@ normalizeAngle(angle) {
       });
   }    
 
-
- debugLog(data) {
-    let lastDebugTime = 0;
-
-  const now = performance.now();
-  // Only log every 500ms
-  if (now - lastDebugTime > 500) {
-    console.debug('[SensorController Debug]', data);
-    lastDebugTime = now;
-  }
+  debugLog(data) {
+    const now = performance.now();
+    // Only log every 500ms
+    if (now - this.lastDebugTime > 500) {
+      console.debug('[SensorController Debug]', JSON.stringify(data, null, 2)); // Beautified JSON string
+      this.lastDebugTime = now;
+    }
 }
 
 
