@@ -60,46 +60,54 @@ export class WebRTCManager {
      * Initializes the WebSocket signaling server connection and handles WebRTC setup.
      */
     initializeSignalingServer() {
+        const clientType = isMobileDevice() ? 'mobile' : 'desktop'; // Determine device type
+    
+        if (isMobileDevice()) {
+            console.log('[WebRTCManager] Mobile device detected. External connection is not needed.');
+            return; // Skip WebRTC initialization on mobile
+        }
+    
         this.ws = new WebSocket('wss://connect.maar.world/ws/');
-
+    
         this.ws.onopen = () => {
             console.log('[WebRTCManager] Connected to WebSocket server.');
-            console.log('[WebRTCManager] Sending registration as desktop client.');
-            this.ws.send(JSON.stringify({ type: 'register', clientType: 'desktop', uniqueId: UNIQUE_ID }));
+            console.log(`[WebRTCManager] Sending registration as ${clientType} client.`);
+            this.ws.send(JSON.stringify({ type: 'register', clientType, uniqueId: UNIQUE_ID }));
         };
-
+    
         this.ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
                 console.log('[WebRTCManager] Message received from server:', message);
-
+    
                 switch (message.type) {
                     case 'registered':
                         console.log(`[WebRTCManager] Registered with server. Client ID: ${message.clientId}`);
                         this.clientId = message.clientId;
-                        // Automatically generate the QR code after registration
-                        //this.generateConnectionModal();
+    
+                        if (clientType === 'desktop') {
+                            this.generateConnectionModal(); // Only generate modal for desktop
+                        }
                         break;
-
-                        case 'mobileConnected':
-                            console.log(`[WebRTCManager] Mobile client connected: ${message.clientId}`);
-                            this.targetClientId = message.clientId;
-                            this.isConnected = true; // Update connection state
-                            this.updateConnectionStatus();
-
-                            notifications.closeModal(); // Close the modal
-                            console.log('[WebRTCManager] Connection modal closed.');
-                            notifications.showToast('Device successfully connected as an external sensor.', 'success');
-                            this.createAndSendOffer(); // Proceed to create WebRTC offer
-                            break;
-                        
-                        case 'mobileDisconnected':
-                            console.warn(`[WebRTCManager] Mobile client disconnected: ${message.clientId}`);
-                            this.cleanupConnection();
-                            this.isConnected = false;
-                            this.updateConnectionStatus();
-                            notifications.showToast('Device disconnected.', 'warning');
-                            break;
+    
+                    case 'mobileConnected':
+                        console.log(`[WebRTCManager] Mobile client connected: ${message.clientId}`);
+                        this.targetClientId = message.clientId;
+                        this.isConnected = true;
+                        this.updateConnectionStatus();
+                        notifications.closeModal();
+                        console.log('[WebRTCManager] Connection modal closed.');
+                        this.createAndSendOffer();
+                        break;
+    
+                    case 'mobileDisconnected':
+                        console.warn(`[WebRTCManager] Mobile client disconnected: ${message.clientId}`);
+                        this.cleanupConnection();
+                        this.isConnected = false;
+                        this.updateConnectionStatus();
+                        notifications.showToast('Device disconnected.', 'warning');
+                        break;
+    
                     case 'answer':
                         console.log('[WebRTCManager] Received SDP Answer from mobile:', message.answer.sdp);
                         if (this.peerConnection) {
@@ -110,7 +118,7 @@ export class WebRTCManager {
                             console.error('[WebRTCManager] PeerConnection not initialized.');
                         }
                         break;
-
+    
                     case 'candidate':
                         console.log('[WebRTCManager] Received ICE Candidate from mobile:', message.candidate);
                         if (this.peerConnection) {
@@ -121,22 +129,19 @@ export class WebRTCManager {
                             console.error('[WebRTCManager] PeerConnection not initialized.');
                         }
                         break;
-
+    
                     case 'pong':
                         console.log('[WebRTCManager] Pong received from mobile:', message.message);
-                        notifications.showToast('Connection confirmed with mobile device.', 'success');
-                        // Reset the ping timeout
                         if (this.pingTimeout) {
                             clearTimeout(this.pingTimeout);
                             this.pingTimeout = null;
                         }
                         break;
-
+    
                     case 'error':
                         console.error(`[WebRTCManager] Server Error: ${message.message}`);
                         break;
-
-
+    
                     default:
                         console.warn('[WebRTCManager] Unknown message type:', message.type);
                 }
@@ -144,12 +149,12 @@ export class WebRTCManager {
                 console.error('[WebRTCManager] Error parsing WebSocket message:', event.data, error);
             }
         };
-
+    
         this.ws.onclose = () => {
             console.warn('[WebRTCManager] WebSocket connection closed. Attempting to reconnect...');
             this.reconnectSignalingServer();
         };
-
+    
         this.ws.onerror = (error) => {
             console.error('[WebRTCManager] WebSocket error:', error);
         };
