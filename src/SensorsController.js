@@ -271,86 +271,104 @@ export class SensorController {
         this.processSensorData(event, false);
     }
 
-    /**
-     * Processes sensor data and maps it to normalized x, y, z values using quaternions.
-     * Ensures smooth, continuous mapping without gimbal lock or jumps.
-     * @param {Object} event - Sensor data (alpha, beta, gamma).
-     * @param {boolean} isExternal - Whether the data is from an external source.
-     */
-    processSensorData(event, isExternal = false) {
-        // 1) Grab the raw angles
-        let alpha = event.alpha ?? 0;
-        let beta  = event.beta  ?? 0;
-        let gamma = event.gamma ?? 0;
-    
-        // 2) If user has calibrated, subtract offsets—otherwise, leave them as-is
-        if (this.calibrated) {
-            alpha -= (this.initialAlpha || 0);
-            beta  -= (this.initialBeta  || 0);
-            gamma -= (this.initialGamma || 0);
-        }
-    
-        // 3) Convert Euler angles to Quaternion
-        const euler = new Euler(
-            MathUtils.degToRad(beta),  // X-axis (Pitch)
-            MathUtils.degToRad(gamma), // Y-axis (Roll)
-            MathUtils.degToRad(alpha), // Z-axis (Yaw)
-            'YXZ'
-        );
-        const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
-    
-        // 4) Check continuity
-        if (this.currentQuaternion.dot(newQuaternion) < 0) {
-            newQuaternion.x *= -1;
-            newQuaternion.y *= -1;
-            newQuaternion.z *= -1;
-            newQuaternion.w *= -1;
-        }
-    
-        // 5) Smoothly interpolate (slerp factor is up to you, e.g. 0.9 = quite fast)
-        this.currentQuaternion.slerp(newQuaternion, 0.9);
-    
-        // 6) Map quaternion components to [0..1]
-        const normalizedX = this.mapRange(this.currentQuaternion.x, -1, 1, 0, 1);
-        const normalizedY = this.mapRange(this.currentQuaternion.y, -1, 1, 0, 1);
-        const normalizedZ = this.mapRange(this.currentQuaternion.z, -1, 1, 0, 1);
-    
-        // 7) Update axes if active
-        if (this.activeAxes.x) {
-            this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
-            this.user1Manager.setNormalizedValue('x', this.currentYaw);
-        }
-        if (this.activeAxes.y) {
-            this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
-            this.user1Manager.setNormalizedValue('y', this.currentPitch);
-        }
-        if (this.activeAxes.z) {
-            this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
-            this.user1Manager.setNormalizedValue('z', this.currentRoll);
-        }
-    
-        debugLog({
-            rawAlpha: event.alpha,
-            rawBeta: event.beta,
-            rawGamma: event.gamma,
-            offsetAlpha: alpha,
-            offsetBeta: beta,
-            offsetGamma: gamma,
-            quaternion: {
-              x: this.currentQuaternion.x.toFixed(3),
-              y: this.currentQuaternion.y.toFixed(3),
-              z: this.currentQuaternion.z.toFixed(3),
-              w: this.currentQuaternion.w.toFixed(3)
-            },
-            normalized: {
-              x: this.currentYaw.toFixed(2),
-              y: this.currentPitch.toFixed(2),
-              z: this.currentRoll.toFixed(2)
-            }
-          });
-        
+/**
+ * Helper to normalize angles to the range [-180, 180).
+ * For example, 361 becomes 1, 359 becomes -1, etc.
+ */
+normalizeAngle(angle) {
+    // Handle NaN or undefined
+    if (typeof angle !== 'number' || isNaN(angle)) {
+      return 0;
     }
-    
+    // Bring angle into 0..360 range
+    let a = (angle + 360) % 360;
+    // Shift anything above 180 into the negative range for continuity
+    if (a > 180) a -= 360;
+    return a;
+  }
+  
+  /**
+   * Processes sensor data and maps it to normalized x, y, z values using quaternions.
+   * Ensures smooth, continuous mapping without gimbal lock or jumps.
+   * @param {Object} event - Sensor data ({ alpha, beta, gamma } in degrees).
+   * @param {boolean} isExternal - Whether the data is from an external source.
+   */
+  processSensorData(event, isExternal = false) {
+      // 1) Grab the raw angles and normalize each to [-180..180)
+      let rawAlpha = this.normalizeAngle(event.alpha ?? 0);
+      let rawBeta  = this.normalizeAngle(event.beta  ?? 0);
+      let rawGamma = this.normalizeAngle(event.gamma ?? 0);
+  
+      // 2) If user has calibrated, subtract offsets—otherwise, leave them as-is
+      //    This effectively re-centers if you have "zero" angles from calibration.
+      if (this.calibrated) {
+          rawAlpha -= (this.initialAlpha || 0);
+          rawBeta  -= (this.initialBeta  || 0);
+          rawGamma -= (this.initialGamma || 0);
+      }
+  
+      // 3) Convert the final angles (in degrees) to radians, then build an Euler
+      //    'YXZ' is common for yaw/pitch/roll, but you can experiment with 'ZXY', 'XYZ', etc.
+      const euler = new Euler(
+          MathUtils.degToRad(rawBeta),  // X-axis (Pitch)
+          MathUtils.degToRad(rawGamma), // Y-axis (Roll)
+          MathUtils.degToRad(rawAlpha), // Z-axis (Yaw)
+          'YXZ'
+      );
+  
+      // 4) Convert Euler -> Quaternion and normalize
+      const newQuaternion = new Quaternion().setFromEuler(euler).normalize();
+  
+      // 5) Check continuity (dot < 0 => flip signs to avoid sudden jumps)
+      if (this.currentQuaternion.dot(newQuaternion) < 0) {
+          newQuaternion.x *= -1;
+          newQuaternion.y *= -1;
+          newQuaternion.z *= -1;
+          newQuaternion.w *= -1;
+      }
+  
+      // 6) Slerp for smooth interpolation. 
+      //    Lower factor (e.g. 0.5) = more smoothing, more lag
+      //    Higher factor (e.g. 0.9) = less lag but risk of abrupt changes if angles jump
+      this.currentQuaternion.slerp(newQuaternion, 0.75);
+  
+      // 7) Map quaternion components to [0..1]
+      //    currentQuaternion.x,y,z in [-1..1] => [0..1]
+      const normalizedX = this.mapRange(this.currentQuaternion.x, -1, 1, 0, 1);
+      const normalizedY = this.mapRange(this.currentQuaternion.y, -1, 1, 0, 1);
+      const normalizedZ = this.mapRange(this.currentQuaternion.z, -1, 1, 0, 1);
+  
+      // 8) Optionally apply exponential smoothing for final normalized values
+      if (this.activeAxes.x) {
+          this.currentYaw = this.smoothValue(this.currentYaw, normalizedX, 0.8);
+          this.user1Manager.setNormalizedValue('x', this.currentYaw);
+      }
+      if (this.activeAxes.y) {
+          this.currentPitch = this.smoothValue(this.currentPitch, normalizedY, 0.8);
+          this.user1Manager.setNormalizedValue('y', this.currentPitch);
+      }
+      if (this.activeAxes.z) {
+          this.currentRoll = this.smoothValue(this.currentRoll, normalizedZ, 0.8);
+          this.user1Manager.setNormalizedValue('z', this.currentRoll);
+      }
+  
+      // 9) Throttled debug log (not every frame)
+      this.debugLog({
+          rawAngles: { alpha: event.alpha, beta: event.beta, gamma: event.gamma },
+          normalizedAngles: { rawAlpha, rawBeta, rawGamma },
+          quaternion: {
+            x: this.currentQuaternion.x.toFixed(3),
+            y: this.currentQuaternion.y.toFixed(3),
+            z: this.currentQuaternion.z.toFixed(3),
+            w: this.currentQuaternion.w.toFixed(3)
+          },
+          finalNormalized: {
+            x: this.currentYaw.toFixed(2),
+            y: this.currentPitch.toFixed(2),
+            z: this.currentRoll.toFixed(2)
+          }
+      });
+  }    
 
 
  debugLog(data) {
