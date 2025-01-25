@@ -44,7 +44,7 @@
   background-color: #000000;
   border: solid 1px #000000;
   box-shadow: 1px 1px 2px ##a5a5a5;
-  font-family: orbit;
+  font-family: 'Orbit', sans-serif;
   font-size: 11px;
   line-height:1.7em;
   text-align:center;
@@ -1840,217 +1840,221 @@ try {
  * - ARIA attributes for accessibility and keyboard interaction.
  * - Customizable visuals with hexagon or circle shapes depending on type.
  */
-  try {
-    // Helper function to draw a hexagon
-    function drawHexagon(ctx, x, y, radius, fillStyle, strokeStyle) {
-      const sides = 6;
-      const angleStep = (2 * Math.PI) / sides;
-      ctx.beginPath();
-      for (let i = 0; i <= sides; i++) {
-        const angle = i * angleStep - Math.PI / 2; // Start from the top
-        const px = x + radius * Math.cos(angle);
-        const py = y + radius * Math.sin(angle);
-        if (i === 0) {
-          ctx.moveTo(px, py);
-        } else {
-          ctx.lineTo(px, py);
-        }
+try {
+  // Helper functions
+  function drawHexagon(ctx, x, y, radius, fillStyle, strokeStyle) {
+    const sides = 6;
+    const angleStep = (2 * Math.PI) / sides;
+    ctx.beginPath();
+    for (let i = 0; i <= sides; i++) {
+      const angle = i * angleStep - Math.PI / 2; // Start from the top
+      const px = x + radius * Math.cos(angle);
+      const py = y + radius * Math.sin(angle);
+      if (i === 0) {
+        ctx.moveTo(px, py);
+      } else {
+        ctx.lineTo(px, py);
       }
-      ctx.fillStyle = fillStyle;
-      ctx.fill();
-      ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = 1;
-      ctx.stroke();
     }
-    function drawSquare(ctx, x, y, size, fillStyle, strokeStyle) {
-      const half = size / 2;
-      ctx.beginPath();
-      ctx.rect(x - half, y - half, size, size);
-      ctx.fillStyle = fillStyle;
-      ctx.fill();
-      ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-    customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
-      constructor() {
-        super();
-  
-        // Bind methods
-        this.pointerdown = this.pointerdown.bind(this);
-        this.keydown = this.keydown.bind(this);
-         this.wheel = this.wheel.bind(this);
-         this.redraw = this.redraw.bind(this);
-         this.handleParamChange = this.handleParamChange.bind(this);
-         this.kickVisualActive = false; // New visual-only flag
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
 
-        // Initialize properties for ResizeObserver
-        this.resizeObserver = null;
-  
-        // Initialize group management
-        if (!window.webaudioSwitchGroups) {
-          window.webaudioSwitchGroups = {};
+  function drawSquare(ctx, x, y, size, fillStyle, strokeStyle) {
+    const half = size / 2;
+    ctx.beginPath();
+    ctx.rect(x - half, y - half, size, size);
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
+    constructor() {
+      super();
+
+      // Bind methods
+      this.pointerdown = this.pointerdown.bind(this);
+      this.keydown = this.keydown.bind(this);
+      this.wheel = this.wheel.bind(this);
+      this.redraw = this.redraw.bind(this);
+      this.handleParamChange = this.handleParamChange.bind(this);
+      this.kickVisualActive = false; // New visual-only flag
+
+      // Initialize properties for ResizeObserver
+      this.resizeObserver = null;
+
+      // Initialize group management
+      if (!window.webaudioSwitchGroups) {
+        window.webaudioSwitchGroups = {};
+      }
+    }
+
+    connectedCallback() {
+      let root;
+      if (this.attachShadow) {
+        root = this.attachShadow({ mode: 'open' });
+      } else {
+        root = this;
+      }
+
+      // Define HTML structure with updated CSS
+      root.innerHTML = `
+      <style>
+        ${this.basestyle}
+        :host {
+          display: inline-block;
+          position: relative;
+          margin: 0;
+          padding: 0;
+          font-family: sans-serif;
+          font-size: 11px;
+          cursor: pointer;
+          user-select: none;
+          width: 100%;
+          height: 100%;
+        }
+        .webaudio-switch-body {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          touch-action: none;
+        }
+        canvas.webaudio-switch-canvas {
+          display: block;
+          width: 100%;
+          height: 100%;
+          z-index: 1; /* Ensure canvas is below label */
+        }
+        .webaudioctrl-tooltip {
+          position: absolute;
+          top: -25px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.7);
+          color: #fff;
+          padding: 2px 5px;
+          border-radius: 3px;
+          font-size: 10px;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .webaudioctrl-label {
+          position: absolute;
+          pointer-events: none; /* Don't block interaction */
+          font-size: 14px; /* Adjust font size if necessary */
+          color: var(--label-color, #333); /* Dynamic color */
+          font-family: 'Orbit', sans-serif;
+          z-index: 2; /* Ensure it appears above the canvas */
+        }
+        :host(:focus) .webaudio-switch-body {
+          outline: none;
+        }
+      </style>
+      <div class='webaudio-switch-body' tabindex='1'>
+        <canvas class='webaudio-switch-canvas'></canvas>
+        <div class='webaudioctrl-tooltip'></div>
+        <div part="label" class="webaudioctrl-label"><slot></slot></div>
+      </div>
+    `;
+      // Reference elements
+      this.elem = root.querySelector('.webaudio-switch-body');
+      this.canvas = root.querySelector('canvas.webaudio-switch-canvas');
+      this.ctx = this.canvas.getContext('2d');
+      this.ttframe = root.querySelector('.webaudioctrl-tooltip');
+      this.label = root.querySelector('.webaudioctrl-label');
+
+      // Initialize properties
+      this.enable = this.getAttr("enable", 1);
+      this.tracking = this.getAttr("tracking", "rel");
+      this.type = this.getAttribute("type") || "toggle"; // Types: toggle, kick, radio, sequential
+      this.group = this.getAttribute("group") || null; // Group name for radio switches
+      this._colors = this.getAttribute("colors") || "#e00;#333"; // background; stroke/fill
+      this.outline = this.getAttribute("outline") || "2px solid #444";
+      this.setupLabel();
+
+      // Process colors
+      this.coltab = this._colors.split(";").map(color => {
+        color = color.trim();
+        if (color.startsWith("var(") && color.endsWith(")")) {
+          const varName = color.slice(4, -1).trim();
+          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+          return resolvedColor || "#000";
+        }
+        return color;
+      });
+      while (this.coltab.length < 2) this.coltab.push("#000"); // Ensure at least two colors
+
+      // Define 'state' property
+      Object.defineProperty(this, 'state', {
+        get: () => this._state,
+        set: (v) => { this.setState(v, true); }
+      });
+
+      // Register in group if type is radio
+      if (this.type === "radio" && this.group) {
+        if (!window.webaudioSwitchGroups[this.group]) {
+          window.webaudioSwitchGroups[this.group] = [];
+        }
+        window.webaudioSwitchGroups[this.group].push(this);
+        console.log(`Switch ID: ${this.id} registered to group '${this.group}'`);
+      }
+
+      // Global registration
+      window.webaudioSwitches = window.webaudioSwitches || {};
+      if (this.id) {
+        window.webaudioSwitches[this.id] = this;
+        console.log(`Switch ID: ${this.id} registered globally`);
+      }
+
+      // Initialize min, max, step
+      this._min = parseInt(this.getAttribute("min"));
+      this._max = parseInt(this.getAttribute("max"));
+      this._step = parseInt(this.getAttribute("step")) || 1;
+
+      // Validate min and max for sequential type
+      if (this.type === "sequential") {
+        if (isNaN(this._min) || isNaN(this._max)) {
+          console.warn(`webaudio-switch: 'sequential' type requires valid 'min' and 'max' attributes.`);
+          this._min = 1;
+          this._max = 5;
+        }
+        if (this._min >= this._max) {
+          console.warn(`webaudio-switch: 'min' should be less than 'max' for 'sequential' type.`);
+          this._min = 1;
+          this._max = 5;
         }
       }
-  
-      connectedCallback() {
-        let root;
-        if (this.attachShadow) {
-          root = this.attachShadow({ mode: 'open' });
-        } else {
-          root = this;
+
+      // Initialize state
+      let initialState = parseInt(this.getAttribute("state"));
+      if (isNaN(initialState)) {
+        initialState = this.type === "sequential" ? this._min : 0;
+      }
+      if (this.type === "sequential") {
+        if (initialState < this._min || initialState > this._max) {
+          initialState = this._min;
         }
-  
-        // Define HTML structure
-        root.innerHTML = `
-          <style>
-            ${this.basestyle}
-            :host {
-              display: inline-block;
-              position: relative;
-              margin: 0;
-              padding: 0;
-              font-family: sans-serif;
-              font-size: 11px;
-              cursor: pointer;
-              user-select: none;
-              width: 100%;
-              height: 100%;
-            }
-            .webaudio-switch-body {
-              position: relative;
-              width: 100%;
-              height: 100%;
-              touch-action: none;
-            }
-            canvas.webaudio-switch-canvas {
-              display: block;
-              width: 100%;
-              height: 100%;
-            }
-            .webaudioctrl-tooltip {
-              position: absolute;
-              top: -25px;
-              left: 50%;
-              transform: translateX(-50%);
-              background: rgba(0, 0, 0, 0.7);
-              color: #fff;
-              padding: 2px 5px;
-              border-radius: 3px;
-              font-size: 10px;
-              white-space: nowrap;
-              pointer-events: none;
-              opacity: 0;
-              transition: opacity 0.2s;
-            }
-            .webaudioctrl-label {
-              position: absolute;
-              width: 100%;
-              text-align: center;
-              top: 100%;
-              left: 0;
-              transform: translateY(4px);
-            }
-            :host(:focus) .webaudio-switch-body {
-              outline: none;
-            }
-          </style>
-          <div class='webaudio-switch-body' tabindex='1'>
-            <canvas class='webaudio-switch-canvas'></canvas>
-            <div class='webaudioctrl-tooltip'></div>
-            <div part="label" class="webaudioctrl-label"><slot></slot></div>
-          </div>
-        `;
-  
-        // Reference elements
-        this.elem = root.querySelector('.webaudio-switch-body');
-        this.canvas = root.querySelector('canvas.webaudio-switch-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.ttframe = root.querySelector('.webaudioctrl-tooltip');
-        this.label = root.querySelector('.webaudioctrl-label');
-  
-        // Initialize properties
-        this.enable = this.getAttr("enable", 1);
-        this.tracking = this.getAttr("tracking", "rel");
-        this.type = this.getAttribute("type") || "toggle"; // Types: toggle, kick, radio, sequential
-        this.group = this.getAttribute("group") || null; // Group name for radio switches
-        this._colors = this.getAttribute("colors") || "#e00;#333"; // background; stroke/fill
-        this.outline = this.getAttribute("outline") || "2px solid #444";
-        this.setupLabel();
-  
-        // Process colors
-        this.coltab = this._colors.split(";").map(color => {
-          color = color.trim();
-          if (color.startsWith("var(") && color.endsWith(")")) {
-            const varName = color.slice(4, -1).trim();
-            const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-            return resolvedColor || "#000";
-          }
-          return color;
-        });
-        while (this.coltab.length < 2) this.coltab.push("#000"); // Ensure at least two colors
-  
-        // Define 'state' property
-        Object.defineProperty(this, 'state', {
-          get: () => this._state,
-          set: (v) => { this.setState(v, true); }
-        });
-  
-        // Register in group if type is radio
-        if (this.type === "radio" && this.group) {
-          if (!window.webaudioSwitchGroups[this.group]) {
-            window.webaudioSwitchGroups[this.group] = [];
-          }
-          window.webaudioSwitchGroups[this.group].push(this);
-        }
-  
-        // Global registration
-        window.webaudioSwitches = window.webaudioSwitches || {};
-        if (this.id) {
-          window.webaudioSwitches[this.id] = this;
-        }
-  
-        // Initialize min, max, step
-        this._min = parseInt(this.getAttribute("min"));
-        this._max = parseInt(this.getAttribute("max"));
-        this._step = parseInt(this.getAttribute("step")) || 1;
-  
-        // Validate min and max for sequential type
-        if (this.type === "sequential") {
-          if (isNaN(this._min) || isNaN(this._max)) {
-            console.warn(`webaudio-switch: 'sequential' type requires valid 'min' and 'max' attributes.`);
-            this._min = 1;
-            this._max = 5;
-          }
-          if (this._min >= this._max) {
-            console.warn(`webaudio-switch: 'min' should be less than 'max' for 'sequential' type.`);
-            this._min = 1;
-            this._max = 5;
-          }
-        }
-  
-        // Initialize state
-        let initialState = parseInt(this.getAttribute("state"));
-        if (isNaN(initialState)) {
-          initialState = this.type === "sequential" ? this._min : 0;
-        }
-        if (this.type === "sequential") {
-          if (initialState < this._min || initialState > this._max) {
-            initialState = this._min;
-          }
-        }
-        this._state = initialState;
-  
-        // Ensure initial state is within range
-        this.setState(this._state, false);
-  
-        // Initial setup
-        this.setupCanvas();
-        this.redraw();
-  
-            // Parameter Manager Integration
-        this.rootParam = this.getAttr("root-param", null); // New attribute
-        this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
+      }
+      this._state = initialState;
+
+      // Ensure initial state is within range
+      this.setState(this._state, false);
+
+      // Initial setup
+      this.setupCanvas();
+      this.redraw();
+
+      // Parameter Manager Integration
+      this.rootParam = this.getAttr("root-param", null); // New attribute
+      this.isBidirectional = this.getAttr("is-bidirectional", false); // New attribute
 
       // Register with ParameterManager if rootParam is specified
       if (this.rootParam) {
@@ -2058,512 +2062,542 @@ try {
         const priority = getPriority("webaudio-switch");
 
         user1Manager.subscribe(this, this.rootParam, priority);
+        console.log(`Switch ID: ${this.id} subscribed to root parameter '${this.rootParam}'`);
       }
-        // Event listeners
-        this.elem.addEventListener('keydown', this.keydown);
-        this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
-        this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
-        this.elem.addEventListener('wheel', this.wheel, { passive: false });
-  
-        // ResizeObserver for responsive behavior
-        this.resizeObserver = new ResizeObserver(entries => {
-          for (let entry of entries) {
-            this.setupCanvas();
-            this.redraw();
-          }
-        });
-        this.resizeObserver.observe(this);
-        // Add to widget manager
-        if (window.webAudioControlsWidgetManager)
-          window.webAudioControlsWidgetManager.addWidget(this);
-      }
-  
-      disconnectedCallback() {
-        // Remove event listeners
-        this.elem.removeEventListener('keydown', this.keydown);
-        this.elem.removeEventListener('mousedown', this.pointerdown);
-        this.elem.removeEventListener('touchstart', this.pointerdown);
-         this.elem.removeEventListener('wheel', this.wheel, { passive: false });
-   
-        // Unobserve ResizeObserver
-        if (this.resizeObserver) {
-          this.resizeObserver.unobserve(this);
-        }
-  
-        // Additional cleanup
-        if (this.linkedParam) {
-          this.linkedParam.removeEventListener("input", this.handleParamChange);
-        }
-        // Unsubscribe from ParameterManager
-        if (this.rootParam) {
-          user1Manager.unsubscribe(this, this.rootParam);
-        }
-        // Remove from widget manager
-        if (window.webAudioControlsWidgetManager)
-          window.webAudioControlsWidgetManager.removeWidget(this);
-  
-        // Remove from group if radio
-        if (this.type === "radio" && this.group && window.webaudioSwitchGroups[this.group]) {
-          window.webaudioSwitchGroups[this.group] = window.webaudioSwitchGroups[this.group].filter(sw => sw !== this);
-        }
-      }
-  
 
-  
-      setupCanvas() {
-        // Get actual size
-        const rect = this.elem.getBoundingClientRect();
-        this._width = rect.width;
-        this._height = rect.height;
-  
-        // High DPI handling
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = this._width * dpr;
-        this.canvas.height = this._height * dpr;
-        this.ctx.scale(dpr, dpr);
-  
-        // Recalculate colors
-        this.coltab = this._colors.split(";").map(color => {
-          color = color.trim();
-          if (color.startsWith("var(") && color.endsWith(")")) {
-            const varName = color.slice(4, -1).trim();
-            const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-            return resolvedColor || "#000";
-          }
-          return color;
-        });
-        while (this.coltab.length < 2) this.coltab.push("#000");
-  
-        // Recalculate dimensions
-        this.radius = Math.min(this._width, this._height) / 2 * 0.8; // 80% of half the smallest dimension
-        this.centerX = this._width / 2;
-        this.centerY = this._height / 2;
+      // Add a click event listener for debugging
+      this.elem.addEventListener('click', (e) => {
+        console.log(`Switch clicked: ID=${this.id}, Type=${this.type}, Group=${this.group}`);
+      });
+
+      // Event listeners
+      this.elem.addEventListener('keydown', this.keydown);
+      this.elem.addEventListener('mousedown', this.pointerdown, { passive: false });
+      this.elem.addEventListener('touchstart', this.pointerdown, { passive: false });
+      this.elem.addEventListener('wheel', this.wheel, { passive: false });
+
+      // ResizeObserver for responsive behavior
+      this.resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          this.setupCanvas();
+          this.redraw();
+        }
+      });
+      this.resizeObserver.observe(this);
+      console.log(`Switch ID: ${this.id} - ResizeObserver attached`);
+
+      // Add to widget manager
+      if (window.webAudioControlsWidgetManager) {
+        window.webAudioControlsWidgetManager.addWidget(this);
+        console.log(`Switch ID: ${this.id} added to widget manager`);
       }
-  
-      redraw() {
-        // Draw the switch based on the current state and type
-        this.drawSwitch();
-  
-        // Update tooltip if necessary
-        if (this.fireflag) {
-          this.showtip(0);
-          this.fireflag = false;
-        }
-  
-        // Update linked param if exists
-        if (this.linkedParam) {
-          if (parseInt(this.linkedParam.value) !== this._state) {
-            this.updatingFromSwitch = true;
-            this.linkedParam.value = this._state;
-            this.updatingFromSwitch = false;
-          }
-        }
-      }
-  
-      /**
-       * Draws the switch on the canvas based on its type and state.
-       */
-      drawSwitch() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this._width, this._height);
-      
-        if (this.type === 'kick') {
-          // Draw outer hexagon
-          drawHexagon(ctx, this.centerX, this.centerY, this.radius, this.coltab[0], this.coltab[1]);
-        
-          // Draw inner inverted hexagon only if kickVisualActive is true
-          if (this.kickVisualActive) {
-            drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.77, this.coltab[1], this.coltab[0]);
-          }
-        } else if (this.type === 'toggle') {
-          // Draw the main square using the outer colors
-          // Full size of the square: let's use radius*2 so it matches the previous circle dimensions
-          const fullSize = this.radius * 2;
-          drawSquare(ctx, this.centerX, this.centerY, fullSize, this.coltab[0], this.coltab[1]);
-      
-          // If active, draw the inner square
-          if (this.isActive()) {
-            // Smaller inner square: let's make it 70% of the full size
-            const innerSize = fullSize * 0.77;
-            // Invert colors: fill with coltab[1], stroke with coltab[0]
-            drawSquare(ctx, this.centerX, this.centerY, innerSize, this.coltab[1], this.coltab[0]);
-          }
-          
-        } else {
-            // Default circle drawing for other types
-            ctx.beginPath();
-            ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = this.coltab[0]; // Background color
-            ctx.fill();
-            ctx.strokeStyle = this.coltab[1]; // Stroke color
-            ctx.lineWidth = 2;
-            ctx.stroke();
-    
-            // For active state, fill a smaller circle
-            if (this.isActive()) {
-                ctx.beginPath();
-                ctx.arc(this.centerX, this.centerY, this.radius * 0.8, 0, Math.PI * 2);
-                ctx.fillStyle = this.coltab[1]; // Fill color
-                ctx.fill();
-            }
-        }
-    
-        // Add any additional indicators if needed
-        this.drawModeIndicator();
     }
-  
-      /**
-       * Draws additional indicators based on the current type and state.
-       */
-      drawModeIndicator() {
-        const ctx = this.ctx;
-  
-        // Set text styling
-        ctx.fillStyle = '#fff';
-        const fontSize = this.radius * 0.5;
-        ctx.font = `${fontSize}px Orbit`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-  
-        // Display text only for the 'sequential' type
-        let text = '';
-        if (this.type === 'sequential') {
-          text = `${this._state}`; // Display state as text for sequential
+
+    disconnectedCallback() {
+      // Remove event listeners
+      this.elem.removeEventListener('keydown', this.keydown);
+      this.elem.removeEventListener('mousedown', this.pointerdown);
+      this.elem.removeEventListener('touchstart', this.pointerdown);
+      this.elem.removeEventListener('wheel', this.wheel, { passive: false });
+
+      // Remove additional event listeners
+      this.elem.removeEventListener('click', () => {});
+
+      // Unobserve ResizeObserver
+      if (this.resizeObserver) {
+        this.resizeObserver.unobserve(this);
+        console.log(`Switch ID: ${this.id} - ResizeObserver detached`);
+      }
+
+      // Additional cleanup
+      if (this.linkedParam) {
+        this.linkedParam.removeEventListener("input", this.handleParamChange);
+      }
+
+      // Unsubscribe from ParameterManager
+      if (this.rootParam) {
+        user1Manager.unsubscribe(this, this.rootParam);
+        console.log(`Switch ID: ${this.id} unsubscribed from root parameter '${this.rootParam}'`);
+      }
+
+      // Remove from widget manager
+      if (window.webAudioControlsWidgetManager) {
+        window.webAudioControlsWidgetManager.removeWidget(this);
+        console.log(`Switch ID: ${this.id} removed from widget manager`);
+      }
+
+      // Remove from group if radio
+      if (this.type === "radio" && this.group && window.webaudioSwitchGroups[this.group]) {
+        window.webaudioSwitchGroups[this.group] = window.webaudioSwitchGroups[this.group].filter(sw => sw !== this);
+        console.log(`Switch ID: ${this.id} removed from group '${this.group}'`);
+      }
+    }
+
+    setupCanvas() {
+      // Get actual size
+      const rect = this.elem.getBoundingClientRect();
+      this._width = rect.width;
+      this._height = rect.height;
+
+      // High DPI handling
+      const dpr = window.devicePixelRatio || 1;
+      this.canvas.width = this._width * dpr;
+      this.canvas.height = this._height * dpr;
+      this.ctx.scale(dpr, dpr);
+
+      // Recalculate colors
+      this.coltab = this._colors.split(";").map(color => {
+        color = color.trim();
+        if (color.startsWith("var(") && color.endsWith(")")) {
+          const varName = color.slice(4, -1).trim();
+          const resolvedColor = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+          return resolvedColor || "#000";
         }
-  
-        // Draw the text if it's not empty
-        if (text) {
-          ctx.fillText(text, this.centerX, this.centerY);
+        return color;
+      });
+      while (this.coltab.length < 2) this.coltab.push("#000");
+
+      // Recalculate dimensions
+      this.radius = Math.min(this._width, this._height) / 2 * 0.8; // 80% of half the smallest dimension
+      this.centerX = this._width / 2;
+      this.centerY = this._height / 2;
+
+      console.log(`Switch ID: ${this.id} - Canvas setup: width=${this._width}, height=${this._height}, radius=${this.radius}`);
+    }
+
+    redraw() {
+      // Draw the switch based on the current state and type
+      this.drawSwitch();
+
+      // Update tooltip if necessary
+      if (this.fireflag) {
+        this.showtip(0);
+        this.fireflag = false;
+      }
+
+      // Update label color based on state for radio buttons
+      if (this.type === 'radio') {
+        if (this.isActive()) {
+          // When activated, set label color to deactivated background color (coltab[0])
+          this.style.setProperty('--label-color', this.coltab[0]);
+        } else {
+          // When deactivated, set label color to stroke color (coltab[1])
+          this.style.setProperty('--label-color', this.coltab[1]);
         }
       }
-  
-      /**
-       * Determines if the switch is active based on the type and state.
-       * @returns {boolean}
-       */
-      isActive() {
-        switch (this.type) {
-          case 'toggle':
-            return this._state === 1;
-          case 'kick':
-            return this._state === 1;
-          case 'radio':
-            return this._state > 0;
-          case 'sequential':
-            return this._state > this._min;
-          default:
-            return this._state === 1;
+
+      // Update linked param if exists
+      if (this.linkedParam) {
+        if (parseInt(this.linkedParam.value) !== this._state) {
+          this.updatingFromSwitch = true;
+          this.linkedParam.value = this._state;
+          this.updatingFromSwitch = false;
+          console.log(`Switch ID: ${this.id} - Linked parameter updated to ${this._state}`);
         }
       }
-    
-      setValue(v,f){
-        this.value=v;
-        this.checked=(!!v);
-        if(this.value!=this.oldvalue){
-          this.redraw();
-          this.showtip(0);
-          if(f){
-            this.sendEvent("input");
-            this.sendEvent("change");
-          }
-          this.oldvalue=this.value;
+    }
+
+    /**
+     * Draws the switch on the canvas based on its type and state.
+     */
+    drawSwitch() {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this._width, this._height);
+
+      if (this.type === 'kick') {
+        // Draw outer hexagon
+        drawHexagon(ctx, this.centerX, this.centerY, this.radius, this.coltab[0], this.coltab[1]);
+
+        // Draw inner inverted hexagon only if kickVisualActive is true
+        if (this.kickVisualActive) {
+          drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.77, this.coltab[1], this.coltab[0]);
+        }
+      } else if (this.type === 'toggle') {
+        // Draw the main square using the outer colors
+        const fullSize = this.radius * 2;
+        drawSquare(ctx, this.centerX, this.centerY, fullSize, this.coltab[0], this.coltab[1]);
+
+        // If active, draw the inner square
+        if (this.isActive()) {
+          const innerSize = fullSize * 0.77;
+          drawSquare(ctx, this.centerX, this.centerY, innerSize, this.coltab[1], this.coltab[0]);
+        }
+
+        console.log(`Drawing Toggle Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+      } else if (this.type === 'radio') {
+        // Draw the main circle
+        ctx.beginPath();
+        ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.isActive() ? this.coltab[1] : this.coltab[0]; // Fill with stroke color if active
+        ctx.fill();
+        ctx.strokeStyle = this.coltab[1];
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Log active state
+        console.log(`Drawing Radio Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+
+        // Note: Labels are handled by the `.webaudioctrl-label` div and do not need to be drawn on the canvas
+      } else {
+        // Default circle drawing for other types
+        ctx.beginPath();
+        ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.isActive() ? this.coltab[1] : this.coltab[0]; // Background or fill with stroke color
+        ctx.fill();
+        ctx.strokeStyle = this.coltab[1]; // Stroke color
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Log active state
+        console.log(`Drawing Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+
+        // For active state, fill a smaller circle
+        if (this.isActive()) {
+          ctx.beginPath();
+          ctx.arc(this.centerX, this.centerY, this.radius * 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = this.coltab[1]; // Fill color (stroke color)
+          ctx.fill();
         }
       }
-      _setState(v) {
-        // Removed 'sequential' type handling to prevent conflicts
-        v = parseInt(v);
-        let changed = false;
-  
-        if (this.type === 'toggle') {
-          v = v ? 1 : 0;
-          if (v !== this._state) {
-            this._state = v;
-            changed = true;
-          }
-        } else if (this.type === 'radio') {
-          // For radio, v should be 1 (active) or 0 (inactive)
-          v = v ? 1 : 0;
-          if (v !== this._state) {
-            this._state = v;
-            changed = true;
-            if (v === 1 && this.group && window.webaudioSwitchGroups[this.group]) {
-              // Deactivate other switches in the group
-              window.webaudioSwitchGroups[this.group].forEach(sw => {
-                if (sw !== this && sw._state !== 0) {
-                  sw.setState(0, true);
-                }
-              });
-            }
-          }
-        } else if (this.type === 'sequential') {
-          // Removed handling here to prevent conflicts
-          // Sequential type is now fully handled in setState
-        } else if (this.type === 'kick') {
-          if (v !== this._state) {
-            this._state = v;
-            changed = true;
-          }
-        }
-  
-        if (changed) {
-          this.fireflag = true;
-          this.redraw();
-          return true;
-        }
-        return false;
+
+      // Add any additional indicators if needed
+      this.drawModeIndicator();
+    }
+
+    /**
+     * Draws additional indicators based on the current type and state.
+     */
+    drawModeIndicator() {
+      const ctx = this.ctx;
+
+      // Set text styling
+      ctx.fillStyle = '#fff';
+      const fontSize = this.radius * 0.5;
+      ctx.font = `${fontSize}px Arial`; // Changed from 'Orbit' to 'Arial' for compatibility
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Display text only for the 'sequential' type
+      let text = '';
+      if (this.type === 'sequential') {
+        text = `${this._state}`; // Display state as text for sequential
       }
-  
-      setState(v, fire = false) {
-        let normalizedValue;
-    
-        if (this.type === 'sequential') {
-            // For sequential, ensure state wraps correctly based on step
-            let newState = v;
-            if (newState > this._max) {
-                newState = this._min;
-            } else if (newState < this._min) {
-                newState = this._max;
-            }
-    
-            if (newState !== this._state) {
-                this._state = newState;
-                this.fireflag = true;
-                this.redraw();
-    
-                if (fire && this.rootParam) {
-                    normalizedValue = this.normalizeValue(newState, this._min, this._max);
-                    this.updateParameter(normalizedValue, 'sequential');
-                }
-            }
-        } else if (this.type === 'toggle') {
-            // Handle toggle mode
-            const newState = v ? 1 : 0; // 1 for "on", 0 for "off"
-    
-            if (newState !== this._state) {
-                this._state = newState;
-                this.fireflag = true;
-                this.redraw();
-    
-                if (fire && this.rootParam) {
-                    normalizedValue = newState; // Normalized: 0 for off, 1 for on
-                    this.updateParameter(normalizedValue, 'toggle');
-                }
-            }
-        } else if (this.type === 'kick') {
-            // Handle kick mode
-            if (v === 1 && fire) {
-                normalizedValue = 0.5; // Fixed value for kick button
-                if (this.rootParam) {
-                    this.updateParameter(normalizedValue, 'kick');
-                }
-    
-                // Reset state after a delay
-                setTimeout(() => {
-                    this._state = 0; // Reset state to "not pressed"
-                    this.redraw();
-                }, 100); // Adjust delay as needed
-            }
+
+      // Draw the text if it's not empty
+      if (text) {
+        ctx.fillText(text, this.centerX, this.centerY);
+        console.log(`Switch ID: ${this.id} - Mode Indicator: ${text}`);
+      }
+    }
+
+    /**
+     * Determines if the switch is active based on the type and state.
+     * @returns {boolean}
+     */
+    isActive() {
+      switch (this.type) {
+        case 'toggle':
+          return this._state === 1;
+        case 'kick':
+          return this._state === 1;
+        case 'radio':
+          return this._state === 1; // Radio should be active only if _state is 1
+        case 'sequential':
+          return this._state > this._min;
+        default:
+          return this._state === 1;
+      }
+    }
+
+    setValue(v, f) {
+      this.value = v;
+      this.checked = (!!v);
+      if (this.value != this.oldvalue) {
+        this.redraw();
+        this.showtip(0);
+        if (f) {
+          this.sendEvent("input");
+          this.sendEvent("change");
         }
-    
-        // Dispatch input and change events for all modes
-            if (fire) {
-                this.sendEvent('input');
-                this.sendEvent('change');
-            }
+        this.oldvalue = this.value;
+      }
+    }
+
+    _setState(v) {
+      v = parseInt(v);
+      let changed = false;
+
+      console.log(`_setState called for Switch ID: ${this.id}, Current State: ${this._state}, New State: ${v}`);
+
+      if (this.type === 'toggle') {
+        v = v ? 1 : 0;
+        if (v !== this._state) {
+          console.log(`Toggle: State changed from ${this._state} to ${v}`);
+          this._state = v;
+          changed = true;
         }
-        /**
+      } else if (this.type === 'radio') {
+        // Log for debugging radio behavior
+        console.log(`Radio: Processing Switch ID: ${this.id}, Group: ${this.group}, New State: ${v}`);
+        v = v ? 1 : 0;
+        if (v !== this._state) {
+          console.log(`Radio: State changed for ${this.id} from ${this._state} to ${v}`);
+          this._state = v;
+          changed = true;
+
+          if (v === 1 && this.group && window.webaudioSwitchGroups[this.group]) {
+            console.log(`Radio: Deactivating other switches in group: ${this.group}`);
+            window.webaudioSwitchGroups[this.group].forEach(sw => {
+              if (sw !== this) {
+                console.log(`Radio: Turning off Switch ID: ${sw.id}`);
+                sw._setState(0); // Turn off other switches without firing events to prevent infinite loops
+                sw.redraw(); // Ensure other switches are visually updated
+              }
+            });
+          }
+        }
+      } else if (this.type === 'sequential') {
+        // Sequential type logic
+        if (v !== this._state) {
+          console.log(`Sequential: State changed from ${this._state} to ${v}`);
+          this._state = v;
+          changed = true;
+        }
+      } else if (this.type === 'kick') {
+        if (v !== this._state) {
+          console.log(`Kick: State changed from ${this._state} to ${v}`);
+          this._state = v;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        console.log(`Switch ID: ${this.id} - State changed to: ${this._state}`);
+        this.fireflag = true;
+        this.redraw(); // Trigger visual update
+        return true;
+      }
+
+      return false;
+    }
+
+    setState(v, fire = false) {
+      console.log(`setState called for Switch ID: ${this.id}, Type: ${this.type}, New Value: ${v}, Fire: ${fire}`);
+
+      this._setState(v);
+
+      if (fire) {
+        this.sendEvent('input');
+        this.sendEvent('change');
+        console.log(`Dispatching events for Switch ID: ${this.id}`);
+      }
+
+      // Redraw to update the visual state and label color
+      this.redraw();
+    }
+
+    /**
      * Handles parameter updates from ParameterManager.
      * @param {string} parameterName - The name of the parameter that changed.
      * @param {number} newValue - The new value of the parameter.
      */
-        onParameterChanged(parameterName, newValue) {
-          if (this.rootParam === parameterName) {
-            if (this.isBidirectional && this._value !== newValue) {
-              this.setValue(newValue, false); // Avoid triggering another update to ParameterManager
-            }
-          }
+    onParameterChanged(parameterName, newValue) {
+      if (this.rootParam === parameterName) {
+        console.log(`Parameter '${parameterName}' changed to ${newValue} for Switch ID: ${this.id}`);
+        if (this.isBidirectional && this._state !== newValue) {
+          console.log(`Updating Switch ID: ${this.id} state to ${newValue} based on parameter change`);
+          this.setState(newValue, false); // Avoid triggering another update to ParameterManager
         }
-        
-      updateParameter(normalizedValue, mode) {
-        const priority = getPriority(`webaudio-${mode}`);
-        user1Manager.setNormalizedValue(
-            this.rootParam,
-            normalizedValue,
-            this, // Source controller
-            priority
-        );
-  
-      console.debug(`[setState] ${mode} mode: Updated parameter '${this.rootParam}' with normalized value: ${normalizedValue}`);
-  }
-      normalizeValue(value, min, max) {
-        return (value - min) / (max - min);
       }
+    }
 
-      keydown(e) {
-        if (!this.enable) return;
-        switch (this.type) {
-          case 'toggle':
-            if (e.key === "Enter" || e.key === " ") {
-              this.toggleState();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-            break;
-          case 'kick':
-            if (e.key === "Enter" || e.key === " ") {
-              this.triggerKick();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-            break;
-          case 'radio':
-            if (["Enter", " "].includes(e.key)) {
-              this.activateRadio();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-            break;
-          case 'sequential':
-            if (["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft", "Enter", " "].includes(e.key)) {
-              this.cycleState();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-            break;
-          default:
-            if (e.key === "Enter" || e.key === " ") {
-              this.toggleState();
-              e.preventDefault();
-              e.stopPropagation();
-            }
-        }
-      }
-  
-      wheel(e) {
-        if (!this.enable) return;
-        let delta = e.deltaY < 0 ? 1 : -1;
-        if (e.shiftKey) delta *= 5; // Increase sensitivity with shift
-  
-        if (this.type === 'sequential') {
-          this.cycleState(delta);
-        } else if (this.type === 'radio') {
-          // Typically, wheel interactions aren't common for radio buttons,
-          // but you can define behavior if needed.
-          // For example, activate the next switch in the group.
-          if (this.group && window.webaudioSwitchGroups[this.group]) {
-            const group = window.webaudioSwitchGroups[this.group];
-            const currentIndex = group.indexOf(this);
-            let nextIndex = currentIndex + (delta > 0 ? 1 : -1);
-            if (nextIndex >= group.length) nextIndex = 0;
-            if (nextIndex < 0) nextIndex = group.length - 1;
-            group[nextIndex].activateRadio();
-          }
-        }
-        e.preventDefault();
-        e.stopPropagation();
-      }
-  
-      pointerdown(ev) {
-        if (!this.enable) return;
-  
-        // Prevent default to avoid unwanted behaviors
-        ev.preventDefault();
-        ev.stopPropagation();
-  
-        this.elem.focus();
-  
-        // Toggle or trigger based on type
-        switch (this.type) {
-          case 'toggle':
+    updateParameter(normalizedValue, mode) {
+      const priority = getPriority(`webaudio-${mode}`);
+      user1Manager.setNormalizedValue(
+        this.rootParam,
+        normalizedValue,
+        this, // Source controller
+        priority
+      );
+
+      console.debug(`[setState] ${mode} mode: Updated parameter '${this.rootParam}' with normalized value: ${normalizedValue}`);
+    }
+
+    normalizeValue(value, min, max) {
+      return (value - min) / (max - min);
+    }
+
+    keydown(e) {
+      if (!this.enable) return;
+      switch (this.type) {
+        case 'toggle':
+          if (e.key === "Enter" || e.key === " ") {
             this.toggleState();
-            break;
-          case 'kick':
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          break;
+        case 'kick':
+          if (e.key === "Enter" || e.key === " ") {
             this.triggerKick();
-            break;
-          case 'radio':
-            this.activateRadio();
-            break;
-          case 'sequential':
-            this.cycleState();
-            break;
-          default:
-            this.toggleState();
-        }
-      }
-  
-      /**
-       * Toggles the switch state (for toggle type).
-       */
-      toggleState() {
-        const newState = this._state ? 0 : 1;
-        this.setState(newState, true);
-      }
-  
-      /**
-       * Triggers a kick (momentary press).
-       */
-      triggerKick() {
-        // Existing behavior - do not change parameter logic
-        user1Manager.setToMiddle(this.rootParam); // sets param to 0.5 or whatever is needed
-        
-        // Now add the visual effect
-        this.kickVisualActive = true; 
-        this.redraw(); // Redraw to show the inner hexagon
-      
-        // Reset after 100ms (adjust time as needed)
-        setTimeout(() => {
-          this.kickVisualActive = false;
-          this.redraw(); // Redraw to remove the inner hexagon
-        }, 100);
-      }
-  
-      /**
-       * Cycles through states (for sequential type).
-       * Accepts an optional delta to increment/decrement.
-       */
-      cycleState(delta = 1) {
-        let newState = this._state + delta * this._step;
-        if (newState > this._max) {
-          newState = this._min;
-        } else if (newState < this._min) {
-          newState = this._max;
-        }
-        this.setState(newState, true);
-      }
-  
-      /**
-       * Activates the radio switch, ensuring only this switch is active in its group.
-       */
-      activateRadio() {
-        if (this.type !== "radio") return;
-        this.setState(1, true);
-      }
-  
-      // Handle changes from the linked param
-      handleParamChange(e) {
-        if (this.updatingFromSwitch) return; // Prevent circular update
-        const newValue = parseInt(e.target.value);
-        if (!isNaN(newValue) && newValue !== this._state) {
-          this.setState(newValue, false);
-        }
-      }
-  
-      // Update linked param when switch changes
-      updateLinkedParam() {
-        if (this.linkedParam) {
-          if (parseInt(this.linkedParam.value) !== this._state) {
-            // Prevent param's event listener from triggering switch's update again
-            this.updatingFromSwitch = true;
-            this.linkedParam.value = this._state;
-            this.updatingFromSwitch = false;
+            e.preventDefault();
+            e.stopPropagation();
           }
+          break;
+        case 'radio':
+          if (["Enter", " "].includes(e.key)) {
+            this.activateRadio();
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          break;
+        case 'sequential':
+          if (["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft", "Enter", " "].includes(e.key)) {
+            this.cycleState();
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          break;
+        default:
+          if (e.key === "Enter" || e.key === " ") {
+            this.toggleState();
+            e.preventDefault();
+            e.stopPropagation();
+          }
+      }
+    }
+
+    wheel(e) {
+      if (!this.enable) return;
+      let delta = e.deltaY < 0 ? 1 : -1;
+      if (e.shiftKey) delta *= 5; // Increase sensitivity with shift
+
+      if (this.type === 'sequential') {
+        this.cycleState(delta);
+      } else if (this.type === 'radio') {
+        // Typically, wheel interactions aren't common for radio buttons,
+        // but you can define behavior if needed.
+        // For example, activate the next switch in the group.
+        if (this.group && window.webaudioSwitchGroups[this.group]) {
+          const group = window.webaudioSwitchGroups[this.group];
+          const currentIndex = group.indexOf(this);
+          let nextIndex = currentIndex + (delta > 0 ? 1 : -1);
+          if (nextIndex >= group.length) nextIndex = 0;
+          if (nextIndex < 0) nextIndex = group.length - 1;
+          group[nextIndex].activateRadio();
         }
       }
-    });
-  } catch (error) {
-    console.error("webaudio-switch already defined or error in definition:", error);
-  }
-  
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    pointerdown(ev) {
+      if (!this.enable) return;
+
+      // Prevent default to avoid unwanted behaviors
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      this.elem.focus();
+
+      // Toggle or trigger based on type
+      switch (this.type) {
+        case 'toggle':
+          this.toggleState();
+          break;
+        case 'kick':
+          this.triggerKick();
+          break;
+        case 'radio':
+          this.activateRadio();
+          break;
+        case 'sequential':
+          this.cycleState();
+          break;
+        default:
+          this.toggleState();
+      }
+    }
+
+    /**
+     * Toggles the switch state (for toggle type).
+     */
+    toggleState() {
+      console.log(`toggleState called for Switch ID: ${this.id}`);
+      const newState = this._state ? 0 : 1;
+      this.setState(newState, true);
+    }
+
+    /**
+     * Triggers a kick (momentary press).
+     */
+    triggerKick() {
+      console.log(`triggerKick called for Switch ID: ${this.id}`);
+      // Existing behavior - do not change parameter logic
+      user1Manager.setToMiddle(this.rootParam); // sets param to 0.5 or whatever is needed
+
+      // Now add the visual effect
+      this.kickVisualActive = true;
+      this.redraw(); // Redraw to show the inner hexagon
+
+      // Reset after 100ms (adjust time as needed)
+      setTimeout(() => {
+        this.kickVisualActive = false;
+        this.redraw(); // Redraw to remove the inner hexagon
+      }, 100);
+    }
+
+    /**
+     * Cycles through states (for sequential type).
+     * Accepts an optional delta to increment/decrement.
+     */
+    cycleState(delta = 1) {
+      console.log(`cycleState called for Switch ID: ${this.id}, Delta: ${delta}`);
+      let newState = this._state + delta * this._step;
+      if (newState > this._max) {
+        newState = this._min;
+      } else if (newState < this._min) {
+        newState = this._max;
+      }
+      this.setState(newState, true);
+    }
+
+    /**
+     * Activates the radio switch, ensuring only this switch is active in its group.
+     */
+    activateRadio() {
+      console.log(`activateRadio called for Switch ID: ${this.id}`);
+      if (this.type !== "radio") return;
+      this.setState(1, true); // Activate this radio button
+    }
+
+    // Handle changes from the linked param
+    handleParamChange(e) {
+      console.log(`handleParamChange called for Switch ID: ${this.id}`);
+      if (this.updatingFromSwitch) return; // Prevent circular update
+      const newValue = parseInt(e.target.value);
+      if (!isNaN(newValue) && newValue !== this._state) {
+        console.log(`Switch ID: ${this.id} - Updating state to ${newValue} from parameter change`);
+        this.setState(newValue, false);
+      }
+    }
+
+    // Update linked param when switch changes
+    updateLinkedParam() {
+      if (this.linkedParam) {
+        if (parseInt(this.linkedParam.value) !== this._state) {
+          // Prevent param's event listener from triggering switch's update again
+          this.updatingFromSwitch = true;
+          this.linkedParam.value = this._state;
+          this.updatingFromSwitch = false;
+          console.log(`Switch ID: ${this.id} - Linked parameter updated to ${this._state}`);
+        }
+      }
+    }
+  });
+} catch (error) {
+  console.error("webaudio-switch already defined or error in definition:", error);
+}
 /**
  * @class WebAudioParam
  * @memberof 2DGUI

@@ -167,7 +167,7 @@ async function initializeApp() {
  * @param {Object} trackData.soundEngine.soundEngineParams - Parameters for the sound engine.
  */
 function initializeRootParams(parameterManager, trackData) {
-    const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope'];
+    const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope', 'cosmic-radio-xyz'];
 
     // Destructure x, y, z parameters from trackData
     const { x, y, z } = trackData.soundEngine.soundEngineParams;
@@ -189,6 +189,11 @@ function initializeRootParams(parameterManager, trackData) {
             initValue: 0, 
             min: -1, 
             max: 1,
+        },
+        'cosmic-radio-xyz': { 
+            initValue: 0, // Default starting value
+            min: 0, 
+            max: 2,
         },
     };
 
@@ -212,7 +217,7 @@ function initializeRootParams(parameterManager, trackData) {
                         inputTransform, // Input transformation function
                         outputTransform // Output transformation function
                     );
-                    //console.debug(`[initializeRootParams] Added parameter '${paramName}' with transformations.`, config);
+                    console.debug(`[initializeRootParams] Added parameter '${paramName}' with transformations.`, config);
                 } else {
                     // Add parameter without transformation functions, defaulting to linear scale
                     parameterManager.addParameter(
@@ -221,9 +226,8 @@ function initializeRootParams(parameterManager, trackData) {
                         min,
                         max,
                         true // Bidirectional parameter
-                        // inputTransform and outputTransform default to linear if not provided
                     );
-                    //console.debug(`[initializeRootParams] Added parameter '${paramName}' without transformations.`, config);
+                    console.debug(`[initializeRootParams] Added parameter '${paramName}' without transformations.`, config);
                 }
             } else {
                 console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
@@ -233,7 +237,6 @@ function initializeRootParams(parameterManager, trackData) {
         }
     });
 }
-
 // -----------------------------
 // Window Resize Event Listener
 // -----------------------------

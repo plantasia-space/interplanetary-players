@@ -228,53 +228,74 @@
                 </div>
               </div>
 
-              <!-- Main Controls Column (10 columns) -->
-              <div class="col-10">
-                <div class="row">
-                  <!-- Sub-Column 1 -->
-                  <div class="col-4 d-flex flex-column align-items-center">
-                    <!-- Knob -->
-                    <div id="xKnobContainer"></div>
+<!-- Main Controls Column (10 columns) -->
+<div class="col-10">
+  <div class="row">
+    <!-- Sub-Column 1 (X) -->
+    <div class="col-4 d-flex flex-column align-items-center">
+      <!-- Knob -->
+      <div id="xKnobContainer"></div>
 
-                    <!-- Activate Sensors Button -->
-                    <webaudio-switch id="toggleSensorX" data-automatable="true" type="toggle" min="0" max="1" state="0" class="xyz-sensors-toggle" is-bidirectional="true" midilearn="1"
-                    colors="var(--color2);var(--color1);var(--color3)">
-                  </webaudio-switch>
-                    <!-- WebAudio Param -->
-                    <webaudio-param  width="10vmin" height="3.0vmin" fontsize="2.4vmin"   label="x" tooltip="x" root-param="x" is-bidirectional="true"   colors="var(--color1);#0000007d">
-                    </webaudio-param>
-                  </div>
+      <!-- Additional Smaller Switches -->
+      <div class="d-flex flex-column align-items-center">
+        <webaudio-switch id="xCosmic1" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="xCosmic2" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="xCosmic3" data-automatable="true" type="radio" group="radio-xyz" labelpos="center" root-param="cosmic-radio-xyz"   colors="var(--color2);var(--color1);var(--color3)">X</webaudio-switch>
+      </div>
 
-                  <!-- Sub-Column 2 -->
-                  <div class="col-4 d-flex flex-column align-items-center">
-                    <!-- Knob -->
-                    <div id="yKnobContainer"></div>
+      <!-- Activate Sensors Button -->
+      <webaudio-switch id="toggleSensorX" data-automatable="true" type="toggle" min="0" max="1" state="0" class="xyz-sensors-toggle" is-bidirectional="true" midilearn="1" colors="var(--color2);var(--color1);var(--color3)">
+      </webaudio-switch>
+
+      <!-- WebAudio Param -->
+      <webaudio-param width="10vmin" height="3.0vmin" fontsize="2.4vmin" label="x" tooltip="x" root-param="x" is-bidirectional="true" colors="var(--color1);#0000007d">
+      </webaudio-param>
+    </div>
+
+    <!-- Sub-Column 2 (Y) -->
+    <div class="col-4 d-flex flex-column align-items-center">
+      <!-- Knob -->
+      <div id="yKnobContainer"></div>
+
+      <!-- Additional Smaller Switches -->
+      <div class="d-flex flex-column align-items-center">
+        <webaudio-switch id="yCosmic1" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="yCosmic2" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="yCosmic3" data-automatable="true" type="radio" group="radio-xyz" labelpos="center" root-param="cosmic-radio-xyz"   colors="var(--color2);var(--color1);var(--color3)">Y</webaudio-switch>
+      </div>
+
+      <!-- Activate Sensors Button -->
+      <webaudio-switch id="toggleSensorY" data-automatable="true" type="toggle" min="0" max="1" state="0" class="xyz-sensors-toggle" outline="12px solid #444" is-bidirectional="true" midilearn="1" colors="var(--color2);var(--color1);var(--color3)">
+      </webaudio-switch>
+
+      <!-- WebAudio Param -->
+      <webaudio-param width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="y" is-bidirectional="true" colors="var(--color1);#0000007d">
+      </webaudio-param>
+    </div>
+
+    <!-- Sub-Column 3 (Z) -->
+    <div class="col-4 d-flex flex-column align-items-center">
+      <!-- Knob -->
+      <div id="zKnobContainer"></div>
+
+      <!-- Additional Smaller Switches -->
+      <div class="d-flex flex-column align-items-center">
+        <webaudio-switch id="zCosmic1" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="zCosmic2" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="zCosmic3" data-automatable="true" type="radio" group="radio-xyz" labelpos="center" root-param="cosmic-radio-xyz"  colors="var(--color2);var(--color1);var(--color3)">Z</webaudio-switch>
+      </div>
 
 
-                    <!-- Activate Sensors Button -->
-                    <webaudio-switch id="toggleSensorY" data-automatable="true" type="toggle" min="0" max="1" state="0" class="xyz-sensors-toggle" outline="12px solid #444" is-bidirectional="true" midilearn="1"
-                    colors="var(--color2);var(--color1);var(--color3)">
-                  </webaudio-switch>
-                    <!-- WebAudio Param -->
-                    <webaudio-param   width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="y" is-bidirectional="true"  colors="var(--color1);#0000007d">
-                    </webaudio-param>
-                  </div>
+      <!-- Activate Sensors Button -->
+      <webaudio-switch id="toggleSensorZ" data-automatable="true" type="toggle" min="0" max="1" state="0" class="xyz-sensors-toggle" is-bidirectional="true" midilearn="1" colors="var(--color2);var(--color1);var(--color3)">
+      </webaudio-switch>
 
-                  <!-- Sub-Column 3 -->
-                  <div class="col-4 d-flex flex-column align-items-center">
-                    <!-- Knob -->
-                    <div id="zKnobContainer"></div>
-
-                    <!-- Activate Sensors Button -->
-                    <webaudio-switch id="toggleSensorZ" data-automatable="true" type="toggle" min="0" max="1" state="0" class="xyz-sensors-toggle" is-bidirectional="true" midilearn="1"
-                    colors="var(--color2);var(--color1);var(--color3)">
-                  </webaudio-switch>
-                    <!-- WebAudio Param -->
-                    <webaudio-param  width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="z" is-bidirectional="true"  colors="var(--color1);#0000007d">
-                    </webaudio-param>
-                  </div>
-                </div>
-              </div>
+      <!-- WebAudio Param -->
+      <webaudio-param width="10vmin" height="3.0vmin" fontsize="2.4vmin" root-param="z" is-bidirectional="true" colors="var(--color1);#0000007d">
+      </webaudio-param>
+    </div>
+  </div>
+</div>
 
               <!-- Cosmic-LFO Button Column (1 column) -->
               <div class="col-1 d-flex justify-content-center">
