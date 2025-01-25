@@ -71,7 +71,7 @@ export const Constants = {
      * @type {string}
      * @description Default track ID used when none is specified.
      */
-    DEFAULT_TRACK_ID: '6738c0f53af6425d6ef6ba9b',
+    DEFAULT_TRACK_ID: '6729f817cbc71363fd8ce90c',
 
     /** 
      * @type {string|null}
