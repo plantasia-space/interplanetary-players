@@ -2175,15 +2175,13 @@ try {
         this.fireflag = false;
       }
 
-      // Update label color based on state for radio buttons
-      if (this.type === 'radio') {
-        if (this.isActive()) {
-          // When activated, set label color to deactivated background color (coltab[0])
-          this.style.setProperty('--label-color', this.coltab[0]);
-        } else {
-          // When deactivated, set label color to stroke color (coltab[1])
-          this.style.setProperty('--label-color', this.coltab[1]);
-        }
+      // Now apply to all types (toggle, kick, radio, sequential, etc.)
+      if (this.isActive()) {
+        // Use coltab[0] for an "active" label color
+        this.style.setProperty('--label-color', this.coltab[0]);
+      } else {
+        // Use coltab[1] for an "inactive" label color
+        this.style.setProperty('--label-color', this.coltab[1]);
       }
 
       // Update linked param if exists

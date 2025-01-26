@@ -2,7 +2,8 @@
 
 import { MathUtils } from 'three'; // If needed
 import { ModeManagerInstance } from './ModeManager.js'; // If you want to reference the mode manager
-import { notifications } from './AppNotifications.js'; // If you want to show messages
+import notifications from './AppNotifications.js';
+
 // import { EXOPLANET_DATA_SOMEHOW } from './somewhere'; // Example if you need exoplanet info
 
 /**
@@ -77,6 +78,123 @@ export class CosmicLFO {
         // this.periodForC = ...;
 
         console.log('CosmicLFO: Initialized structure.');
+    }
+
+    /**
+     * Creates a waveform-select dropdown HTML string with icons.
+     * @param {string} prefix - e.g., 'a', 'b', 'c' for different dropdowns.
+     * @param {string} selectedWaveform - The default selected waveform (optional).
+     * @returns {string} - The HTML snippet for the waveform-select dropdown.
+     */
+    static createWaveformMenu(prefix, selectedWaveform = 'sine') {
+        // Define waveforms with their respective icons and display names
+        const waveforms = [
+            { name: 'Sine', value: 'sine', icon: '/assets/icons/wf-sine.svg' },
+            { name: 'Square', value: 'square', icon: '/assets/icons/wf-square.svg' },
+            { name: 'UpDown', value: 'updown', icon: '/assets/icons/wf-updown.svg' },
+            { name: 'Up', value: 'up', icon: '/assets/icons/wf-up.svg' },
+            { name: 'Down', value: 'down', icon: '/assets/icons/wf-down.svg' },
+            { name: 'Random', value: 'random', icon: '/assets/icons/wf-random.svg' },
+        ];
+
+        // Find the selected waveform object
+        const selected = waveforms.find(wf => wf.value === selectedWaveform) || waveforms[0];
+
+        return `
+<div class="button-group-container" data-group="${prefix}-waveform-dropdown" style="display: block;">
+  <div class="dropup-center dropup">
+    <!-- Dropdown Toggle Button -->
+    <button
+      class=" lfo-interaction-button dropdown-toggle waveform-dropdown-toggle"
+      type="button"
+      id="${prefix}-waveform-menu-button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+      aria-label="${selected.name}"
+      data-src="${selected.icon}"
+    >
+      <span class="button-icon" data-src="${selected.icon}">
+        <img src="${selected.icon}" alt="${selected.name}" class="button-icon-img" style="width: 16px; height: 16px; margin-right: 8px;">
+      </span>
+    </button>
+
+    <!-- Dropdown Menu -->
+    <ul class="dropdown-menu" aria-labelledby="${prefix}-waveform-menu-button">
+      ${waveforms.map(wf => `
+        <li>
+          <a
+            class="dropdown-item waveform-dropdown-item"
+            href="#"
+            data-midi-controllable="false"
+            id="${prefix}-waveform-${wf.value}"
+            data-value="${wf.value}"
+            data-icon="${wf.icon}"
+          >
+            <img
+              src="${wf.icon}"
+              alt="${wf.value}"
+              class="menu-item-icon"
+              style="width: 16px; height: 16px; margin-right: 8px;"
+            >
+            ${wf.name}
+          </a>
+        </li>
+      `).join('')}
+    </ul>
+  </div>
+</div>
+        `;
+    }
+
+    /**
+     * Creates an exoplanet-select dropdown HTML string.
+     * @param {string} prefix - e.g., 'a', 'b', 'c' for different dropdowns.
+     * @returns {string} - The HTML snippet for the exoplanet-select dropdown.
+     */
+    static createExoplanetMenu(prefix) {
+        // Define exoplanets
+        const exoplanets = [
+            { name: 'Exo A', value: `${prefix}-exo-a` },
+            { name: 'Exo B', value: `${prefix}-exo-b` },
+            { name: 'Exo C', value: `${prefix}-exo-c` },
+        ];
+
+        // Set default exoplanet (first in the list)
+        const defaultExoplanet = exoplanets[0];
+
+        return `
+<div class="button-group-container" data-group="${prefix}-exo-dropdown" style="display: ${prefix === 'a' ? 'block' : 'none'};">
+  <div class="dropup-center dropup">
+    <!-- Dropdown Toggle Button -->
+    <button
+      class=" lfo-interaction-button dropdown-toggle exo-text-button"
+      type="button"
+      id="${prefix}-exo-menu-button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+      aria-label="Exoplanets"
+    >
+      ${defaultExoplanet.name}
+    </button>
+
+    <!-- Dropdown Menu -->
+    <ul class="dropdown-menu" aria-labelledby="${prefix}-exo-menu-button">
+      ${exoplanets.map(exo => `
+        <li>
+          <a
+            class="dropdown-item exo-dropdown-item"
+            href="#"
+            id="${exo.value}"
+            data-value="${exo.value}"
+          >
+            ${exo.name}
+          </a>
+        </li>
+      `).join('')}
+    </ul>
+  </div>
+</div>
+        `;
     }
 
     /**
@@ -156,12 +274,12 @@ export class CosmicLFO {
     }
 
     /**
-     * Called on each frame/tick to compute the LFO output and push it somewhere (e.g. a user param).
+     * Called on each frame/tick to compute the LFO output and push it somewhere (e.g., a user param).
      * Just a skeleton.
      */
     update() {
         // 1) Advance time/phase
-        // e.g. phase += 2 * Math.PI * baseFrequency * (deltaTime? .016?)
+        // e.g., phase += 2 * Math.PI * baseFrequency * (deltaTime? .016?)
         // For skeleton, assume ~1/60 second each tick => 0.016
         const deltaTime = 1 / 60;
         const twoPiFreq = 2.0 * Math.PI * this.baseFrequency;
@@ -174,7 +292,7 @@ export class CosmicLFO {
         const lfoValue = this.calculateLfoValue(this.phase);
 
         // 4) Possibly set it in some user manager param or console log
-        // e.g. user1Manager.setNormalizedValue('cosmic', lfoValue);
+        // e.g., user1Manager.setNormalizedValue('cosmic', lfoValue);
 
         // console.debug('CosmicLFO: LFO Value =', lfoValue.toFixed(3));
     }
@@ -191,7 +309,6 @@ export class CosmicLFO {
                 return Math.sin(phase);
             case 'triangle': {
                 // Normal triangle wave from phase in [0..2pi]
-                // This is just a placeholder approach
                 const modded = phase % (2 * Math.PI);
                 return modded < Math.PI
                     ? (modded / Math.PI) * 2 - 1
@@ -224,5 +341,15 @@ export class CosmicLFO {
     setBaseFrequency(freq) {
         this.baseFrequency = freq;
         console.log(`CosmicLFO: Base frequency set to ${freq} Hz.`);
+    }
+
+    /**
+     * Sets the current exoplanet.
+     * @param {string} exoplanetValue - The value representing the selected exoplanet.
+     */
+    setCurrentExoplanet(exoplanetValue) {
+        this.currentExoplanet = exoplanetValue;
+        console.log(`CosmicLFO: Current exoplanet set to ${exoplanetValue}.`);
+        // Add any additional logic needed when the exoplanet changes
     }
 }

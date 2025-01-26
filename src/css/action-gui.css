@@ -25,7 +25,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    
 
 }
 
@@ -40,26 +41,30 @@
     margin-bottom: 1vh;
 }
 
-.xyz-balance, .xyz-sensors-toggle, .xyz-sensors-toggle{
+.xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle{
     width: 3vmin;
     height: 3vmin;
     margin-bottom: 1vh;
+
 }
 
 .xyz-param {
     width: 6vmin;
     height: 2.4vmin;
     font-size: 1.7vmin;
-    margin-bottom: 1vh;
 }
 
-.transport-button,
-.interaction-button {
+.lfo-interaction-button {
+    width: 10vmin;
+    height: 3vmin;
+
+}
+
+.transport-button, .interaction-button {
     width: 10vmin;
     height: 10vmin;
     margin-right: 3vw !important;
     margin-left: 1vw !important;
-
 }
 
 /* Large screens (lg: ≥992px and <1200px) */
@@ -69,11 +74,15 @@
         height: calc(var(--size-knobs) + 2vmin);
     }
 
-    .xyz-balance, .xyz-sensors-toggle {
+    .xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle {
         width: 5vmin;
         height: 5vmin;
     }
+    .lfo-interaction-button {
+        width: 10vmin;
+        height: 5vmin;
 
+    }
     .xyz-param {
         width: 8vmin;
         height: 3.5vmin;
@@ -81,7 +90,7 @@
     }
 
     .transport-button,
-    .interaction-button {
+     .interaction-button {
         width: 12vmin;
         height: 12vmin;
     }
@@ -94,11 +103,15 @@
         height: calc(var(--size-knobs) + 4vmin);
     }
 
-    .xyz-balance, .xyz-sensors-toggle {
+    .xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle {
         width: 7vmin;
         height: 7vmin;
     }
+    .lfo-interaction-button {
+        width: 10vmin;
+        height: 7vmin;
 
+    }
     .xyz-param {
         width: 10vmin;
         height: 4vmin;
@@ -106,7 +119,7 @@
     }
 
     .transport-button,
-    .interaction-button {
+     .interaction-button {
         width: 12vmin;
         height: 12vmin;
     }
@@ -119,11 +132,15 @@
         height: calc(var(--size-knobs) + 6vmin);
     }
 
-    .xyz-balance, .xyz-sensors-toggle {
+    .xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle {
         width: 9vmin;
         height: 9vmin;
     }
+    .lfo-interaction-button {
+        width: 10vmin;
+        height: 9vmin;
 
+    }
     .xyz-param {
         width: 12vmin;
         height: 5vmin;
@@ -131,7 +148,7 @@
     }
 
     .transport-button,
-    .interaction-button {
+     .interaction-button {
         width: 12vmin;
         height: 12vmin;
 
@@ -211,6 +228,7 @@
   .dropdown,
   .dropup-center {
     pointer-events: auto;
+    
 
   }
   .dropdown-menu,
@@ -220,7 +238,7 @@
   }
   
 /* Interaction Button */
-.interaction-button {
+ .interaction-button {
     /*border: 2px solid var(--color1);  Add stroke */
     border-radius: 8px; /* Slightly rounded corners */
     background-color: transparent;
@@ -230,6 +248,18 @@
     justify-content: center;
     transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
+
+.lfo-interaction-button {
+    border: 2px solid var(--color1); 
+    border-radius: 8px; /* Slightly rounded corners */
+    background-color: transparent;
+    color: var(--color2); /* Dynamic color */
+    transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    margin-bottom: 1vh;
+    padding: .5em; /* Consistent padding */
+
+}
+
 
 /* Hover and Focus State (Pressed but not hovered) */
 .interaction-button:hover,

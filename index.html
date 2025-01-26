@@ -238,9 +238,18 @@
 
       <!-- Additional Smaller Switches -->
       <div class="d-flex flex-column align-items-center">
-        <webaudio-switch id="xCosmic1" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
-        <webaudio-switch id="xCosmic2" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
-        <webaudio-switch id="xCosmic3" data-automatable="true" type="radio" group="radio-xyz" labelpos="center" root-param="cosmic-radio-xyz"   colors="var(--color2);var(--color1);var(--color3)">X</webaudio-switch>
+
+
+
+<!-- Container for Waveform Dropdowns -->
+<div id="my-lfo-controls"></div>
+
+<!-- Container for Exoplanet Dropdowns -->
+<div id="my-exo-controls"></div>
+      
+        <webaudio-switch id="aCosmic3" class="xyz-cosmic-lfo"  data-automatable="true" type="radio" group="radio-xyz" labelpos="center"  root-param="cosmic-radio-xyz"   colors="var(--color2);var(--color1);var(--color3)">X</webaudio-switch>
+  
+      
       </div>
 
       <!-- Activate Sensors Button -->
@@ -259,9 +268,9 @@
 
       <!-- Additional Smaller Switches -->
       <div class="d-flex flex-column align-items-center">
-        <webaudio-switch id="yCosmic1" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
-        <webaudio-switch id="yCosmic2" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
-        <webaudio-switch id="yCosmic3" data-automatable="true" type="radio" group="radio-xyz" labelpos="center" root-param="cosmic-radio-xyz"   colors="var(--color2);var(--color1);var(--color3)">Y</webaudio-switch>
+        <webaudio-switch id="bCosmic1" class="xyz-cosmic-lfo" data-automatable="true" type="kick" min="0" max="1" state="0" labelpos="center"  colors="var(--color2);var(--color1);var(--color3)">x2</webaudio-switch>
+        <webaudio-switch id="bCosmic2" class="xyz-cosmic-lfo" data-automatable="true" type="kick" min="0" max="1" state="0" labelpos="center"  colors="var(--color2);var(--color1);var(--color3)">:2</webaudio-switch>
+        <webaudio-switch id="bCosmic3" class="xyz-cosmic-lfo"  data-automatable="true" type="radio" group="radio-xyz" labelpos="center"  root-param="cosmic-radio-xyz"   colors="var(--color2);var(--color1);var(--color3)">Y</webaudio-switch>
       </div>
 
       <!-- Activate Sensors Button -->
@@ -280,9 +289,9 @@
 
       <!-- Additional Smaller Switches -->
       <div class="d-flex flex-column align-items-center">
-        <webaudio-switch id="zCosmic1" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
-        <webaudio-switch id="zCosmic2" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
-        <webaudio-switch id="zCosmic3" data-automatable="true" type="radio" group="radio-xyz" labelpos="center" root-param="cosmic-radio-xyz"  colors="var(--color2);var(--color1);var(--color3)">Z</webaudio-switch>
+        <webaudio-switch id="cCosmic1" class="xyz-cosmic-lfo" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="cCosmic2" class="xyz-cosmic-lfo" data-automatable="true" type="toggle" min="0" max="1" state="0" colors="var(--color1);#0000007d"></webaudio-switch>
+        <webaudio-switch id="cCosmic3" class="xyz-cosmic-lfo" data-automatable="true" type="radio" group="radio-xyz" labelpos="center"  root-param="cosmic-radio-xyz"  colors="var(--color2);var(--color1);var(--color3)">Z</webaudio-switch>
       </div>
 
 
