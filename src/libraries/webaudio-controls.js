@@ -1821,6 +1821,154 @@ try {
 } catch (error) {
   // Silently handle if the component is already defined or any other errors
 }
+/**
+ * @class WebAudioMonitor
+ * @memberof 2DGUI
+ * @extends WebAudioControlsWidget
+ * @description
+ * Custom HTML element representing a lightweight, non-interactive monitor for WebAudio applications. 
+ * The monitor displays a numeric value with a customizable label, supporting flexible styling and formatting.
+ * 
+ * Features:
+ * - Configurable attributes:
+ *   - `value`: Displays a numeric value, formatted to two decimal places.
+ *   - `label`: Optional text label displayed next to the value.
+ *   - `fontsize`: Adjusts the font size for both the label and the value.
+ *   - `colors`: Semicolon-separated string defining the background and text colors (`background;color`).
+ * - High-DPI support for crisp rendering on modern displays.
+ * - Responsive layout with customizable dimensions using CSS variables (`--monitor-width`, `--monitor-height`).
+ * - Fully accessible:
+ *   - Can display tooltips for additional context.
+ * - Lightweight and ideal for real-time value monitoring in audio applications.
+ * 
+ * Example Usage:
+ * ```html
+ * <webaudio-monitor
+ *   value="42.67"
+ *   label="Frequency"
+ *   fontsize="2vmin"
+ *   colors="#202020;#ffffff">
+ * </webaudio-monitor>
+ * ```
+ * 
+ * Additional Notes:
+ * - This component does not support direct user interaction or input; it is designed purely for display purposes.
+ * - It integrates seamlessly with the WebAudioControls library, providing a consistent visual style.
+ * 
+ * @see WebAudioControlsWidget
+ */
+try {
+  customElements.define(
+    "webaudio-monitor",
+    class WebAudioMonitor extends WebAudioControlsWidget {
+      static get observedAttributes() {
+        return ["value", "label", "fontsize", "colors"];
+      }
+
+      constructor() {
+        super();
+
+        // Shadow DOM setup
+        const root = this.attachShadow({ mode: "open" });
+        root.innerHTML = `
+          <style>
+            :host {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: var(--monitor-width, 10vmin);
+              height: var(--monitor-height, 3vmin);
+              font-size: var(--monitor-fontsize, 2.4vmin);
+              background-color: var(--monitor-bg-color, #0000007d);
+              color: var(--monitor-text-color, #fff);
+              border: 1px solid var(--monitor-border-color, #000);
+              border-radius: 0.5vmin;
+              padding: 0.3vmin;
+              box-sizing: border-box;
+              text-align: center;
+              font-family: Arial, sans-serif;
+            }
+
+            .label {
+              margin-right: 0.5vmin;
+              font-weight: bold;
+            }
+
+            .value {
+              font-variant-numeric: tabular-nums;
+            }
+          </style>
+          <div class="label"></div>
+          <div class="value">0.00</div>
+        `;
+
+        // Element references
+        this.labelEl = root.querySelector(".label");
+        this.valueEl = root.querySelector(".value");
+
+        // Default settings
+        this._value = 0;
+        this._label = "Monitor";
+        this._colors = "#0000007d;#ffffff";
+      }
+
+      // Attribute changes
+      attributeChangedCallback(name, oldValue, newValue) {
+        if (oldValue !== newValue) {
+          switch (name) {
+            case "value":
+              this._value = parseFloat(newValue || "0").toFixed(2);
+              break;
+            case "label":
+              this._label = newValue || "Monitor";
+              break;
+            case "fontsize":
+              this.style.setProperty("--monitor-fontsize", newValue || "2.4vmin");
+              break;
+            case "colors":
+              const [bgColor, textColor] = (newValue || "").split(";");
+              this.style.setProperty("--monitor-bg-color", bgColor || "#0000007d");
+              this.style.setProperty("--monitor-text-color", textColor || "#fff");
+              break;
+          }
+          this.updateContent();
+        }
+      }
+
+      // Update content
+      updateContent() {
+        this.labelEl.textContent = this._label;
+        this.valueEl.textContent = this._value;
+      }
+
+      connectedCallback() {
+        this.updateContent();
+      }
+
+      // Getter and setter for value
+      get value() {
+        return this._value;
+      }
+
+      set value(val) {
+        this._value = parseFloat(val || "0").toFixed(2);
+        this.setAttribute("value", this._value);
+      }
+
+      // Getter and setter for label
+      get label() {
+        return this._label;
+      }
+
+      set label(val) {
+        this._label = val || "Monitor";
+        this.setAttribute("label", this._label);
+      }
+    }
+  );
+} catch (error) {
+  console.log("webaudio-monitor already defined");
+}
 
 
 /**
@@ -2203,25 +2351,29 @@ try {
       ctx.clearRect(0, 0, this._width, this._height);
 
       if (this.type === 'kick') {
-        // Draw outer hexagon
-        drawHexagon(ctx, this.centerX, this.centerY, this.radius, this.coltab[0], this.coltab[1]);
 
-        // Draw inner inverted hexagon only if kickVisualActive is true
-        if (this.kickVisualActive) {
-          drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.77, this.coltab[1], this.coltab[0]);
-        }
-      } else if (this.type === 'toggle') {
         // Draw the main square using the outer colors
         const fullSize = this.radius * 2;
         drawSquare(ctx, this.centerX, this.centerY, fullSize, this.coltab[0], this.coltab[1]);
 
         // If active, draw the inner square
-        if (this.isActive()) {
+        if (this.kickVisualActive) {
           const innerSize = fullSize * 0.77;
           drawSquare(ctx, this.centerX, this.centerY, innerSize, this.coltab[1], this.coltab[0]);
         }
 
         console.log(`Drawing Toggle Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+      } else if (this.type === 'toggle') {
+
+
+        // Draw outer hexagon
+        drawHexagon(ctx, this.centerX, this.centerY, this.radius, this.coltab[0], this.coltab[1]);
+
+        // Draw inner inverted hexagon only if kickVisualActive is true
+        if (this.isActive()) {
+          drawHexagon(ctx, this.centerX, this.centerY, this.radius * 0.77, this.coltab[1], this.coltab[0]);
+        }
+                
       } else if (this.type === 'radio') {
         // Draw the main circle
         ctx.beginPath();
