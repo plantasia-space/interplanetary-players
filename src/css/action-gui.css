@@ -1,6 +1,6 @@
 /* Define size variables for responsiveness */
 :root {
-    --size-knobs: calc(5vmin + 2vmax); 
+    --size-knobs: calc(6vmin + 2vmax); 
     --bs-border-radius: 0.2rem;
 }
 
@@ -41,28 +41,38 @@
     margin-bottom: 1vh;
 }
 
-.xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle{
-    width: 3vmin;
-    height: 3vmin;
+.xyz-balance, .xyz-sensors-toggle{
+    width: 5vmin;
+    height: 5vmin;
     margin-bottom: 1vh;
+    margin-top: 1vh;
 
+}
+
+.lfo-interaction-button, .xyz-cosmic-lfo {
+    width: 8vmin;
+    height: 8vmin;
+    margin: .5vmin;
+}
+
+.freq-multiplier-btn-lfo{
+    width: 5vmin;
+    height: 5vmin;
+    padding: 0%;
+    
 }
 
 .xyz-param {
-    width: 6vmin;
-    height: 2.4vmin;
+    width: 8vmin;
+    height: 2vmin;
     font-size: 1.7vmin;
 }
 
-.lfo-interaction-button {
-    width: 10vmin;
-    height: 3vmin;
 
-}
 
 .transport-button, .interaction-button {
-    width: 10vmin;
-    height: 10vmin;
+    width: 13vmin;
+    height: 13vmin;
     margin-right: 3vw !important;
     margin-left: 1vw !important;
 }
@@ -74,12 +84,12 @@
         height: calc(var(--size-knobs) + 2vmin);
     }
 
-    .xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle {
+    .xyz-balance, .xyz-sensors-toggle {
         width: 5vmin;
         height: 5vmin;
     }
-    .lfo-interaction-button {
-        width: 10vmin;
+    .lfo-interaction-button, .xyz-cosmic-lfo, {
+        width: 8vmin;
         height: 5vmin;
 
     }
@@ -91,37 +101,37 @@
 
     .transport-button,
      .interaction-button {
-        width: 12vmin;
-        height: 12vmin;
+        width: 13vmin;
+        height: 13vmin;
     }
 }
 
 /* Small screens (sm: ≥576px and <992px) */
 @media (max-width: 991.98px) {
     .xyz-knobs {
-        width: calc(var(--size-knobs) + 4vmin);
-        height: calc(var(--size-knobs) + 4vmin);
+        width: calc(var(--size-knobs) + 5vmin);
+        height: calc(var(--size-knobs) + 5vmin);
     }
 
-    .xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle {
-        width: 7vmin;
-        height: 7vmin;
+    .xyz-balance, .xyz-sensors-toggle {
+        width: 8vmin;
+        height: 8vmin;
     }
-    .lfo-interaction-button {
-        width: 10vmin;
-        height: 7vmin;
+    .lfo-interaction-button, .xyz-cosmic-lfo {
+        width: 13vmin;
+        height: 8vmin;
 
     }
     .xyz-param {
-        width: 10vmin;
-        height: 4vmin;
+        width: 13vmin;
+        height: 5vmin;
         font-size: 3vmin;
     }
 
     .transport-button,
      .interaction-button {
-        width: 12vmin;
-        height: 12vmin;
+        width: 13vmin;
+        height: 13vmin;
     }
 }
 
@@ -132,13 +142,13 @@
         height: calc(var(--size-knobs) + 6vmin);
     }
 
-    .xyz-balance, .xyz-cosmic-lfo, .xyz-sensors-toggle {
-        width: 9vmin;
-        height: 9vmin;
+    .xyz-balance, .xyz-sensors-toggle {
+        width: 8vmin;
+        height: 8vmin;
     }
-    .lfo-interaction-button {
-        width: 10vmin;
-        height: 9vmin;
+    .lfo-interaction-button, .xyz-cosmic-lfo {
+        width: 13vmin;
+        height: 8vmin;
 
     }
     .xyz-param {
@@ -149,8 +159,8 @@
 
     .transport-button,
      .interaction-button {
-        width: 12vmin;
-        height: 12vmin;
+        width: 13vmin;
+        height: 13vmin;
 
     }
 }
@@ -250,14 +260,19 @@
 }
 
 .lfo-interaction-button {
-    border: 2px solid var(--color1); 
+/*     border: 1px solid var(--color1); 
     border-radius: 8px; /* Slightly rounded corners */
     background-color: transparent;
-    color: var(--color2); /* Dynamic color */
+    color: var(--color2); /* Dynamic color for stroke */
     transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    margin-bottom: 1vh;
-    padding: .5em; /* Consistent padding */
+    padding: 0.1em; /* Consistent padding */
+}
 
+.lfo-interaction-button svg {
+    fill: none; /* No fill */
+    stroke: currentColor; /* Stroke inherits the color from the parent */
+    stroke-width: 1.5px; /* Adjust stroke width as needed */
+    transition: stroke 0.3s ease; /* Smooth transition for stroke color changes */
 }
 
 
@@ -378,3 +393,5 @@
     height: 24px;
     fill: currentColor;
 }
+
+
