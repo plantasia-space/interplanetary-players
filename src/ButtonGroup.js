@@ -196,6 +196,10 @@ export class ButtonGroup {
         const isMidiLearnAvailable = MIDI_SUPPORTED && this.midiController;
 
         const groupType = this.container.getAttribute('data-group');
+        if (!groupType) {
+            console.warn(`[ButtonGroup] Unknown or missing group type.`);
+            return;
+        }
 
         // Handle MIDI Learn mode if available
         if (isMidiLearnAvailable && this.midiController.isMidiLearnModeActive) {
@@ -231,45 +235,78 @@ export class ButtonGroup {
             case 'interaction-dropdown':
                 this.handleInteractionDropdown(selectedValue);
                 break;
-            case 'more-dropdown': // New case for the More menu
+            case 'more-dropdown': // Case for the More menu
                 this.handleMoreDropdown(selectedValue);
+                break;
+            case 'z-waveform-dropdown':
+            case 'y-waveform-dropdown':
+            case 'x-waveform-dropdown':
+                this.handleWaveformDropdown(groupType, selectedValue);
+                break;
+            case 'z-exo-lfo-dropdown':
+            case 'y-exo-lfo-dropdown':
+            case 'x-exo-lfo-dropdown':
+                this.handleExoplanetDropdown(groupType, selectedValue);
                 break;
             default:
                 console.warn(`[ButtonGroup] Unknown group type: ${groupType}`);
         }
     }
 
-/**
- * Handles selections from the More dropdown menu.
- * @param {string} selectedValue - The selected action.
- * @private
- */
-handleMoreDropdown(selectedValue) {
-    console.log(`[More Dropdown] Selected: ${selectedValue}`);
-
-    switch (selectedValue) {
-        case 'Share':
-            console.log('[More Dropdown] Share option clicked.');
-            notifications.showToast('Sharing functionality is under development!', 'info');
-            break;
-
-        case 'Fullscreen':
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-                console.log('[More Dropdown] Exited fullscreen mode.');
-                notifications.showToast('Exited fullscreen mode.');
-            } else {
-                document.documentElement.requestFullscreen();
-                console.log('[More Dropdown] Entered fullscreen mode.');
-                notifications.showToast('Entered fullscreen mode.');
-            }
-            break;
-
-
-        default:
-            console.warn(`[More Dropdown] Unknown action: ${selectedValue}`);
+    /**
+     * Handles waveform dropdown menu selections.
+     * @param {string} groupType - The type of waveform group (e.g., z-waveform-dropdown).
+     * @param {string} selectedValue - The selected waveform value.
+     * @private
+     */
+    handleWaveformDropdown(groupType, selectedValue) {
+        console.log(`[Waveform Dropdown] Group: ${groupType}, Selected: ${selectedValue}`);
+        // Placeholder for waveform handling logic
+        // TODO: Integrate CosmicLFO or relevant functionality here
     }
-}
+
+    /**
+     * Handles exoplanet dropdown menu selections.
+     * @param {string} groupType - The type of exoplanet group (e.g., z-exo-lfo-dropdown).
+     * @param {string} selectedValue - The selected exoplanet value.
+     * @private
+     */
+    handleExoplanetDropdown(groupType, selectedValue) {
+        console.log(`[Exoplanet Dropdown] Group: ${groupType}, Selected: ${selectedValue}`);
+        // Placeholder for exoplanet handling logic
+        // TODO: Integrate CosmicLFO or relevant functionality here
+    }
+
+    /**
+     * Handles selections from the More dropdown menu.
+     * @param {string} selectedValue - The selected action.
+     * @private
+     */
+    handleMoreDropdown(selectedValue) {
+        console.log(`[More Dropdown] Selected: ${selectedValue}`);
+
+        switch (selectedValue) {
+            case 'Share':
+                console.log('[More Dropdown] Share option clicked.');
+                notifications.showToast('Sharing functionality is under development!', 'info');
+                break;
+
+            case 'Fullscreen':
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                    console.log('[More Dropdown] Exited fullscreen mode.');
+                    notifications.showToast('Exited fullscreen mode.');
+                } else {
+                    document.documentElement.requestFullscreen();
+                    console.log('[More Dropdown] Entered fullscreen mode.');
+                    notifications.showToast('Entered fullscreen mode.');
+                }
+                break;
+
+            default:
+                console.warn(`[More Dropdown] Unknown action: ${selectedValue}`);
+        }
+    }
 
     /**
      * Handles selections from the information dropdown menu.

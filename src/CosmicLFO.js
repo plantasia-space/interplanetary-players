@@ -4,8 +4,6 @@ import { MathUtils } from 'three'; // If needed
 import { ModeManagerInstance } from './ModeManager.js'; // If you want to reference the mode manager
 import notifications from './AppNotifications.js';
 
-// import { EXOPLANET_DATA_SOMEHOW } from './somewhere'; // Example if you need exoplanet info
-
 /**
  * @class CosmicLFO
  * @description A low-frequency oscillator (LFO) that derives its frequency settings from exoplanet data.
@@ -35,166 +33,32 @@ export class CosmicLFO {
         }
 
         // ====== Basic LFO State ======
-        /**
-         * @type {boolean}
-         * @description Indicates if the LFO is currently running.
-         */
         this.isActive = false;
-
-        /**
-         * @type {string}
-         * @description The chosen waveform for the LFO, e.g. "sine", "triangle", "square", "sawup", "sawdown", "random".
-         */
         this.waveform = 'sine';
-
-        /**
-         * @type {number}
-         * @description Base frequency in Hz or some abstract measure. 
-         * Will later be computed from exoplanet data (period_earthdays, etc.).
-         */
         this.baseFrequency = 0.1;
-
-        /**
-         * @type {number}
-         * @description Accumulated phase or time offset for the oscillator.
-         */
         this.phase = 0;
-
-        // If referencing exoplanet data:
         this.currentExoplanet = null;
         this.closestNeighbor1 = null;
         this.closestNeighbor2 = null;
-
-        // ====== Timers or intervals for updates ======
         this.updateIntervalId = null;
-
-        // Additional placeholders for amplitude, offset, advanced configs:
         this.amplitude = 1.0;
         this.offset = 0.0;
-
-        // Possibly placeholders for "fetched from exoplanet data"
-        // this.periodForA = ...;
-        // this.periodForB = ...;
-        // this.periodForC = ...;
 
         console.log('CosmicLFO: Initialized structure.');
     }
 
-    /**
-     * Creates a waveform-select dropdown HTML string with icons.
-     * @param {string} prefix - e.g., 'a', 'b', 'c' for different dropdowns.
-     * @param {string} selectedWaveform - The default selected waveform (optional).
-     * @returns {string} - The HTML snippet for the waveform-select dropdown.
-     */
-    static createWaveformMenu(prefix, selectedWaveform = 'sine') {
-        // Define waveforms with their respective icons and display names
-        const waveforms = [
-            { name: 'Sine', value: 'sine', icon: '/assets/icons/wf-sine.svg' },
-            { name: 'Square', value: 'square', icon: '/assets/icons/wf-square.svg' },
-            { name: 'UpDown', value: 'updown', icon: '/assets/icons/wf-updown.svg' },
-            { name: 'Up', value: 'up', icon: '/assets/icons/wf-up.svg' },
-            { name: 'Down', value: 'down', icon: '/assets/icons/wf-down.svg' },
-            { name: 'Random', value: 'random', icon: '/assets/icons/wf-random.svg' },
-        ];
-
-        // Find the selected waveform object
-        const selected = waveforms.find(wf => wf.value === selectedWaveform) || waveforms[0];
-
-        return `
-<div class="button-group-container" data-group="${prefix}-waveform-dropdown" style="display: block;">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class=" lfo-interaction-button dropdown-toggle waveform-dropdown-toggle"
-      type="button"
-      id="${prefix}-waveform-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="${selected.name}"
-      data-src="${selected.icon}"
-    >
-      <span class="button-icon" data-src="${selected.icon}">
-        <img src="${selected.icon}" alt="${selected.name}" class="button-icon-img" style="width: 16px; height: 16px; margin-right: 8px;">
-      </span>
-    </button>
-
-    <!-- Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="${prefix}-waveform-menu-button">
-      ${waveforms.map(wf => `
-        <li>
-          <a
-            class="dropdown-item waveform-dropdown-item"
-            href="#"
-            data-midi-controllable="false"
-            id="${prefix}-waveform-${wf.value}"
-            data-value="${wf.value}"
-            data-icon="${wf.icon}"
-          >
-            <img
-              src="${wf.icon}"
-              alt="${wf.value}"
-              class="menu-item-icon"
-              style="width: 16px; height: 16px; margin-right: 8px;"
-            >
-            ${wf.name}
-          </a>
-        </li>
-      `).join('')}
-    </ul>
-  </div>
-</div>
-        `;
-    }
 
     /**
-     * Creates an exoplanet-select dropdown HTML string.
-     * @param {string} prefix - e.g., 'a', 'b', 'c' for different dropdowns.
-     * @returns {string} - The HTML snippet for the exoplanet-select dropdown.
+     * Handles selection changes from dropdown menus.
+     * @param {string} type - The dropdown type ('waveform' or 'exo').
+     * @param {string} value - The selected value.
      */
-    static createExoplanetMenu(prefix) {
-        // Define exoplanets
-        const exoplanets = [
-            { name: 'Exo A', value: `${prefix}-exo-a` },
-            { name: 'Exo B', value: `${prefix}-exo-b` },
-            { name: 'Exo C', value: `${prefix}-exo-c` },
-        ];
-
-        // Set default exoplanet (first in the list)
-        const defaultExoplanet = exoplanets[0];
-
-        return `
-<div class="button-group-container" data-group="${prefix}-exo-dropdown" style="display: ${prefix === 'a' ? 'block' : 'none'};">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class=" lfo-interaction-button dropdown-toggle exo-text-button"
-      type="button"
-      id="${prefix}-exo-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Exoplanets"
-    >
-      ${defaultExoplanet.name}
-    </button>
-
-    <!-- Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="${prefix}-exo-menu-button">
-      ${exoplanets.map(exo => `
-        <li>
-          <a
-            class="dropdown-item exo-dropdown-item"
-            href="#"
-            id="${exo.value}"
-            data-value="${exo.value}"
-          >
-            ${exo.name}
-          </a>
-        </li>
-      `).join('')}
-    </ul>
-  </div>
-</div>
-        `;
+    handleSelectionChange(type, value) {
+        if (type === 'waveform') {
+            this.setWaveform(value);
+        } else if (type === 'exo') {
+            this.setCurrentExoplanet(value);
+        }
     }
 
     /**

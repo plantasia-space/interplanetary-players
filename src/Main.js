@@ -1,16 +1,13 @@
-// main.js
-
 /**
  * @file main.js
  * @description Entry point for initializing the Interplanetary Players application.
  * Handles scene setup, parameter management, interactions, and rendering.
  * @version 2.0.0
- * @author 
+ * @author 𝐵𝓇𝓊𝓃𝒶 𝒢𝓊𝒶𝓇𝓃𝒾𝑒𝓇𝒾 
  * @license MIT
  * @date 2024-12-07
  * @memberof CoreModule 
  */
-
 /**
  * @namespace CoreModule
  * @description The **CoreModule** serves as the backbone of the application, organizing and executing foundational logic. 
@@ -48,9 +45,6 @@
 
 // Scene and rendering utilities
 import { initScene, initRenderer, addLights } from './Scene.js';
-
-// CosmicLFO import
-import { CosmicLFO } from './CosmicLFO.js'; 
 
 // Model loader
 import { loadAndDisplayModel } from './Loaders.js';
@@ -109,6 +103,54 @@ const user1Manager = new ParameterManager();
 
 // Flag to control the animation loop
 let animationRunning = false;
+
+// -----------------------------
+// Application Initialization Function
+// -----------------------------
+
+/**
+ * Initializes the application.
+ * Fetches track data, sets up the scene, and configures interactions.
+ * @async
+ * @function initializeApp
+ * @throws Will log an error if initialization fails.
+ * @memberof CoreModule 
+ */
+async function initializeApp() {
+    try {
+        console.log('[APP] Starting application...');
+
+        // Parse URL parameters to get the trackId, defaulting if not present
+        const urlParams = new URLSearchParams(window.location.search);
+        let trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
+
+        // Use DataManager to fetch and configure data for the given trackId
+        await dataManager.fetchAndUpdateConfig(trackId);
+
+        // Retrieve the updated track data from Constants
+        const trackData = Constants.getTrackData(trackId);
+        if (!trackData) {
+            throw new Error('Failed to fetch track data.');
+        }
+
+        // Initialize root parameters based on the fetched track data
+        initializeRootParams(user1Manager, trackData);
+
+        // Apply visual and interactive settings based on track data
+        applyColorsFromTrackData(trackData);
+        updateKnobsFromTrackData(trackData);
+
+        // Setup UI interactions and populate initial placeholders
+        setupInteractions(dataManager, audioPlayer, user1Manager);
+        dataManager.populatePlaceholders('monitorInfo');
+
+        // Load and display the 3D model in the scene
+        await loadAndDisplayModel(scene, trackData);
+        console.log('[APP] Model loaded successfully.');
+    } catch (error) {
+        console.error('[APP] Error during application initialization:', error);
+    }
+}
 
 // -----------------------------
 // Parameter Initialization Function
@@ -195,162 +237,15 @@ function initializeRootParams(parameterManager, trackData) {
         }
     });
 }
-
-// -----------------------------
-// Show/Hide Dropdowns Function
-// -----------------------------
-
-/**
- * Shows the specified dropdown and hides others within the same type.
- * @param {string} type - The type of dropdown ('waveform' or 'exo').
- * @param {string} prefix - The prefix of the dropdown to show ('a', 'b', 'c', etc.).
- */
-function showDropdown(type, prefix) {
-    // Hide all dropdowns of the specified type
-    const allDropdowns = document.querySelectorAll(`[data-group$="-${type}-dropdown"]`);
-    allDropdowns.forEach(el => el.style.display = 'none');
-
-    // Show the selected dropdown
-    const dropdown = document.querySelector(`[data-group="${prefix}-${type}-dropdown"]`);
-    if (dropdown) dropdown.style.display = 'block';
-}
-
-// -----------------------------
-// Attach Exoplanet Dropdown Event Listeners Function
-// -----------------------------
-
-/**
- * Finds all buttons with class="exo-text-button", locates their associated 
- * dropdown menu (via aria-labelledby="theButtonId"), and attaches click 
- * listeners so that selecting a menu item updates the button text and CosmicLFO's waveform.
- */
-function attachExoplanetDropdownListeners() {
-    const exoDropdownButtons = document.querySelectorAll('.exo-text-button');
-
-    exoDropdownButtons.forEach((button) => {
-        const buttonId = button.id;
-
-        // Find the associated dropdown menu
-        const menu = document.querySelector(
-            `.dropdown-menu[aria-labelledby="${buttonId}"]`
-        );
-
-        if (!menu) {
-            console.warn(`No exoplanet dropdown menu found for button #${buttonId}`);
-            return;
-        }
-
-        // Grab all items in that menu
-        const menuItems = menu.querySelectorAll('.exo-dropdown-item');
-
-        menuItems.forEach((item) => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault(); // Prevent link navigation
-
-                // Get the selected text
-                const selectedText = item.textContent.trim();
-
-                // Update the button's text
-                button.textContent = selectedText;
-
-                // Update the CosmicLFO instance with the new exoplanet
-                const cosmicLfo = CosmicLFO.getInstance();
-                cosmicLfo.setCurrentExoplanet(item.getAttribute('data-value'));
-
-                // Optionally, trigger additional actions based on selection
-                // cosmicLfo.handleExoplanetChange(item.getAttribute('data-value'));
-            });
-        });
-    });
-}
-
-/**
- * Attaches event listeners to waveform dropdown buttons.
- */
-function attachWaveformDropdownListeners() {
-    const waveformItems = document.querySelectorAll('.waveform-dropdown-item');
-    waveformItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            const waveformValue = item.getAttribute('data-value');
-            const waveformIcon = item.getAttribute('data-icon');
-            const button = item.closest('.dropdown').querySelector('.dropdown-toggle');
-
-            // Update button content
-            button.innerHTML = `
-                <img src="${waveformIcon}" alt="${waveformValue}" style="width:16px; height:16px; margin-right:8px;">
-                ${item.textContent.trim()}
-            `;
-
-            // Update CosmicLFO
-            const cosmicLfo = CosmicLFO.getInstance();
-            cosmicLfo.setWaveform(waveformValue);
-        });
-    });
-}
-
-// -----------------------------
-// Animation Loop Function
-// -----------------------------
-
-function animate() {
-    controls.update(); // Update camera controls
-    renderer.render(scene, camera); // Render the scene from the perspective of the camera
-    requestAnimationFrame(animate); // Request the next frame
-}
-
-// -----------------------------
-// Application Initialization Function
-// -----------------------------
-
-/**
- * Initializes the application.
- * Fetches track data, sets up the scene, and configures interactions.
- * @async
- * @function initializeApp
- * @throws Will log an error if initialization fails.
- * @memberof CoreModule 
- */
-async function initializeApp() {
-    try {
-        console.log('[APP] Starting application...');
-
-        // Parse URL parameters to get the trackId, defaulting if not present
-        const urlParams = new URLSearchParams(window.location.search);
-        let trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
-
-        // Use DataManager to fetch and configure data for the given trackId
-        await dataManager.fetchAndUpdateConfig(trackId);
-
-        // Retrieve the updated track data from Constants
-        const trackData = Constants.getTrackData(trackId);
-        if (!trackData) {
-            throw new Error('Failed to fetch track data.');
-        }
-
-        // Initialize root parameters based on the fetched track data
-        initializeRootParams(user1Manager, trackData);
-
-        // Apply visual and interactive settings based on track data
-        applyColorsFromTrackData(trackData);
-        updateKnobsFromTrackData(trackData);
-
-        // Setup UI interactions and populate initial placeholders
-        setupInteractions(dataManager, audioPlayer, user1Manager);
-        dataManager.populatePlaceholders('monitorInfo');
-
-        // Load and display the 3D model in the scene
-        await loadAndDisplayModel(scene, trackData);
-        console.log('[APP] Model loaded successfully.');
-    } catch (error) {
-        console.error('[APP] Error during application initialization:', error);
-    }
-}
-
 // -----------------------------
 // Window Resize Event Listener
 // -----------------------------
 
+/**
+ * Adjusts renderer and camera settings on window resize.
+ * Ensures the 3D scene adapts to viewport changes.
+ * @memberof 3DGUI 
+ */
 window.addEventListener('resize', () => {
     const MIN_SIZE = 340; // Minimum frame size in pixels
 
@@ -371,12 +266,37 @@ window.addEventListener('resize', () => {
 
     // Set the pixel ratio for high-DPI screens, capped at 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    //console.log('[APP] Renderer and camera updated on resize.');
 });
+
+// -----------------------------
+// Animation Loop Function
+// -----------------------------
+
+/**
+ * Animation loop for the application.
+ * Updates controls and renders the scene.
+ * @function animate
+ * @memberof 3DGUI 
+ */
+function animate() {
+    controls.update(); // Update camera controls
+    renderer.render(scene, camera); // Render the scene from the perspective of the camera
+    requestAnimationFrame(animate); // Request the next frame
+}
 
 // -----------------------------
 // Collapse Menu Alignment Function
 // -----------------------------
 
+/**
+ * Sets up alignment for the information collapse menu.
+ * Adjusts the menu's position based on window size and button position.
+ * Attaches relevant event listeners for alignment updates.
+ * @function setupCollapseMenuAlignment
+ * @memberof 2DGUI 
+ */
 function setupCollapseMenuAlignment() {
     const infoButton = document.getElementById("informationMenuButton");
     const collapseMenu = document.getElementById("collapseInfoMenu");
@@ -390,6 +310,10 @@ function setupCollapseMenuAlignment() {
     const verticalOffsetVH = 2; // Vertical offset in viewport height units
     const horizontalOffsetVW = -1; // Horizontal offset in viewport width units
 
+    /**
+     * Aligns the collapse menu relative to the information button.
+     * @function alignCollapseMenu
+     */
     const alignCollapseMenu = () => {
         const buttonRect = infoButton.getBoundingClientRect();
         const headerRect = headerRow.getBoundingClientRect();
@@ -401,6 +325,8 @@ function setupCollapseMenuAlignment() {
         // Apply the calculated positions to the collapse menu
         collapseMenu.style.top = `${calculatedTop}px`;
         collapseMenu.style.left = `${calculatedLeft}px`;
+
+        //console.debug('[APP] Collapse menu aligned:', { top: calculatedTop, left: calculatedLeft });
     };
 
     // Align initially
@@ -417,39 +343,15 @@ function setupCollapseMenuAlignment() {
 // DOMContentLoaded Event Listener
 // -----------------------------
 
+/**
+ * Executes when the DOM is fully loaded.
+ * Initializes the application and starts the animation loop.
+ * @memberof CoreModule 
+ */
 document.addEventListener('DOMContentLoaded', () => {
     console.log("[APP] DOMContentLoaded: Application initialized.");
 
-    // --- Generate and Inject Dropdown Menus ---
-    const waveformParentContainer = document.getElementById('my-lfo-controls');
-    const exoParentContainer = document.getElementById('my-exo-controls');
-
-    if (!waveformParentContainer || !exoParentContainer) {
-        console.error('Parent containers for dropdowns not found.');
-        return;
-    }
-
-    const prefixes = ['a', 'b', 'c']; // Add more prefixes as needed
-
-    prefixes.forEach(prefix => {
-        // Create and inject Waveform Dropdown
-        const waveformDropdownHTML = CosmicLFO.createWaveformMenu(prefix);
-        waveformParentContainer.innerHTML += waveformDropdownHTML;
-
-        // Create and inject Exoplanet Dropdown
-        const exoplanetDropdownHTML = CosmicLFO.createExoplanetMenu(prefix);
-        exoParentContainer.innerHTML += exoplanetDropdownHTML;
-    });
-
-    // --- Show the First Waveform and Exoplanet Dropdowns ---
-    showDropdown('waveform', 'a'); // Show the 'a-waveform-dropdown'
-    showDropdown('exo', 'a'); // Show the 'a-exo-dropdown'
-
-    // --- Attach Event Listeners After Injection ---
-    attachWaveformDropdownListeners();
-    attachExoplanetDropdownListeners();
-
-    // Initialize the application and start the animation loop
+    // Initialize the application and start the animation loop upon successful initialization
     initializeApp().then(() => {
         console.log("[APP] Starting animation loop.");
         animate();
@@ -457,6 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
+
+    
 });
 
 // -----------------------------
