@@ -3,7 +3,6 @@ name: Deploy static content to Pages
 on:
   push:
     branches: ["main"]
-
   workflow_dispatch:
 
 permissions:
@@ -40,9 +39,11 @@ jobs:
       - name: Debug build output
         run: ls -la ./dist
 
+      # Replace the Pages-specific artifact action with the new v4 uploader.
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
+          name: pages-artifact
           path: './dist'
 
       - name: Deploy to GitHub Pages
