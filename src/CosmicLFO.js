@@ -216,4 +216,64 @@ export class CosmicLFO {
         console.log(`CosmicLFO: Current exoplanet set to ${exoplanetValue}.`);
         // Add any additional logic needed when the exoplanet changes
     }
+
+      // ──────────────────────────────
+  // New Methods for Mode Toggling
+  // ──────────────────────────────
+
+  /**
+   * Called when the Cosmic LFO mode is activated.
+   * This method shows all elements related to the Cosmic LFO mode:
+   * - Dropdowns for waveform and exo selections.
+   * - Additional cosmic switches (IDs starting with xCosmic, yCosmic, or zCosmic).
+   * - Web Audio Monitors with IDs starting with cosmic-lfo-
+   * It then starts the LFO.
+   */
+  enterMode() {
+    console.log('CosmicLFO: Entering Cosmic LFO mode.');
+
+    // Select all elements that are part of the Cosmic LFO interface
+    const cosmicElements = document.querySelectorAll(
+      '[data-group$="-waveform-dropdown"], ' +
+      '[data-group$="-exo-lfo-dropdown"], ' +
+      '[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"], ' +
+      'webaudio-monitor[id^="cosmic-lfo-"]'
+    );
+
+    // Show all Cosmic LFO–related elements
+    cosmicElements.forEach(el => {
+      // Remove any inline display style that might hide the element
+      el.style.display = '';
+    });
+
+    // Start the LFO
+    this.start();
+  }
+
+  /**
+   * Called when the Cosmic LFO mode is deactivated.
+   * This method hides all Cosmic LFO–related elements (dropdowns, switches, and monitors)
+   * by setting their inline style.display to 'none'. It then stops the LFO.
+   */
+  exitMode() {
+    console.log('CosmicLFO: Exiting Cosmic LFO mode.');
+
+    // Select the same set of elements as above
+    const cosmicElements = document.querySelectorAll(
+      '[data-group$="-waveform-dropdown"], ' +
+      '[data-group$="-exo-lfo-dropdown"], ' +
+      '[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"], ' +
+      'webaudio-monitor[id^="cosmic-lfo-"]'
+    );
+
+    // Hide all Cosmic LFO–related elements
+    cosmicElements.forEach(el => {
+      el.style.display = 'none';
+    });
+
+    // Stop the LFO
+    this.stop();
+  }
+
+
 }

@@ -250,221 +250,214 @@
         colors="var(--color1);#0000007d">
       </webaudio-param>
 
-<!-- X Controls -->
-<div class="button-group-container" data-group="x-waveform-dropdown">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class="lfo-interaction-button dropdown-toggle"
-      type="button"
-      id="x-waveform-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Sine"
-      data-src="/assets/icons/wf-sine.svg"
-    >
-      <span class="button-icon" data-src="/assets/icons/wf-sine.svg" aria-label="Sine"></span>
-    </button>
-
-    <!-- Single Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="x-waveform-menu-button">
-      <!-- First Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="x-waveform-sine"
-          data-value="x-waveform-sine"
-          data-icon="/assets/icons/wf-sine.svg"
-        >
-          <img
-            src="/assets/icons/wf-sine.svg"
-            alt="x-waveform-sine"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
+      <!-- X Controls -->
+      <div class="button-group-container" data-group="x-waveform-dropdown" style="display: none;">
+        <div class="dropup-center dropup"> 
+          <!-- Dropdown Toggle Button -->
+          <button
+            class="lfo-interaction-button dropdown-toggle"
+            type="button"
+            id="x-waveform-menu-button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Sine" 
+            data-src="/assets/icons/wf-sine.svg" 
           >
-          Sine
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="x-waveform-square"
-          data-value="x-waveform-square"
-          data-icon="/assets/icons/wf-square.svg"
-        >
-          <img
-            src="/assets/icons/wf-square.svg"
-            alt="x-waveform-square"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
+            <span class="button-icon" data-src="/assets/icons/wf-sine.svg" aria-label="Sine"></span>
+          </button>
+
+          <!-- Single Dropdown Menu -->
+          <ul class="dropdown-menu" aria-labelledby="x-waveform-menu-button">
+            <!-- First Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="x-waveform-sine"
+                data-value="x-waveform-sine"
+                data-icon="/assets/icons/wf-sine.svg"
+              >
+                <img
+                  src="/assets/icons/wf-sine.svg"
+                  alt="x-waveform-sine"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Sine
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="x-waveform-square"
+                data-value="x-waveform-square"
+                data-icon="/assets/icons/wf-square.svg"
+              >
+                <img
+                  src="/assets/icons/wf-square.svg"
+                  alt="x-waveform-square"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Square
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="x-waveform-updown"
+                data-value="x-waveform-updown"
+                data-icon="/assets/icons/wf-updown.svg"
+              >
+                <img
+                  src="/assets/icons/wf-updown.svg"
+                  alt="x-waveform-updown"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Updown
+              </a>
+            </li>
+
+            <!-- Second Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="x-waveform-up"
+                data-value="x-waveform-up"
+                data-icon="/assets/icons/wf-up.svg"
+              >
+                <img
+                  src="/assets/icons/wf-up.svg"
+                  alt="x-waveform-up"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Up
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="x-waveform-down"
+                data-value="x-waveform-down"
+                data-icon="/assets/icons/wf-down.svg"
+              >
+                <img
+                  src="/assets/icons/wf-down.svg"
+                  alt="x-waveform-down"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Down
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="x-waveform-random"
+                data-value="x-waveform-random"
+                data-icon="/assets/icons/wf-random.svg"
+              >
+                <img
+                  src="/assets/icons/wf-random.svg"
+                  alt="x-waveform-random"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Random
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="button-group-container" data-group="x-exo-lfo-dropdown" style="display: none;">
+        <div class="dropup-center dropup">
+          <!-- Dropdown Toggle Button -->
+          <button
+            class="lfo-interaction-button dropdown-toggle"
+            type="button"
+            id="x-exo-lfo-menu-button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Sine"
+            data-src="/assets/icons/exo-a.svg"
           >
-          Square
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="x-waveform-updown"
-          data-value="x-waveform-updown"
-          data-icon="/assets/icons/wf-updown.svg"
-        >
-          <img
-            src="/assets/icons/wf-updown.svg"
-            alt="x-waveform-updown"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Updown
-        </a>
-      </li>
+            <span class="button-icon" data-src="/assets/icons/exo-a.svg" aria-label="Sine"></span>
+          </button>
 
-
-      <!-- Second Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="x-waveform-up"
-          data-value="x-waveform-up"
-          data-icon="/assets/icons/wf-up.svg"
-        >
-          <img
-            src="/assets/icons/wf-up.svg"
-            alt="x-waveform-up"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Up
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="x-waveform-down"
-          data-value="x-waveform-down"
-          data-icon="/assets/icons/wf-down.svg"
-        >
-          <img
-            src="/assets/icons/wf-down.svg"
-            alt="x-waveform-down"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Down
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="x-waveform-random"
-          data-value="x-waveform-random"
-          data-icon="/assets/icons/wf-random.svg"
-        >
-          <img
-            src="/assets/icons/wf-random.svg"
-            alt="x-waveform-random"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Random
-        </a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-<div class="button-group-container" data-group="x-exo-lfo-dropdown">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class="lfo-interaction-button dropdown-toggle"
-      type="button"
-      id="x-exo-lfo-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Sine"
-      data-src="/assets/icons/exo-a.svg"
-    >
-      <span class="button-icon" data-src="/assets/icons/exo-a.svg" aria-label="Sine"></span>
-    </button>
-
-    <!-- Single Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="x-exo-lfo-menu-button">
-      <!-- First Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-a"
-          data-value="exo-a"
-          data-icon="/assets/icons/exo-a.svg"
-        >
-          <img
-            src="/assets/icons/exo-a.svg"
-            alt="exo-a"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo A
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-b"
-          data-value="exo-b"
-          data-icon="/assets/icons/exo-b.svg"
-        >
-          <img
-            src="/assets/icons/exo-b.svg"
-            alt="exo-b"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo B
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-c"
-          data-value="exo-c"
-          data-icon="/assets/icons/exo-c.svg"
-        >
-          <img
-            src="/assets/icons/exo-c.svg"
-            alt="exo-c"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo C
-        </a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-
-
-
+          <!-- Single Dropdown Menu -->
+          <ul class="dropdown-menu" aria-labelledby="x-exo-lfo-menu-button">
+            <!-- First Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-a"
+                data-value="exo-a"
+                data-icon="/assets/icons/exo-a.svg"
+              >
+                <img
+                  src="/assets/icons/exo-a.svg"
+                  alt="exo-a"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo A
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-b"
+                data-value="exo-b"
+                data-icon="/assets/icons/exo-b.svg"
+              >
+                <img
+                  src="/assets/icons/exo-b.svg"
+                  alt="exo-b"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo B
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-c"
+                data-value="exo-c"
+                data-icon="/assets/icons/exo-c.svg"
+              >
+                <img
+                  src="/assets/icons/exo-c.svg"
+                  alt="exo-c"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo C
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
 
       <!-- Additional Smaller Switches -->
       <div class="d-flex flex-column align-items-center">
@@ -478,7 +471,10 @@
             max="1"
             state="0"
             labelpos="center"
-            colors="var(--color2);var(--color1);var(--color3)">:2</webaudio-switch>
+            colors="var(--color2);var(--color1);var(--color3)"
+            style="display: none;">
+            :2
+          </webaudio-switch>
           <webaudio-switch
             id="xCosmic2"
             class="freq-multiplier-btn-lfo"
@@ -488,14 +484,18 @@
             max="1"
             state="0"
             labelpos="center"
-            colors="var(--color2);var(--color1);var(--color3)">x2</webaudio-switch>
+            colors="var(--color2);var(--color1);var(--color3)"
+            style="display: none;">
+            x2
+          </webaudio-switch>
         </div>
         <webaudio-monitor
-        id="cosmic-lfo-y-freq"
+          id="cosmic-lfo-y-freq"
           value="0.45"
           label="ƒ"
           fontsize="1.5vmin"
-          colors="#0000007d;var(--color2)">
+          colors="#0000007d;var(--color2)"
+          style="display: none;">
         </webaudio-monitor>
       </div>
 
@@ -508,7 +508,10 @@
         group="radio-xyz"
         labelpos="center"
         root-param="cosmic-radio-xyz"
-        colors="var(--color2);var(--color1);var(--color3)">X</webaudio-switch>
+        colors="var(--color2);var(--color1);var(--color3)"
+        >
+        X
+      </webaudio-switch>
 
       <!-- Activate Sensors Button -->
       <webaudio-switch
@@ -523,8 +526,6 @@
         midilearn="1"
         colors="var(--color2);var(--color1);var(--color3)">
       </webaudio-switch>
-
-
     </div>
 
     <!-- Sub-Column 2 (Y) -->
@@ -543,222 +544,214 @@
         colors="var(--color1);#0000007d">
       </webaudio-param>
 
-<!-- y Controls -->
-
-<div class="button-group-container" data-group="y-waveform-dropdown">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class="lfo-interaction-button dropdown-toggle"
-      type="button"
-      id="y-waveform-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Sine"
-      data-src="/assets/icons/wf-sine.svg"
-    >
-      <span class="button-icon" data-src="/assets/icons/wf-sine.svg" aria-label="Sine"></span>
-    </button>
-
-    <!-- Single Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="y-waveform-menu-button">
-      <!-- First Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="y-waveform-sine"
-          data-value="y-waveform-sine"
-          data-icon="/assets/icons/wf-sine.svg"
-        >
-          <img
-            src="/assets/icons/wf-sine.svg"
-            alt="y-waveform-sine"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
+      <!-- y Controls -->
+      <div class="button-group-container" data-group="y-waveform-dropdown" style="display: none;">
+        <div class="dropup-center dropup">
+          <!-- Dropdown Toggle Button -->
+          <button
+            class="lfo-interaction-button dropdown-toggle"
+            type="button"
+            id="y-waveform-menu-button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Sine"
+            data-src="/assets/icons/wf-sine.svg"
           >
-          Sine
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="y-waveform-square"
-          data-value="y-waveform-square"
-          data-icon="/assets/icons/wf-square.svg"
-        >
-          <img
-            src="/assets/icons/wf-square.svg"
-            alt="y-waveform-square"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
+            <span class="button-icon" data-src="/assets/icons/wf-sine.svg" aria-label="Sine"></span>
+          </button>
+
+          <!-- Single Dropdown Menu -->
+          <ul class="dropdown-menu" aria-labelledby="y-waveform-menu-button">
+            <!-- First Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="y-waveform-sine"
+                data-value="y-waveform-sine"
+                data-icon="/assets/icons/wf-sine.svg"
+              >
+                <img
+                  src="/assets/icons/wf-sine.svg"
+                  alt="y-waveform-sine"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Sine
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="y-waveform-square"
+                data-value="y-waveform-square"
+                data-icon="/assets/icons/wf-square.svg"
+              >
+                <img
+                  src="/assets/icons/wf-square.svg"
+                  alt="y-waveform-square"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Square
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="y-waveform-updown"
+                data-value="y-waveform-updown"
+                data-icon="/assets/icons/wf-updown.svg"
+              >
+                <img
+                  src="/assets/icons/wf-updown.svg"
+                  alt="y-waveform-updown"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Updown
+              </a>
+            </li>
+
+            <!-- Second Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="y-waveform-up"
+                data-value="y-waveform-up"
+                data-icon="/assets/icons/wf-up.svg"
+              >
+                <img
+                  src="/assets/icons/wf-up.svg"
+                  alt="y-waveform-up"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Up
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="y-waveform-down"
+                data-value="y-waveform-down"
+                data-icon="/assets/icons/wf-down.svg"
+              >
+                <img
+                  src="/assets/icons/wf-down.svg"
+                  alt="y-waveform-down"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Down
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="y-waveform-random"
+                data-value="y-waveform-random"
+                data-icon="/assets/icons/wf-random.svg"
+              >
+                <img
+                  src="/assets/icons/wf-random.svg"
+                  alt="y-waveform-random"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Random
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="button-group-container" data-group="y-exo-lfo-dropdown" style="display: none;">
+        <div class="dropup-center dropup">
+          <!-- Dropdown Toggle Button -->
+          <button
+            class="lfo-interaction-button dropdown-toggle"
+            type="button"
+            id="y-exo-lfo-menu-button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Exo B"
+            data-src="/assets/icons/exo-b.svg"
           >
-          Square
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="y-waveform-updown"
-          data-value="y-waveform-updown"
-          data-icon="/assets/icons/wf-updown.svg"
-        >
-          <img
-            src="/assets/icons/wf-updown.svg"
-            alt="y-waveform-updown"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Updown
-        </a>
-      </li>
+            <span class="button-icon" data-src="/assets/icons/exo-b.svg" aria-label="Exo B"></span>
+          </button>
 
-
-      <!-- Second Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="y-waveform-up"
-          data-value="y-waveform-up"
-          data-icon="/assets/icons/wf-up.svg"
-        >
-          <img
-            src="/assets/icons/wf-up.svg"
-            alt="y-waveform-up"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Up
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="y-waveform-down"
-          data-value="y-waveform-down"
-          data-icon="/assets/icons/wf-down.svg"
-        >
-          <img
-            src="/assets/icons/wf-down.svg"
-            alt="y-waveform-down"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Down
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="y-waveform-random"
-          data-value="y-waveform-random"
-          data-icon="/assets/icons/wf-random.svg"
-        >
-          <img
-            src="/assets/icons/wf-random.svg"
-            alt="y-waveform-random"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Random
-        </a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-<div class="button-group-container" data-group="y-exo-lfo-dropdown">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class="lfo-interaction-button dropdown-toggle"
-      type="button"
-      id="y-exo-lfo-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Exo B"
-      data-src="/assets/icons/exo-b.svg"
-    >
-      <span class="button-icon" data-src="/assets/icons/exo-b.svg" aria-label="Exo B"></span>
-    </button>
-
-    <!-- Single Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="y-exo-lfo-menu-button">
-      <!-- First Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-a"
-          data-value="exo-a"
-          data-icon="/assets/icons/exo-a.svg"
-        >
-          <img
-            src="/assets/icons/exo-a.svg"
-            alt="exo-a"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo A
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-b"
-          data-value="exo-b"
-          data-icon="/assets/icons/exo-b.svg"
-        >
-          <img
-            src="/assets/icons/exo-b.svg"
-            alt="exo-b"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo B
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-c"
-          data-value="exo-c"
-          data-icon="/assets/icons/exo-c.svg"
-        >
-          <img
-            src="/assets/icons/exo-c.svg"
-            alt="exo-c"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo C
-        </a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-
-
-
+          <!-- Single Dropdown Menu -->
+          <ul class="dropdown-menu" aria-labelledby="y-exo-lfo-menu-button">
+            <!-- First Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-a"
+                data-value="exo-a"
+                data-icon="/assets/icons/exo-a.svg"
+              >
+                <img
+                  src="/assets/icons/exo-a.svg"
+                  alt="exo-a"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo A
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-b"
+                data-value="exo-b"
+                data-icon="/assets/icons/exo-b.svg"
+              >
+                <img
+                  src="/assets/icons/exo-b.svg"
+                  alt="exo-b"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo B
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-c"
+                data-value="exo-c"
+                data-icon="/assets/icons/exo-c.svg"
+              >
+                <img
+                  src="/assets/icons/exo-c.svg"
+                  alt="exo-c"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo C
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
 
       <!-- Additional Smaller Switches -->
       <div class="d-flex flex-column align-items-center">
@@ -772,7 +765,10 @@
             max="1"
             state="0"
             labelpos="center"
-            colors="var(--color2);var(--color1);var(--color3)">:2</webaudio-switch>
+            colors="var(--color2);var(--color1);var(--color3)"
+            style="display: none;">
+            :2
+          </webaudio-switch>
           <webaudio-switch
             id="yCosmic2"
             class="freq-multiplier-btn-lfo"
@@ -782,14 +778,18 @@
             max="1"
             state="0"
             labelpos="center"
-            colors="var(--color2);var(--color1);var(--color3)">x2</webaudio-switch>
+            colors="var(--color2);var(--color1);var(--color3)"
+            style="display: none;">
+            x2
+          </webaudio-switch>
         </div>
         <webaudio-monitor
-        id="cosmic-lfo-y-freq"
+          id="cosmic-lfo-y-freq"
           value="0.45"
           label="ƒ"
           fontsize="1.5vmin"
-          colors="#0000007d;var(--color2)">
+          colors="#0000007d;var(--color2)"
+          style="display: none;">
         </webaudio-monitor>
       </div>
 
@@ -802,7 +802,10 @@
         group="radio-xyz"
         labelpos="center"
         root-param="cosmic-radio-xyz"
-        colors="var(--color2);var(--color1);var(--color3)">Y</webaudio-switch>
+        colors="var(--color2);var(--color1);var(--color3)"
+        >
+        Y
+      </webaudio-switch>
 
       <!-- Activate Sensors Button -->
       <webaudio-switch
@@ -817,8 +820,6 @@
         midilearn="1"
         colors="var(--color2);var(--color1);var(--color3)">
       </webaudio-switch>
-
-
     </div>
 
     <!-- Sub-Column 3 (Z) -->
@@ -837,224 +838,213 @@
         colors="var(--color1);#0000007d">
       </webaudio-param>
       
-      
       <!-- Z Controls -->
-
-<div class="button-group-container" data-group="z-waveform-dropdown">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class="lfo-interaction-button dropdown-toggle"
-      type="button"
-      id="z-waveform-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Sine"
-      data-src="/assets/icons/wf-sine.svg"
-    >
-      <span class="button-icon" data-src="/assets/icons/wf-sine.svg" aria-label="Sine"></span>
-    </button>
-
-    <!-- Single Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="z-waveform-menu-button">
-      <!-- First Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="z-waveform-sine"
-          data-value="z-waveform-sine"
-          data-icon="/assets/icons/wf-sine.svg"
-        >
-          <img
-            src="/assets/icons/wf-sine.svg"
-            alt="z-waveform-sine"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
+      <div class="button-group-container" data-group="z-waveform-dropdown" style="display: none;">
+        <div class="dropup-center dropup">
+          <!-- Dropdown Toggle Button -->
+          <button
+            class="lfo-interaction-button dropdown-toggle"
+            type="button"
+            id="z-waveform-menu-button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Sine"
+            data-src="/assets/icons/wf-sine.svg"
           >
-          Sine
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="z-waveform-square"
-          data-value="z-waveform-square"
-          data-icon="/assets/icons/wf-square.svg"
-        >
-          <img
-            src="/assets/icons/wf-square.svg"
-            alt="z-waveform-square"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
+            <span class="button-icon" data-src="/assets/icons/wf-sine.svg" aria-label="Sine"></span>
+          </button>
+
+          <!-- Single Dropdown Menu -->
+          <ul class="dropdown-menu" aria-labelledby="z-waveform-menu-button">
+            <!-- First Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="z-waveform-sine"
+                data-value="z-waveform-sine"
+                data-icon="/assets/icons/wf-sine.svg"
+              >
+                <img
+                  src="/assets/icons/wf-sine.svg"
+                  alt="z-waveform-sine"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Sine
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="z-waveform-square"
+                data-value="z-waveform-square"
+                data-icon="/assets/icons/wf-square.svg"
+              >
+                <img
+                  src="/assets/icons/wf-square.svg"
+                  alt="z-waveform-square"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Square
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="z-waveform-updown"
+                data-value="z-waveform-updown"
+                data-icon="/assets/icons/wf-updown.svg"
+              >
+                <img
+                  src="/assets/icons/wf-updown.svg"
+                  alt="z-waveform-updown"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Updown
+              </a>
+            </li>
+            <!-- Second Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="z-waveform-up"
+                data-value="z-waveform-up"
+                data-icon="/assets/icons/wf-up.svg"
+              >
+                <img
+                  src="/assets/icons/wf-up.svg"
+                  alt="z-waveform-up"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Up
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="z-waveform-down"
+                data-value="z-waveform-down"
+                data-icon="/assets/icons/wf-down.svg"
+              >
+                <img
+                  src="/assets/icons/wf-down.svg"
+                  alt="z-waveform-down"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Down
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="z-waveform-random"
+                data-value="z-waveform-random"
+                data-icon="/assets/icons/wf-random.svg"
+              >
+                <img
+                  src="/assets/icons/wf-random.svg"
+                  alt="z-waveform-random"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Random
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="button-group-container" data-group="z-exo-lfo-dropdown" style="display: none;">
+        <div class="dropup-center dropup">
+          <!-- Dropdown Toggle Button -->
+          <button
+            class="lfo-interaction-button dropdown-toggle"
+            type="button"
+            id="z-exo-lfo-menu-button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-label="Exo C"
+            data-src="/assets/icons/exo-c.svg"
           >
-          Square
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="z-waveform-updown"
-          data-value="z-waveform-updown"
-          data-icon="/assets/icons/wf-updown.svg"
-        >
-          <img
-            src="/assets/icons/wf-updown.svg"
-            alt="z-waveform-updown"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Updown
-        </a>
-      </li>
+            <span class="button-icon" data-src="/assets/icons/exo-c.svg" aria-label="Exo C"></span>
+          </button>
 
-
-      <!-- Second Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="z-waveform-up"
-          data-value="z-waveform-up"
-          data-icon="/assets/icons/wf-up.svg"
-        >
-          <img
-            src="/assets/icons/wf-up.svg"
-            alt="z-waveform-up"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Up
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="z-waveform-down"
-          data-value="z-waveform-down"
-          data-icon="/assets/icons/wf-down.svg"
-        >
-          <img
-            src="/assets/icons/wf-down.svg"
-            alt="z-waveform-down"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Down
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="z-waveform-random"
-          data-value="z-waveform-random"
-          data-icon="/assets/icons/wf-random.svg"
-        >
-          <img
-            src="/assets/icons/wf-random.svg"
-            alt="z-waveform-random"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Random
-        </a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-<div class="button-group-container" data-group="z-exo-lfo-dropdown">
-  <div class="dropup-center dropup">
-    <!-- Dropdown Toggle Button -->
-    <button
-      class="lfo-interaction-button dropdown-toggle"
-      type="button"
-      id="z-exo-lfo-menu-button"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
-      aria-label="Exo C"
-      data-src="/assets/icons/exo-c.svg"
-    >
-      <span class="button-icon" data-src="/assets/icons/exo-c.svg" aria-label="Exo C"></span>
-    </button>
-
-    <!-- Single Dropdown Menu -->
-    <ul class="dropdown-menu" aria-labelledby="z-exo-lfo-menu-button">
-      <!-- First Section -->
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-a"
-          data-value="exo-a"
-          data-icon="/assets/icons/exo-a.svg"
-        >
-          <img
-            src="/assets/icons/exo-a.svg"
-            alt="exo-a"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo A
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-b"
-          data-value="exo-b"
-          data-icon="/assets/icons/exo-b.svg"
-        >
-          <img
-            src="/assets/icons/exo-b.svg"
-            alt="exo-b"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo B
-        </a>
-      </li>
-      <li>
-        <a
-          class="dropdown-item"
-          href="#"
-          data-midi-controllable="false"
-          id="exo-c"
-          data-value="exo-c"
-          data-icon="/assets/icons/exo-c.svg"
-        >
-          <img
-            src="/assets/icons/exo-c.svg"
-            alt="exo-c"
-            class="menu-item-icon"
-            style="width: 16px; height: 16px; margin-right: 8px;"
-          >
-          Exo C
-        </a>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-
-
-
-
+          <!-- Single Dropdown Menu -->
+          <ul class="dropdown-menu" aria-labelledby="z-exo-lfo-menu-button">
+            <!-- First Section -->
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-a"
+                data-value="exo-a"
+                data-icon="/assets/icons/exo-a.svg"
+              >
+                <img
+                  src="/assets/icons/exo-a.svg"
+                  alt="exo-a"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo A
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-b"
+                data-value="exo-b"
+                data-icon="/assets/icons/exo-b.svg"
+              >
+                <img
+                  src="/assets/icons/exo-b.svg"
+                  alt="exo-b"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo B
+              </a>
+            </li>
+            <li>
+              <a
+                class="dropdown-item"
+                href="#"
+                data-midi-controllable="false"
+                id="exo-c"
+                data-value="exo-c"
+                data-icon="/assets/icons/exo-c.svg"
+              >
+                <img
+                  src="/assets/icons/exo-c.svg"
+                  alt="exo-c"
+                  class="menu-item-icon"
+                  style="width: 16px; height: 16px; margin-right: 8px;"
+                >
+                Exo C
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
 
       <!-- Additional Smaller Switches -->
       <div class="d-flex flex-column align-items-center">
@@ -1068,7 +1058,10 @@
             max="1"
             state="0"
             labelpos="center"
-            colors="var(--color2);var(--color1);var(--color3)">:2</webaudio-switch>
+            colors="var(--color2);var(--color1);var(--color3)"
+            style="display: none;">
+            :2
+          </webaudio-switch>
           <webaudio-switch
             id="zCosmic2"
             class="freq-multiplier-btn-lfo"
@@ -1078,14 +1071,18 @@
             max="1"
             state="0"
             labelpos="center"
-            colors="var(--color2);var(--color1);var(--color3)">x2</webaudio-switch>
+            colors="var(--color2);var(--color1);var(--color3)"
+            style="display: none;">
+            x2
+          </webaudio-switch>
         </div>
         <webaudio-monitor
-         id="cosmic-lfo-z-freq"
+          id="cosmic-lfo-z-freq"
           value="0.45"
           label="ƒ"
           fontsize="1.5vmin"
-          colors="#0000007d;var(--color2)">
+          colors="#0000007d;var(--color2)"
+          style="display: none;">
         </webaudio-monitor>
       </div>
 
@@ -1098,7 +1095,10 @@
         group="radio-xyz"
         labelpos="center"
         root-param="cosmic-radio-xyz"
-        colors="var(--color2);var(--color1);var(--color3)">Z</webaudio-switch>
+        colors="var(--color2);var(--color1);var(--color3)"
+        >
+        Z
+      </webaudio-switch>
 
       <!-- Activate Sensors Button -->
       <webaudio-switch
@@ -1113,8 +1113,6 @@
         midilearn="1"
         colors="var(--color2);var(--color1);var(--color3)">
       </webaudio-switch>
-
-
     </div>
   </div>
 </div>

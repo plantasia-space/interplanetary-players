@@ -998,50 +998,56 @@ class MIDIController {
    */
   exitMidiLearnMode() {
     console.log('MIDIController: Exiting MIDI Learn mode.');
-
+  
     // Reset mode state
     this.isMidiLearnModeActive = false;
     this.currentLearnParam = null;
     this.currentLearnWidget = null;
-
+  
     // Clean up UI
     document.body.classList.remove('midi-learn-mode');
     this.closeContextMenu();
     this.removeOverlays();
     this.toggleMoreMenuButton(false); // Reset the More Menu button
     document.removeEventListener('keydown', this.handleEscKey);
-
-    // Remove highlights
+  
+    // Remove highlights from any elements
     document.querySelectorAll('.midi-learn-highlight').forEach(element =>
-        element.classList.remove('midi-learn-highlight')
+      element.classList.remove('midi-learn-highlight')
     );
-
-    // Clear lingering messages
+  
+    // Clear lingering messages from the toast container (if present)
     const toastContainer = document.getElementById('toast-container');
     if (toastContainer) toastContainer.innerHTML = '';
-
-    // Reset interaction dropdown to Jam mode
+  
+    // Reset interaction dropdown to JAM mode:
+    // Find the interaction button, its icon, and the JAM mode item.
     const interactionButton = document.getElementById('interactionMenuButton');
     const interactionIcon = interactionButton?.querySelector('.button-icon');
     const jamItem = document.getElementById('jam-item');
-
+  
     if (interactionButton && interactionIcon && jamItem) {
-        const jamIconSrc = jamItem.getAttribute('data-icon');
-        const jamLabel = jamItem.getAttribute('data-value');
-
-        // Update button attributes
-        interactionButton.setAttribute('aria-label', jamLabel);
-
-        // Fetch and set the SVG dynamically using fetchAndSetSVG
-        this.fetchAndSetSVG(jamIconSrc, interactionIcon, true);
-
-        console.log(`Interaction dropdown reset to "${jamLabel}" mode.`);
+      const jamIconSrc = jamItem.getAttribute('data-icon');
+      const jamLabel = jamItem.getAttribute('data-value');
+  
+      // Update the button's aria-label so it shows the JAM mode label.
+      interactionButton.setAttribute('aria-label', jamLabel);
+  
+      // Start the asynchronous fetch of the JAM icon and update the interaction icon.
+      this.fetchAndSetSVG(jamIconSrc, interactionIcon, true);
+      console.log(`Interaction dropdown reset to "${jamLabel}" mode.`);
     } else {
-        console.warn('Interaction dropdown elements are missing or undefined.');
+      console.warn('Interaction dropdown elements are missing or undefined.');
     }
-
+  
     console.log('MIDIController: Fully exited MIDI Learn mode.');
-}
+  
+    // Use a slight delay (e.g., 100ms) so that the asynchronous icon update has time to finish,
+    // then activate JAM mode via the Mode Manager.
+    setTimeout(() => {
+      ModeManagerInstance.activateMode('JAM');
+    }, 100);
+  }
 
   /**
    * Handles the "Learn" action from the context menu.
