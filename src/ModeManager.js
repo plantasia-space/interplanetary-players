@@ -193,7 +193,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
                 console.log('[ModeManager] Switching to external sensors via WebRTC...');
                 sensorController.switchSensorSource(true); // External sensors
                 if (webRTCManager) {
-                    webRTCManager.generateConnectionModal();
+                   // webRTCManager.generateConnectionModal();
                     notifications.showToast('Using external sensors via QR code.', 'info');
                 } else {
                     console.error('[ModeManager] Failed to initialize WebRTCManager.');
