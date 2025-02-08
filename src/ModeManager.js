@@ -76,32 +76,35 @@ ModeManagerInstance.registerMode('JAM', {
         if (el.id.endsWith('1') || el.id.endsWith('2')) {
           el.style.display = 'none';
         } else if (el.id.endsWith('3')) {
-          // Reset to default display (or use 'block' if necessary)
+          // Reset to default display (or use 'block' if needed)
           el.style.display = '';
         }
       });
   
-      // Optionally, hide the Cosmic LFO monitors in JAM mode (if they are only needed in COSMIC_LFO mode).
+      // Hide Cosmic LFO monitors if they belong exclusively to Cosmic LFO mode.
       document.querySelectorAll('webaudio-monitor[id^="cosmic-lfo-"]').forEach(el => {
         el.style.display = 'none';
       });
   
-      // Conditionally show the XYZ sensors toggle buttons
-      if (SENSORS_USABLE) {
+      // Conditionally show the XYZ sensors toggle buttons only if sensors have been activated.
+      // This depends on whether the sensor mode has been activated and the sensor controller's flag isSensorActive is true.
+      if (ModeManagerInstance.sensorControllerInstance && ModeManagerInstance.sensorControllerInstance.isSensorActive) {
         document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+          console.log(`Showing sensor toggle button: ${button.id}`);
           button.style.display = 'block';
         });
       } else {
         document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+          console.log(`Hiding sensor toggle button: ${button.id}`);
           button.style.display = 'none';
         });
       }
   
-      // The knob containers and webaudio-param elements are assumed to be visible by default.
+      // The knob containers and webaudio-param elements remain visible by default.
     },
     onExit: () => {
       console.log('[ModeManager] Exited JAM mode.');
-      // Clean up JAM mode–specific UI changes here if necessary.
+      // Clean up any JAM mode–specific UI changes here if necessary.
     }
   });
 
