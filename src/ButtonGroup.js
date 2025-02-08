@@ -18,7 +18,7 @@ export class ButtonGroup {
      * @param {string} buttonSelector - CSS selector for the main button within the container.
      * @param {string} menuItemsSelector - CSS selector for the menu items within the dropdown.
      * @param {string} iconSelector - CSS selector for the icon within the main button.
-     * @param {AudioPlayer} audioPlayer - Instance of AudioPlayer for managing audio controls.
+     * @param {SoundEngine} soundEngine - Instance of SoundEngine for managing audio controls.
      * @param {DataManager} [dataManager=null] - Instance of DataManager for managing data (optional).
      * @param {User1Manager} [user1Manager=null] - Instance of User1Manager for managing user parameters (optional).
      */
@@ -28,11 +28,11 @@ export class ButtonGroup {
         buttonSelector,
         menuItemsSelector,
         iconSelector,
-        audioPlayer,
+        soundEngine,
         dataManager = null,
         user1Manager = null // Added parameter
     ) {
-        this.audioPlayer = audioPlayer;
+        this.soundEngine = soundEngine;
         this.dataManager = dataManager;
         this.user1Manager = user1Manager; // Store user1Manager
 
@@ -378,13 +378,13 @@ export class ButtonGroup {
         console.log(`[Transport Dropdown] Selected: ${selectedValue}`);
         switch (selectedValue.toLowerCase()) {
             case 'play':
-                this.audioPlayer.play();
+                this.soundEngine.play();
                 break;
             case 'pause':
-                this.audioPlayer.pause();
+                this.soundEngine.pause();
                 break;
             case 'stop':
-                this.audioPlayer.stop();
+                this.soundEngine.stop();
                 break;
             default:
                 console.warn(`[Transport Dropdown] Unknown action: ${selectedValue}`);

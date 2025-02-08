@@ -62,7 +62,7 @@ import lscache from 'lscache';
 import { setupInteractions, updateKnobsFromTrackData, applyColorsFromTrackData } from './Interaction.js';
 
 // Audio player module
-import { AudioPlayer } from './AudioPlayer.js';
+import { SoundEngine } from './SoundEngine.js';
 
 // Button group module
 import { ButtonGroup } from './ButtonGroup.js';
@@ -75,6 +75,7 @@ import { logarithmic } from './Transformations.js';
 
 // Notifications handler
 import notifications from './AppNotifications.js';
+
 
 // -----------------------------
 // Initialization of Core Components
@@ -95,8 +96,8 @@ addLights(scene);
 // Instantiate the DataManager for handling track data
 const dataManager = new DataManager();
 
-// Instantiate the AudioPlayer for managing audio playback
-const audioPlayer = new AudioPlayer();
+// Instantiate the SoundEngine for managing audio playback
+let user1SoundEngine;
 
 // Instantiate the ParameterManager for managing adjustable parameters for user 1
 const user1Manager = new ParameterManager();
@@ -118,39 +119,46 @@ let animationRunning = false;
  */
 async function initializeApp() {
     try {
-        console.log('[APP] Starting application...');
-
-        // Parse URL parameters to get the trackId, defaulting if not present
-        const urlParams = new URLSearchParams(window.location.search);
-        let trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
-
-        // Use DataManager to fetch and configure data for the given trackId
-        await dataManager.fetchAndUpdateConfig(trackId);
-
-        // Retrieve the updated track data from Constants
-        const trackData = Constants.getTrackData(trackId);
-        if (!trackData) {
-            throw new Error('Failed to fetch track data.');
-        }
-
-        // Initialize root parameters based on the fetched track data
-        initializeRootParams(user1Manager, trackData);
-
-        // Apply visual and interactive settings based on track data
-        applyColorsFromTrackData(trackData);
-        updateKnobsFromTrackData(trackData);
-
-        // Setup UI interactions and populate initial placeholders
-        setupInteractions(dataManager, audioPlayer, user1Manager);
-        dataManager.populatePlaceholders('monitorInfo');
-
-        // Load and display the 3D model in the scene
-        await loadAndDisplayModel(scene, trackData);
-        console.log('[APP] Model loaded successfully.');
+      console.log('[APP] Starting application...');
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
+  
+      // Fetch configuration data and update cache
+      await dataManager.fetchAndUpdateConfig(trackId);
+  
+      // Retrieve the full cached data (contains track, soundEngine, interplanetaryPlayer)
+      const cachedData = Constants.getTrackData(trackId);
+      if (!cachedData) {
+        throw new Error('Failed to fetch track data from cache.');
+      }
+  
+      // Destructure the cached data
+      const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
+  
+      // Initialize root parameters, apply colors, update knobs, etc.
+      initializeRootParams(user1Manager, cachedData);
+      applyColorsFromTrackData(cachedData);
+      updateKnobsFromTrackData(cachedData);
+  
+      // **Important:** Create the SoundEngine instance before setting up interactions.
+      const ksteps = 255;
+      user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps);
+      
+      // Now pass the SoundEngine instance into your UI setup.
+      setupInteractions(dataManager, user1SoundEngine, user1Manager);
+      dataManager.populatePlaceholders('monitorInfo');
+  
+      // Load and display the 3D model (your other initialization logic)
+      await loadAndDisplayModel(scene, cachedData);
+      console.log('[APP] Model loaded successfully.');
+      
+      // Optionally, you can choose not to call soundEngine.init() here
+      // and let the play button trigger it on the first user gesture.
     } catch (error) {
-        console.error('[APP] Error during application initialization:', error);
+      console.error('[APP] Error during application initialization:', error);
     }
-}
+  }
+  
 
 // -----------------------------
 // Parameter Initialization Function
@@ -178,7 +186,7 @@ function initializeRootParams(parameterManager, trackData) {
         y: { ...y },
         z: { ...z },
         'body-level': { 
-            initValue: 0.0, 
+            initValue: 0.5, 
             min: -60, 
             max: 6, 
             scale: "logarithmic", // Scale type for transformations

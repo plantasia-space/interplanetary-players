@@ -21,12 +21,12 @@ import { SensorController } from './SensorsController.js'; // Import the class i
  * @memberof CoreModule 
  * @function setupInteractions
  * @param {DataManager} dataManager - The shared DataManager instance.
- * @param {AudioPlayer} audioPlayer - The shared AudioPlayer instance.
+ * @param {SoundEngine} soundEngine - The shared SoundEngine instance.
  * @param {User1Manager} user1Manager - The user manager instance.
  * @returns {void}
  * @throws Will log an error if Bootstrap is not loaded.
  */
-export function setupInteractions(dataManager, audioPlayer, user1Manager) {
+export function setupInteractions(dataManager, soundEngine, user1Manager) {
     if (typeof bootstrap === 'undefined') {
         console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
         return;
@@ -46,7 +46,7 @@ export function setupInteractions(dataManager, audioPlayer, user1Manager) {
             'button.dropdown-toggle',                             // buttonSelector
             'a.dropdown-item',                                    // menuItemsSelector
             '.button-icon',                                       // iconSelector
-            audioPlayer,                                          // audioPlayer
+            soundEngine,                                          // soundEngine
             dataManager,                                           // dataManager
             user1Manager
         );
