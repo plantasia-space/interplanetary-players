@@ -1,12 +1,5 @@
 // SoundEngine.js
 
-// Ensure RNBO is available from the global scope
-console.log("RNBO from window:", window.RNBO);
-const RNBO = window.RNBO;
-if (!RNBO) {
-  console.error("RNBO is not defined! Make sure the RNBO script is loaded before this module.");
-}
-
 import { Constants } from './Constants.js';
 
 export class SoundEngine {
@@ -18,30 +11,27 @@ export class SoundEngine {
    * @param {ParameterManager} userManager - The user manager instance holding root parameters.
    * @param {number} ksteps - Number of discrete steps for parameter mapping.
    */
-  constructor(soundEngineData, trackData, userManager, ksteps) {
-    if (!soundEngineData || !trackData || !userManager || !ksteps) {
-      console.error("SoundEngine Error: Missing required data.");
-      return;
+  constructor(soundEngineData, trackData, userManager, ksteps, rnbo) {
+    if (!soundEngineData || !trackData || !userManager || !ksteps || !rnbo) {
+        console.error("SoundEngine Error: Missing required data.");
+        return;
     }
+
     this.soundEngineData = soundEngineData;
     this.trackData = trackData;
-    this.userManager = userManager; // Save user manager reference
+    this.userManager = userManager;
     this.ksteps = ksteps;
+    this.rnbo = rnbo;  // Store RNBO object locally
 
-    // RNBO-related properties
     this.context = null;
     this.device = null;
     this.inputX = null;
     this.inputY = null;
     this.inputZ = null;
     this.inputGain = null;
-
-    // For storing amplitude values from the RNBO device
     this.amplitude = 0;
-
-    // Flag to mark if initialization has been completed
     this.initialized = false;
-  }
+}
 
   /**
    * Asynchronously initializes the RNBO device and loads the audio buffer.
@@ -49,54 +39,39 @@ export class SoundEngine {
    */
   async init() {
     if (this.initialized) return;
-
+  
     try {
       const patchExportURL = this.soundEngineData.soundEngineJSONURL;
       console.log("Fetching RNBO patch from:", patchExportURL);
-
+  
       const WAContext = window.AudioContext || window.webkitAudioContext;
       this.context = new WAContext();
-
+  
       const rawPatcher = await fetch(patchExportURL);
       const patcher = await rawPatcher.json();
-
-      this.device = await RNBO.createDevice({ context: this.context, patcher });
+  
+      this.device = await this.rnbo.createDevice({ context: this.context, patcher });
       this.device.node.connect(this.context.destination);
-
+  
+      // Load and stream the audio buffer, while accumulating the total duration.
       await this.loadAudioBuffer();
-
+  
       // Retrieve RNBO parameter objects AFTER loading the audio buffer
       this.inputX = this.device.parametersById.get("inputX");
       this.inputY = this.device.parametersById.get("inputY");
       this.inputZ = this.device.parametersById.get("inputZ");
       this.inputGain = this.device.parametersById.get("inputGain");
-
-      // Initialize spatial parameters with some default (you can adjust as needed)
-      const centerValue = (this.ksteps - 1) / 2;
-      this.inputX.value = this.map(
-        centerValue,
-        0,
-        this.ksteps - 1,
-        this.soundEngineData.soundEngineParams.x.min,
-        this.soundEngineData.soundEngineParams.x.max
-      );
-      this.inputY.value = this.map(
-        centerValue,
-        0,
-        this.ksteps - 1,
-        this.soundEngineData.soundEngineParams.y.min,
-        this.soundEngineData.soundEngineParams.y.max
-      );
-      this.inputZ.value = this.map(
-        centerValue,
-        0,
-        this.ksteps - 1,
-        this.soundEngineData.soundEngineParams.z.min,
-        this.soundEngineData.soundEngineParams.z.max
-      );
-      // For inputGain (body-level), we set a default normalized value (e.g., 0.5)
-      this.inputGain.value = 0.5;
-
+      this.playMin = this.device.parametersById.get("sampler/playMin");
+      this.playMax = this.device.parametersById.get("sampler/playMax");
+  
+      // Set the play loop parameters based on the loaded buffer
+      this.playMin.value = 0;
+      // Convert totalDuration (in seconds) to milliseconds:
+      this.playMax.value = this.totalDuration * 1000;
+      console.log(`[SoundEngine] Set playMin to ${this.playMin.value} and playMax to ${this.playMax.value} ms`);
+  
+      // (Optional) You might want to also update these as more chunks are appended if you expect the buffer to grow over time.
+  
       // Subscribe to RNBO message events (for amplitude updates, etc.)
       this.device.messageEvent.subscribe((ev) => {
         if (ev.tag === "amp") {
@@ -107,14 +82,13 @@ export class SoundEngine {
           }
         }
       });
-
-      // IMPORTANT: Subscribe to key user parameters AFTER the RNBO parameter objects exist.
-      // For body-level we want the normalized value; for x, y, z we want the raw values.
+  
+      // Subscribe to key user parameters AFTER the RNBO parameter objects exist.
       this.userManager.subscribe(this, "body-level", 1);
       this.userManager.subscribe(this, "x", 1);
       this.userManager.subscribe(this, "y", 1);
       this.userManager.subscribe(this, "z", 1);
-
+  
       this.initialized = true;
       console.log("SoundEngine initialized successfully.");
     } catch (error) {
@@ -129,31 +103,98 @@ export class SoundEngine {
    */
   async loadAudioBuffer() {
     try {
-      let audioURL;
-      if (navigator.connection) {
-        const speed = navigator.connection.downlink;
-        audioURL =
-          speed > 1
-            ? this.trackData.audioFileMP3URL
-            : this.trackData.audioFileWAVURL;
-      } else {
-        audioURL = this.trackData.audioFileMP3URL;
+      const audioURL = this.trackData.audioFileMP3URL || this.trackData.audioFileWAVURL;
+      const response = await fetch(audioURL);
+  
+      if (!response.body) {
+        throw new Error("Streaming not supported.");
       }
-      const fileResponse = await fetch(audioURL, { cache: "reload" });
-      if (!fileResponse.ok) {
-        throw new Error("Network response was not OK");
+  
+      const reader = response.body.getReader();
+      let initialBufferFilled = false;
+      this.totalDuration = 0;  // Store the total duration in seconds
+  
+      console.log("[SoundEngine] Streaming and buffering audio...");
+  
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+  
+        // Decode the chunk and calculate its duration
+        const chunkBuffer = await new Response(value).arrayBuffer();
+        const audioBuffer = await this.context.decodeAudioData(chunkBuffer);
+        const chunkDuration = audioBuffer.duration;  // Get the duration of the chunk in seconds
+  
+        // Accumulate the total duration
+        this.totalDuration += chunkDuration;
+  
+        if (!initialBufferFilled) {
+          // Initially set the RNBO buffer and start playback
+          await this.device.setDataBuffer("world1", audioBuffer);
+          this._sendPlayEvent();  // Start playback after the initial chunk
+          initialBufferFilled = true;
+        } else {
+          // Append subsequent chunks to the RNBO buffer
+          await this.appendToRNBOBuffer(audioBuffer);
+        }
       }
-      const arrayBuf = await fileResponse.arrayBuffer();
-      if (!(arrayBuf instanceof ArrayBuffer)) {
-        throw new Error("Fetched data is not a valid ArrayBuffer");
-      }
-      const audioBuf = await this.context.decodeAudioData(arrayBuf);
-      await this.device.setDataBuffer("world1", audioBuf);
+  
+      console.log(`[SoundEngine] Audio fully streamed and buffered. Total duration: ${this.totalDuration * 1000} ms`);
+  
     } catch (error) {
-      console.error("Error loading audio buffer:", error);
+      console.error("[SoundEngine] Error during audio streaming and buffering:", error);
     }
   }
+  async appendToRNBOBuffer(newBuffer) {
+    try {
+        const sampleRate = newBuffer.sampleRate;
+        const numChannels = newBuffer.numberOfChannels; // Dynamically detect the number of channels
 
+        // Initialize the merged buffer if it's the first chunk
+        if (!this.mergedBuffers) {
+            this.mergedBuffers = Array.from({ length: numChannels }, () => []);
+            this.mergedSampleRate = sampleRate;
+        }
+
+        // Append the new data to the appropriate channel buffers
+        for (let channel = 0; channel < numChannels; channel++) {
+            const newChannelData = newBuffer.getChannelData(channel);
+            this.mergedBuffers[channel].push(newChannelData);
+        }
+
+        // Merge and concatenate buffers for each channel
+        const mergedChannels = this.mergedBuffers.map((channelData) => {
+            // Flatten the array of Float32Arrays into one contiguous Float32Array
+            const totalLength = channelData.reduce((sum, array) => sum + array.length, 0);
+            const mergedChannel = new Float32Array(totalLength);
+            let offset = 0;
+            for (const array of channelData) {
+                mergedChannel.set(array, offset);
+                offset += array.length;
+            }
+            return mergedChannel;
+        });
+
+        // Create a new AudioBuffer with the correct number of channels and sample rate
+        const mergedAudioBuffer = this.context.createBuffer(
+            numChannels,
+            mergedChannels[0].length, // Assuming all channels have the same length
+            this.mergedSampleRate
+        );
+
+        // Copy the merged data into the respective channels of the AudioBuffer
+        for (let channel = 0; channel < numChannels; channel++) {
+            mergedAudioBuffer.copyToChannel(mergedChannels[channel], channel);
+        }
+
+        // Set the updated AudioBuffer to RNBO
+        await this.device.setDataBuffer("world1", mergedAudioBuffer);
+        console.log("[SoundEngine] RNBO buffer extended with new chunk.");
+
+    } catch (error) {
+        console.error("[SoundEngine] Error appending to RNBO buffer:", error);
+    }
+}
   /**
    * Utility function for linear mapping.
    */
@@ -161,21 +202,41 @@ export class SoundEngine {
     return ((value - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
   }
 
+  async preloadAndSuspend() {
+    try {
+      // Create the audio context if it doesn’t exist
+      if (!this.context) {
+        const WAContext = window.AudioContext || window.webkitAudioContext;
+        this.context = new WAContext();
+      }
+  
+      await this.init();  // Ensure the RNBO device is created before loading the buffer
+      await this.context.suspend();
+      console.log("[SoundEngine] Audio preloaded and context suspended.");
+  
+    } catch (error) {
+      console.error("[SoundEngine] Error during preload and suspend:", error);
+    }
+  }
+  
   /**
    * Sends a "play" command to the RNBO device.
    * If not initialized, calls init() first.
    */
-  play() {
-    if (!this.initialized) {
-      this.init()
-        .then(() => {
-          this._resumeAndPlay();
-        })
-        .catch(err => {
-          console.error("SoundEngine: Error during initialization on play:", err);
-        });
-    } else {
-      this._resumeAndPlay();
+  async play() {
+    try {
+      if (!this.initialized) {
+        await this.init();  // Ensure RNBO device and context are ready
+      }
+  
+      if (this.context.state === "suspended") {
+        await this.context.resume();  // Resume audio context on user action
+        console.log("[SoundEngine] Audio context resumed.");
+      }
+  
+      this._sendPlayEvent();  // Start playback
+    } catch (error) {
+      console.error("[SoundEngine] Error during play:", error);
     }
   }
 
@@ -296,4 +357,33 @@ export class SoundEngine {
         console.warn("SoundEngine: Unknown parameter", parameterName);
     }
   }
+
+
+  cleanUp() {
+    try {
+      console.log("[SoundEngine] Cleaning up resources...");
+  
+      // Release buffers
+      const bufferDescriptions = this.device.dataBufferDescriptions;
+      bufferDescriptions.forEach(async (desc) => {
+        await this.device.releaseDataBuffer(desc.id);
+        console.log(`[SoundEngine] Released buffer with id ${desc.id}`);
+      });
+  
+      // Unsubscribe from RNBO events (if applicable)
+      this.device.messageEvent.unsubscribe();
+      console.log("[SoundEngine] Unsubscribed from RNBO events.");
+  
+      // Close the audio context
+      if (this.context && this.context.state !== "closed") {
+        this.context.close();
+        console.log("[SoundEngine] Audio context closed.");
+      }
+  
+    } catch (error) {
+      console.error("[SoundEngine] Error during clean-up:", error);
+    }
+  }
+
+  
 }

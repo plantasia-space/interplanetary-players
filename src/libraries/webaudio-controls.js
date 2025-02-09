@@ -1306,11 +1306,9 @@ try {
       // Calculate ratio
       let ratio;
       if (this.log) {
-        if (this._value <= 0 || this._min <= 0) {
-          ratio = 0;
-        } else {
-          ratio = Math.log(this._value / this._min) / Math.log(this._max / this._min);
-        }
+        // Use the normalized value computed as (raw - min) / (max - min)
+        // Note: For a dB parameter, _min is -60 and _max is 6.
+        ratio = (this._value - this._min) / (this._max - this._min);
       } else {
         ratio = (this._value - this._min) / (this._max - this._min);
       }
@@ -1649,39 +1647,30 @@ try {
       const rect = this.canvas.getBoundingClientRect();
       const clientX = touch.clientX;
       const clientY = touch.clientY;
-
+    
       let ratio;
-      if (this.isHorizontal) {
-        let x = clientX - rect.left;
-        x = Math.max(this.trackX, Math.min(this.trackX + this.trackLength, x));
-        ratio = (x - this.trackX) / this.trackLength;
-      } else {
-        let y = clientY - rect.top;
-        y = Math.max(this.trackY, Math.min(this.trackY + this.trackLength, y));
-        ratio = 1 - (y - this.trackY) / this.trackLength;
-      }
+// Compute the pointer ratio as you already do:
+if (this.isHorizontal) {
+  let x = clientX - rect.left;
+  x = Math.max(this.trackX, Math.min(this.trackX + this.trackLength, x));
+  ratio = (x - this.trackX) / this.trackLength;
+} else {
+  let y = clientY - rect.top;
+  y = Math.max(this.trackY, Math.min(this.trackY + this.trackLength, y));
+  ratio = 1 - (y - this.trackY) / this.trackLength;
+}
+// (Optional) Add snapping if the ratio is very near 0 or 1:
+const snapThreshold = 0.01; // adjust as needed
+if (ratio <= snapThreshold) {
+  ratio = 0;
+} else if (ratio >= 1 - snapThreshold) {
+  ratio = 1;
+}
 
-      let newValue;
-      if (this.log) {
-        if (this._min <= 0) {
-          newValue = this._min;
-        } else {
-          newValue = this._min * Math.pow(this._max / this._min, ratio);
-        }
-      } else {
-        newValue = this._min + ratio * (this._max - this._min);
-      }
-
-      // Snap to max or min if at the boundaries to ensure precision
-      if (ratio === 1) {
-        newValue = this._max;
-      } else if (ratio === 0) {
-        newValue = this._min;
-      }
-
-      this.setValue(newValue, true);
+// Now compute the new raw value using the parameter manager’s mapping:
+let newValue = ratio * (this._max - this._min) + this._min;
+this.setValue(newValue, true);
     }
-
     /**
      * Updates the slider value based on relative pointer movement.
      * @param {PointerEvent | TouchEvent | MouseEvent} ev - The pointer event.
@@ -3011,25 +3000,19 @@ try {
         let displayValue;
       
         if (this.isLogarithmic) {
-          // Define a threshold near the minimum value
-          const threshold = this.min + 0.0001 * (this.max - this.min);
-      
-          if (this.value <= threshold) {
-            // For values below the threshold, show "-infinite"
+          // Use the normalized value (if available) to decide whether to show -∞.
+          const norm = user1Manager.getNormalizedValue(this.rootParam);
+          if (norm <= 0.0001) {
             displayValue = '-∞';
           } else {
-            // Format logarithmic values to two decimal places
             displayValue = parseFloat(this.value).toFixed(2);
           }
         } else {
-          // For linear values, format to two decimal places
           displayValue = parseFloat(this.value).toFixed(2);
         }
       
-        // Assign the formatted value to the element
         this.elem.value = displayValue;
-      }
-      
+      }      
       setupKeyboardInteraction() {
         const keyboardModal = document.getElementById("numericKeyboardModal");
         const keyboard = keyboardModal.querySelector("webaudio-numeric-keyboard");
@@ -3111,16 +3094,22 @@ validateValue(value) {
 
   return validatedValue;
 }
-      onParameterChanged(parameterName, newValue) {
-        if (this.rootParam === parameterName) {
-          if (this.isBidirectional) {
-            this.updatingFromParameter = true;
-            // Update the slider's value with the transformed value from the ParameterManager
-            this.setValue(newValue, false);
-            this.updatingFromParameter = false;
-          }
-        }
-      }
+onParameterChanged(parameterName, newValue) {
+  if (this.rootParam === parameterName) {
+    if (this.isBidirectional) {
+      this.updatingFromParameter = true;
+
+      // 1) Retrieve the real dB from paramManager:
+      const rawDb = user1Manager.getRawValue(parameterName); 
+      // e.g. -20 or -7.2, etc.
+
+      // 2) Store that dB in this.value, without re-firing paramManager:
+      this.setValue(rawDb, /*fire=*/false);
+
+      this.updatingFromParameter = false;
+    }
+  }
+}
       onScaleChanged(parameterName, scale) {
 
         if (this.rootParam === parameterName) {

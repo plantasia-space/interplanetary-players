@@ -123,14 +123,16 @@ async function initializeApp() {
       const urlParams = new URLSearchParams(window.location.search);
       const trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
   
-      // Fetch configuration data and update cache
+      // Fetch configuration data and update cache, then fetch RNBO library
       await dataManager.fetchAndUpdateConfig(trackId);
-  
-      // Retrieve the full cached data (contains track, soundEngine, interplanetaryPlayer)
       const cachedData = Constants.getTrackData(trackId);
+  
       if (!cachedData) {
         throw new Error('Failed to fetch track data from cache.');
       }
+  
+      // Load RNBO library based on patcher version
+      const rnbo = await loadRNBOLibrary(cachedData.soundEngine.soundEngineJSONURL);
   
       // Destructure the cached data
       const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
@@ -140,10 +142,20 @@ async function initializeApp() {
       applyColorsFromTrackData(cachedData);
       updateKnobsFromTrackData(cachedData);
   
-      // **Important:** Create the SoundEngine instance before setting up interactions.
+      // Create the SoundEngine instance with the loaded RNBO library
       const ksteps = 255;
-      user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps);
-      
+      user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps, rnbo);
+  
+    // Attach the clean-up listener once the SoundEngine is created
+    window.addEventListener('beforeunload', () => {
+        if (user1SoundEngine) {
+            user1SoundEngine.cleanUp();
+        }
+        });
+        
+      // Start preloading the audio buffer (but don’t play yet)
+      await user1SoundEngine.preloadAndSuspend();
+  
       // Now pass the SoundEngine instance into your UI setup.
       setupInteractions(dataManager, user1SoundEngine, user1Manager);
       dataManager.populatePlaceholders('monitorInfo');
@@ -151,14 +163,44 @@ async function initializeApp() {
       // Load and display the 3D model (your other initialization logic)
       await loadAndDisplayModel(scene, cachedData);
       console.log('[APP] Model loaded successfully.');
-      
-      // Optionally, you can choose not to call soundEngine.init() here
-      // and let the play button trigger it on the first user gesture.
+  
     } catch (error) {
       console.error('[APP] Error during application initialization:', error);
     }
   }
   
+/**
+ * Dynamically loads the RNBO library based on the patcher version.
+ * @param {string} patchExportURL - URL to fetch the RNBO patcher.
+ * @returns {Promise<object>} Resolves with the RNBO object after loading the script.
+ */
+async function loadRNBOLibrary(patchExportURL) {
+    console.log(`[RNBO] Fetching patch metadata from: ${patchExportURL}`);
+    const response = await fetch(patchExportURL);
+    if (!response.ok) {
+        throw new Error(`[RNBO] Failed to fetch patcher: ${response.statusText}`);
+    }
+    const patcher = await response.json();
+    const rnboversion = patcher.desc?.meta?.rnboversion;
+
+    if (!rnboversion) {
+        throw new Error("[RNBO] Version not found in patch metadata.");
+    }
+
+    const scriptUrl = `https://cdn.cycling74.com/rnbo/${rnboversion}/rnbo.min.js`;
+    console.log(`[RNBO] Loading script from: ${scriptUrl}`);
+
+    await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = scriptUrl;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`[RNBO] Failed to load: ${scriptUrl}`));
+        document.head.appendChild(script);
+    });
+
+    console.log("[RNBO] RNBO script loaded successfully.");
+    return window.RNBO;
+}
 
 // -----------------------------
 // Parameter Initialization Function
@@ -190,7 +232,7 @@ function initializeRootParams(parameterManager, trackData) {
             min: -60, 
             max: 6, 
             scale: "logarithmic", // Scale type for transformations
-            inputTransform: logarithmic.inverse, // Transformation for input
+            inputTransform: logarithmic.inverwse, // Transformation for input
             outputTransform: logarithmic.forward  // Transformation for output
         }, 
         'body-envelope': { 

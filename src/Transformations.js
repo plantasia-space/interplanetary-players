@@ -58,17 +58,29 @@ export const linear = {
  * @property {function(number): number} inverse - Maps dB scale back to normalized [0,1].
  */
 export const logarithmic = {
-  forward: (normalized) => {
-    const minDb = -60; // Minimum decibels
-    const maxDb = 6;    // Maximum decibels
-    // Map normalized [0,1] to [minDb, maxDb] with logarithmic scaling
-    return minDb + (maxDb - minDb) * normalized;
+  /**
+   * forward: from normalized [0..1] -> dB [-60..+6]
+   * We use an exponent to make the mapping non-linear.
+   */
+  forward: (norm) => {
+    const minDb = -60;
+    const maxDb = 6;
+    if (norm <= 0) return minDb; // treat 0 as the minimum
+    // Adjust 'exponent' for the curve shape; higher values compress the low end more.
+    const exponent = 2.0;
+    const mappedNorm = Math.pow(norm, exponent);
+    return minDb + (maxDb - minDb) * mappedNorm;
   },
+
+  /**
+   * inverse: from dB [-60..+6] -> normalized [0..1]
+   */
   inverse: (db) => {
     const minDb = -60;
     const maxDb = 6;
-    // Normalize dB to [0,1]
-    return (db - minDb) / (maxDb - minDb);
+    if (db <= minDb) return 0;
+    const exponent = 2.0;
+    const mappedNorm = (db - minDb) / (maxDb - minDb);
+    return Math.pow(mappedNorm, 1 / exponent);
   },
 };
-
