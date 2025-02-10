@@ -119,22 +119,18 @@ export class SoundEngine {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-  
-        // Decode the chunk and calculate its duration
+      
+        // Decode the chunk immediately instead of waiting
         const chunkBuffer = await new Response(value).arrayBuffer();
         const audioBuffer = await this.context.decodeAudioData(chunkBuffer);
-        const chunkDuration = audioBuffer.duration;  // Get the duration of the chunk in seconds
-  
-        // Accumulate the total duration
-        this.totalDuration += chunkDuration;
-  
+        
+        // Accumulate the total duration and append to RNBO
+        this.totalDuration += audioBuffer.duration;
         if (!initialBufferFilled) {
-          // Initially set the RNBO buffer and start playback
           await this.device.setDataBuffer("world1", audioBuffer);
           this._sendPlayEvent();  // Start playback after the initial chunk
           initialBufferFilled = true;
         } else {
-          // Append subsequent chunks to the RNBO buffer
           await this.appendToRNBOBuffer(audioBuffer);
         }
       }
@@ -164,15 +160,12 @@ export class SoundEngine {
 
         // Merge and concatenate buffers for each channel
         const mergedChannels = this.mergedBuffers.map((channelData) => {
-            // Flatten the array of Float32Arrays into one contiguous Float32Array
-            const totalLength = channelData.reduce((sum, array) => sum + array.length, 0);
-            const mergedChannel = new Float32Array(totalLength);
-            let offset = 0;
-            for (const array of channelData) {
-                mergedChannel.set(array, offset);
-                offset += array.length;
-            }
-            return mergedChannel;
+          return channelData.reduce((merged, chunk) => {
+            const newBuffer = new Float32Array(merged.length + chunk.length);
+            newBuffer.set(merged);
+            newBuffer.set(chunk, merged.length);
+            return newBuffer;
+          }, new Float32Array());
         });
 
         // Create a new AudioBuffer with the correct number of channels and sample rate
