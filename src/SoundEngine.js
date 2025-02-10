@@ -105,40 +105,16 @@ export class SoundEngine {
     try {
       const audioURL = this.trackData.audioFileMP3URL || this.trackData.audioFileWAVURL;
       const response = await fetch(audioURL);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
   
-      if (!response.body) {
-        throw new Error("Streaming not supported.");
-      }
+      await this.device.setDataBuffer("world1", audioBuffer);
+      this.totalDuration = audioBuffer.duration;
+      console.log("[SoundEngine] Full audio buffer loaded.");
   
-      const reader = response.body.getReader();
-      let initialBufferFilled = false;
-      this.totalDuration = 0;  // Store the total duration in seconds
-  
-      console.log("[SoundEngine] Streaming and buffering audio...");
-  
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-      
-        // Decode the chunk immediately instead of waiting
-        const chunkBuffer = await new Response(value).arrayBuffer();
-        const audioBuffer = await this.context.decodeAudioData(chunkBuffer);
-        
-        // Accumulate the total duration and append to RNBO
-        this.totalDuration += audioBuffer.duration;
-        if (!initialBufferFilled) {
-          await this.device.setDataBuffer("world1", audioBuffer);
-          this._sendPlayEvent();  // Start playback after the initial chunk
-          initialBufferFilled = true;
-        } else {
-          await this.appendToRNBOBuffer(audioBuffer);
-        }
-      }
-  
-      console.log(`[SoundEngine] Audio fully streamed and buffered. Total duration: ${this.totalDuration * 1000} ms`);
-  
+      this._sendPlayEvent();
     } catch (error) {
-      console.error("[SoundEngine] Error during audio streaming and buffering:", error);
+      console.error("[SoundEngine] Error loading full buffer:", error);
     }
   }
   async appendToRNBOBuffer(newBuffer) {
