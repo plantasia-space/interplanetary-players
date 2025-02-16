@@ -37,65 +37,80 @@ export class SoundEngine {
    * Asynchronously initializes the RNBO device and loads the audio buffer.
    * This method is intended to run only once.
    */
-  async init() {
-    if (this.initialized) return;
-  
-    try {
-      const patchExportURL = this.soundEngineData.soundEngineJSONURL;
-      console.log("Fetching RNBO patch from:", patchExportURL);
-  
-      const WAContext = window.AudioContext || window.webkitAudioContext;
-      this.context = new WAContext();
-  
-      const rawPatcher = await fetch(patchExportURL);
-      const patcher = await rawPatcher.json();
-  
-      this.device = await this.rnbo.createDevice({ context: this.context, patcher });
-      this.device.node.connect(this.context.destination);
-  
-      // Load and stream the audio buffer, while accumulating the total duration.
-      await this.loadAudioBuffer();
-  
-      // Retrieve RNBO parameter objects AFTER loading the audio buffer
-      this.inputX = this.device.parametersById.get("inputX");
-      this.inputY = this.device.parametersById.get("inputY");
-      this.inputZ = this.device.parametersById.get("inputZ");
-      this.inputGain = this.device.parametersById.get("inputGain");
-      this.playMin = this.device.parametersById.get("sampler/playMin");
-      this.playMax = this.device.parametersById.get("sampler/playMax");
-  
-      // Set the play loop parameters based on the loaded buffer
-      this.playMin.value = 0;
-      // Convert totalDuration (in seconds) to milliseconds:
-      this.playMax.value = this.totalDuration * 1000;
-      console.log(`[SoundEngine] Set playMin to ${this.playMin.value} and playMax to ${this.playMax.value} ms`);
-  
-      // (Optional) You might want to also update these as more chunks are appended if you expect the buffer to grow over time.
-  
-      // Subscribe to RNBO message events (for amplitude updates, etc.)
-      this.device.messageEvent.subscribe((ev) => {
-        if (ev.tag === "amp") {
-          if (typeof ev.payload === "number") {
-            this.amplitude = ev.payload;
-          } else {
-            console.error("Unexpected payload format:", ev.payload);
-          }
-        }
-      });
-  
-      // Subscribe to key user parameters AFTER the RNBO parameter objects exist.
-      this.userManager.subscribe(this, "body-level", 1);
-      this.userManager.subscribe(this, "x", 1);
-      this.userManager.subscribe(this, "y", 1);
-      this.userManager.subscribe(this, "z", 1);
-  
-      this.initialized = true;
-      console.log("SoundEngine initialized successfully.");
-    } catch (error) {
-      console.error("Error creating RNBO:", error);
-    }
-  }
+/**
+ * Asynchronously initializes the RNBO device and loads the audio buffer.
+ * This method is intended to run only once.
+ */
+async init() {
+  if (this.initialized) return;
 
+  try {
+    // 1. Fetch the patch JSON.
+    const patchExportURL = this.soundEngineData.soundEngineJSONURL;
+    console.log("[SoundEngine] Fetching RNBO patch from:", patchExportURL);
+
+    // 2. Create an AudioContext (if it does not already exist).
+    const WAContext = window.AudioContext || window.webkitAudioContext;
+    this.context = new WAContext();
+
+    // 3. Download and parse the patcher JSON.
+    const rawPatcher = await fetch(patchExportURL);
+    const patcher = await rawPatcher.json();
+
+    // 4. Create the RNBO device and connect it to the AudioContext destination.
+    this.device = await this.rnbo.createDevice({ context: this.context, patcher });
+    this.device.node.connect(this.context.destination);
+
+    // 5. Load the entire audio file (MP3/WAV) and set it on RNBO in one go.
+    await this.loadAudioBuffer(); 
+    // After this call, `this.totalDuration` should be set (if available).
+
+    // 6. Retrieve RNBO parameter objects AFTER loading the audio buffer.
+    this.inputX    = this.device.parametersById.get("inputX");
+    this.inputY    = this.device.parametersById.get("inputY");
+    this.inputZ    = this.device.parametersById.get("inputZ");
+    this.inputGain = this.device.parametersById.get("inputGain");
+    this.playMin   = this.device.parametersById.get("sampler/playMin");
+    this.playMax   = this.device.parametersById.get("sampler/playMax");
+
+    // 7. If your RNBO patch is a sampler, set the loop boundaries (in ms).
+    //    Convert totalDuration (seconds) -> milliseconds, if totalDuration is set.
+    if (this.playMin && this.playMax && this.totalDuration) {
+      this.playMin.value = 0;
+      this.playMax.value = this.totalDuration * 1000;
+      console.log(
+        `[SoundEngine] Set playMin to ${this.playMin.value}, playMax to ${this.playMax.value} ms`
+      );
+    }
+
+    // 8. Subscribe to RNBO message events (e.g., amplitude updates).
+    this.device.messageEvent.subscribe((ev) => {
+      if (ev.tag === "amp") {
+        if (typeof ev.payload === "number") {
+          this.amplitude = ev.payload;
+          // Optionally do something with amplitude here...
+        } else {
+          console.error("Unexpected payload format from 'amp' message:", ev.payload);
+        }
+      }
+    });
+
+    // 9. Subscribe this SoundEngine to user parameters. 
+    //    We do this AFTER the RNBO parameter references exist.
+    this.userManager.subscribe(this, "body-level", 1);
+    this.userManager.subscribe(this, "x", 1);
+    this.userManager.subscribe(this, "y", 1);
+    this.userManager.subscribe(this, "z", 1);
+
+    // 10. Mark initialization as complete.
+    this.initialized = true;
+    console.log("[SoundEngine] Initialized successfully.");
+  } catch (error) {
+    console.error("[SoundEngine] Error in init():", error);
+  }
+}
+
+  
   /**
    * Loads the audio file into the RNBO device.
    * Chooses between MP3 and WAV based on network conditions.
@@ -103,67 +118,37 @@ export class SoundEngine {
    */
   async loadAudioBuffer() {
     try {
+      // Choose the best URL; fallback to WAV if MP3 not available
       const audioURL = this.trackData.audioFileMP3URL || this.trackData.audioFileWAVURL;
-      const response = await fetch(audioURL);
+      if (!audioURL) {
+        throw new Error("[SoundEngine] No audio file URL provided.");
+      }
+  
+      console.log("[SoundEngine] Fetching audio file:", audioURL);
+  
+      // 1. Fetch the entire file
+      const response = await fetch(audioURL, { cache: "reload" });
+      if (!response.ok) {
+        throw new Error(`[SoundEngine] Network response was not OK. Status: ${response.status}`);
+      }
+  
+      // 2. Convert response to ArrayBuffer
       const arrayBuffer = await response.arrayBuffer();
+      // 3. Decode the audio data into an AudioBuffer
       const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
   
+      // 4. Set the entire buffer in RNBO
       await this.device.setDataBuffer("world1", audioBuffer);
-      this.totalDuration = audioBuffer.duration;
-      console.log("[SoundEngine] Full audio buffer loaded.");
   
-      this._sendPlayEvent();
+      // (Optional) Store total duration for your UI or transport logic
+      this.totalDuration = audioBuffer.duration;
+      console.log(`[SoundEngine] Audio buffer fully loaded. Duration: ${this.totalDuration.toFixed(2)}s`);
+  
     } catch (error) {
-      console.error("[SoundEngine] Error loading full buffer:", error);
+      console.error("[SoundEngine] Error loading audio buffer:", error);
     }
   }
-  async appendToRNBOBuffer(newBuffer) {
-    try {
-        const sampleRate = newBuffer.sampleRate;
-        const numChannels = newBuffer.numberOfChannels; // Dynamically detect the number of channels
 
-        // Initialize the merged buffer if it's the first chunk
-        if (!this.mergedBuffers) {
-            this.mergedBuffers = Array.from({ length: numChannels }, () => []);
-            this.mergedSampleRate = sampleRate;
-        }
-
-        // Append the new data to the appropriate channel buffers
-        for (let channel = 0; channel < numChannels; channel++) {
-            const newChannelData = newBuffer.getChannelData(channel);
-            this.mergedBuffers[channel].push(newChannelData);
-        }
-
-        // Merge and concatenate buffers for each channel
-        const mergedChannels = this.mergedBuffers.map((channelData) => {
-          return channelData.reduce((merged, chunk) => {
-            const newBuffer = new Float32Array(merged.length + chunk.length);
-            newBuffer.set(merged);
-            newBuffer.set(chunk, merged.length);
-            return newBuffer;
-          }, new Float32Array());
-        });
-
-        // Create a new AudioBuffer with the correct number of channels and sample rate
-        const mergedAudioBuffer = this.context.createBuffer(
-            numChannels,
-            mergedChannels[0].length, // Assuming all channels have the same length
-            this.mergedSampleRate
-        );
-
-        // Copy the merged data into the respective channels of the AudioBuffer
-        for (let channel = 0; channel < numChannels; channel++) {
-            mergedAudioBuffer.copyToChannel(mergedChannels[channel], channel);
-        }
-
-        // Set the updated AudioBuffer to RNBO
-        await this.device.setDataBuffer("world1", mergedAudioBuffer);
-        console.log("[SoundEngine] RNBO buffer extended with new chunk.");
-
-    } catch (error) {
-        console.error("[SoundEngine] Error appending to RNBO buffer:", error);
-    }
-}
   /**
    * Utility function for linear mapping.
    */
@@ -244,7 +229,8 @@ export class SoundEngine {
   }
 
   stop() {
-    this.pause();
+    const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "stop", [1]);
+    this.device.scheduleEvent(messageEvent);    
     console.log("SoundEngine: Stop command processed.");
   }
 
@@ -343,7 +329,7 @@ export class SoundEngine {
       this.device.messageEvent.unsubscribe();
       console.log("[SoundEngine] Unsubscribed from RNBO events.");
   
-      // Close the audio context
+      // Close the audio context 
       if (this.context && this.context.state !== "closed") {
         this.context.close();
         console.log("[SoundEngine] Audio context closed.");
