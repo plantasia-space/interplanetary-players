@@ -9,6 +9,7 @@
  */
 
 import { Constants } from './Constants.js';
+import WaveSurfer from 'https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesurfer.esm.js';
 
 /**
  * @class SoundEngine
@@ -119,6 +120,10 @@ export class SoundEngine {
       // 10. Mark initialization as complete.
       this.initialized = true;
       console.log("[SoundEngine] Initialized successfully.");
+
+      await this.initWaveSurferPeaks();
+
+
     } catch (error) {
       console.error("[SoundEngine] Error in init():", error);
     }
@@ -157,15 +162,68 @@ export class SoundEngine {
       // 4. Set the entire buffer in RNBO.
       await this.device.setDataBuffer("world1", audioBuffer);
 
-      // (Optional) Store total duration for UI or transport logic.
-      this.totalDuration = audioBuffer.duration;
       console.log(`[SoundEngine] Audio buffer fully loaded. Duration: ${this.totalDuration.toFixed(2)}s`);
     } catch (error) {
       console.error("[SoundEngine] Error loading audio buffer:", error);
     }
   }
 
-  /**
+    /**
+   * The "Simplest Approach" for WaveSurfer: use precomputed JSON peaks.
+   * 1) We fetch trackData.waveformJSONURL
+   * 2) Create wavesurfer with no actual audio loading
+   * 3) Use wavesurfer.load(null, precomputedPeaks, duration)
+   * 4) Manually sync playback position from RNBO in a requestAnimationFrame loop
+   */
+    async initWaveSurferPeaks() {
+      try {
+        if (!this.trackData.waveformJSONURL) {
+          console.warn("[WaveSurfer] No waveformJSONURL found in trackData. Skipping peaks approach.");
+          return;
+        }
+    
+        console.log("[WaveSurfer] Fetching waveform JSON:", this.trackData.waveformJSONURL);
+        const resp = await fetch(this.trackData.waveformJSONURL);
+        if (!resp.ok) throw new Error(`Waveform JSON fetch failed: ${resp.status}`);
+    
+        const waveData = await resp.json();
+    
+        if (!waveData || !waveData.data || !Array.isArray(waveData.data)) {
+          throw new Error("[WaveSurfer] Invalid waveform JSON format: 'data' array is missing.");
+        }
+    
+        const approximateDuration = waveData.durationSec || 120; // Fallback to 120s if missing
+        const peaks = waveData.data; // Use 'data' from JSON
+    
+        // Ensure we have a valid waveform container in the DOM
+        const waveformContainer = document.querySelector('#waveform');
+        if (!waveformContainer) {
+          throw new Error("[WaveSurfer] Cannot find #waveform container in the DOM.");
+        }
+    
+        // 2) Create WaveSurfer instance (purely for visualization)
+        this.wavesurfer = WaveSurfer.create({
+          container: waveformContainer,
+          interact: true, // No interaction since RNBO handles playback
+          normalize: true,
+          fillParent: true,
+        });
+    
+        // 3) Load the waveform peaks data (no audio file)
+        this.wavesurfer.load(null, peaks, approximateDuration);
+    
+        // 4) Listen for readiness
+        this.wavesurfer.on('ready', () => {
+          console.log("[WaveSurfer] Precomputed peaks loaded successfully.");
+        });
+    
+        console.log("[WaveSurfer] initWaveSurferPeaks completed.");
+      } catch (err) {
+        console.error("[WaveSurfer] Error in initWaveSurferPeaks:", err);
+      }
+    }
+    
+/**
    * Preloads the audio by initializing the device and then suspends the AudioContext.
    *
    * @async
