@@ -2,6 +2,8 @@
 :root {
     --size-knobs: calc(6vmin + 2vmax); 
     --bs-border-radius: 0.2rem;
+    --waveform-height: 70vh;
+
 }
 
 
@@ -400,6 +402,7 @@
 .waveform-container {
     display: flex;
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
     width: 100%; /* Ensure it takes full width */
@@ -409,7 +412,6 @@
 
 .waveform {
     width: 100%;
-    height: 120px;  /* Adjust height as needed */
     background: #ffffff00;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(255, 0, 0, 0.3);
@@ -433,10 +435,11 @@
     left: 0;
     top: -28px;
     transform: translateX(-50%);
+
 }
 
 #waveform ::part(region) {
-    background-color: rgba(0, 0, 100, 0.25) !important;
+    background-color: rgba(0, 0, 255, 0.837) !important;
 }
 
 #waveform ::part(region-green) {

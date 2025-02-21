@@ -201,14 +201,30 @@ export class SoundEngine {
           throw new Error("[WaveSurfer] Cannot find #waveform container in the DOM.");
         }
     
+        // Get CSS variables from the root element
+        const rootStyles = getComputedStyle(document.documentElement);
+        const waveColor = rootStyles.getPropertyValue('--color1').trim();
+        const progressColor = rootStyles.getPropertyValue('--color2').trim();
+        const cursorColor = rootStyles.getPropertyValue('--color2').trim(); // or another color
+        const waveformHeight = getComputedStyle(document.documentElement).getPropertyValue('--waveform-height');
+
         // 2) Create WaveSurfer instance (purely for visualization)
         this.wavesurfer = WaveSurfer.create({
-          container: waveformContainer,
-          interact: true, // No interaction since RNBO handles playback
-          normalize: true,
-          fillParent: true,
+            container: waveformContainer,
+            interact: true,
+            normalize: true,
+            fillParent: true,
+            height: parseInt(waveformHeight) || 120,  // Use CSS variable, fallback to 120
+            barWidth: 1,
+            barGap: 2,
+            barRadius: 1,
+
+            // ✅ Dynamically use CSS variables
+            waveColor: waveColor,         // Unplayed waveform color
+            progressColor: progressColor, // Played waveform color
+            cursorColor: cursorColor      // Cursor color
         });
-    
+      
         // 3) Load the waveform peaks data (no audio file)
         this.wavesurfer.load(null, peaks, approximateDuration);
     
