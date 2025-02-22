@@ -236,15 +236,32 @@ ModeManagerInstance.registerMode('COSMIC_LFO', {
 
   ModeManagerInstance.registerMode('PLAYBACK', {
     onEnter: () => {
-      console.log('[ModeManager] Entered PLAYBACK mode.');
-      notifications.showToast("Playback mode activated.");
+        console.log('[ModeManager] Entered PLAYBACK mode.');
+        notifications.showToast("Playback mode activated.");
+        
+        // Show waveform and playback switches
+        document.getElementById("waveform-container").style.display = "block";
+        document.getElementById("switches-container").style.display = "block";
+
+        // Hide all elements with class "xyz-cosmic-lfo"
+        document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
+            el.style.display = 'none';
+        });
     },
     onExit: () => {
-      console.log('[ModeManager] Exited PLAYBACK mode.');
-      notifications.showToast("Exited Playback mode.");
+        console.log('[ModeManager] Exited PLAYBACK mode.');
+        notifications.showToast("Exited Playback mode.");
+
+        // Hide waveform and playback switches
+        document.getElementById("waveform-container").style.display = "none";
+        document.getElementById("switches-container").style.display = "none";
+
+        // Show all elements with class "xyz-cosmic-lfo" again
+        document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
+            el.style.display = '';
+        });
     }
-  });
-  
+});
 // Optionally, set user1Manager here if it's globally accessible
 // ModeManagerInstance.user1Manager = user1Manager; // Set it when user1Manager is available
 

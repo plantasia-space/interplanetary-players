@@ -207,7 +207,6 @@ export class SoundEngine {
         const progressColor = rootStyles.getPropertyValue('--color2').trim();
         const cursorColor = rootStyles.getPropertyValue('--color2').trim(); // or another color
         const waveformHeight = getComputedStyle(document.documentElement).getPropertyValue('--waveform-height');
-
         // 2) Create WaveSurfer instance (purely for visualization)
         this.wavesurfer = WaveSurfer.create({
             container: waveformContainer,
@@ -218,7 +217,6 @@ export class SoundEngine {
             barWidth: 1,
             barGap: 2,
             barRadius: 1,
-
             // ✅ Dynamically use CSS variables
             waveColor: waveColor,         // Unplayed waveform color
             progressColor: progressColor, // Played waveform color
@@ -238,6 +236,7 @@ export class SoundEngine {
         console.error("[WaveSurfer] Error in initWaveSurferPeaks:", err);
       }
     }
+    
     
 /**
    * Preloads the audio by initializing the device and then suspends the AudioContext.
