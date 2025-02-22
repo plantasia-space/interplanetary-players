@@ -50,14 +50,6 @@
     margin-top: 1vh;
 
 }
-.playback-switch {
-    width: 10vmin;
-    height: 10vmin;
-    margin-bottom: 1vh;
-    margin-top: 1vh;
-}
-
-
 
 
 .lfo-interaction-button, .xyz-cosmic-lfo {
@@ -421,68 +413,136 @@
     fill: currentColor;
 }
 
-/* Ensure .waveform fits inside the action-gui-subcontainer */
+/* Ensure .waveform fits inside the container */
 .waveform-container {
     display: flex;
+    margin-top: 2vh; /* Keeps the container at the bottom of the sub-frame */
+    margin-bottom: 4vh; /* Keeps the container at the bottom of the sub-frame */
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%; /* Ensure it takes full width */
-    padding: 0.5rem 0;
-    position: relative; /* Helps with stacking */
+    justify-content: center; /* Centers vertically */
+    align-items: center;     /* Centers horizontally */
+    width: 100%;
+    height: calc(var(--waveform-height) * 2); /* Example of setting container height */
+    position: relative;
+    background: #111; /* Just for visibility, optional */
 }
-
 .waveform {
     width: 100%;
-    background: #ffffff00;
+    background: transparent;
     height: var(--waveform-height);
-    margin-bottom: 1vh;
-    margin-top: 1vh;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(255, 0, 0, 0.3);
-    overflow: hidden;
+    position: relative;
+    pointer-events: auto;
+
 }
 
-
-
+/* Cursor customization */
 #waveform ::part(cursor) {
-    height: 100px;
-    top: 28px;
-    border-radius: 4px;
+/*     top: 28px;
+ */    border-radius: 4px;
     border: 1px solid var(--color2);
 }
 
-#waveform ::part(cursor):after {
-    content: '⏄';
-    color: var(--color2);
-    font-size: 1.5em;
+/* Custom cursor with elapsed time */
+#waveform-time,
+#waveform-duration {
+    position: absolute;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 3px 5px;
+    color: #ddd;
+    border-radius: 3px;
+}
+
+#waveform-time {
+    left: 0;
+}
+
+#waveform-duration {
+    right: 0;
+}
+
+/* Hover effect */
+#waveform-hover {
     position: absolute;
     left: 0;
-    top: -28px;
-    transform: translateX(-50%);
-
+    top: 0;
+    z-index: 10;
+    pointer-events: none;
+    height: calc(var(--waveform-height) * 1.2);
+    width: 0;
+    mix-blend-mode: screen;
+    background: rgba(0, 0, 0, 0.8);
 }
 
+/* On hover, subtly change the waveform color */
+#waveform:hover #waveform-hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2); /* Slightly stronger effect */
+}
+
+/* Played region styling */
 #waveform ::part(region) {
-    background-color: rgba(0, 0, 255, 0.837) !important;
+    background-color: rgba(var(--color2), 0.6) !important;
 }
 
-#waveform ::part(region-green) {
-    background-color: rgba(0, 100, 0, 0.25) !important;
-    font-size: 12px;
-    text-shadow: 0 0 2px var(--color1);
-}
-
+/* Adjust region marker styling */
 #waveform ::part(marker) {
     background-color: var(--color1) !important;
     border: 1px solid var(--color2);
-    padding: 1px;
-    text-indent: 10px;
-    font-family: fantasy;
-    text-decoration: underline;
+    
 }
-
-#waveform ::part(region-handle-right) {
-    border-right-width: 4px !important;
-    border-right-color: var(--color2) !important;
-}
+/* Base styling for playback switches */
+.playback-switch {
+    pointer-events: auto;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    transition: transform 0.2s ease-in-out, background-color 0.3s ease-in-out;
+  }
+  
+  /* Hover: scale only; no color change */
+  .playback-switch:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Ensure the SVG inherits the button’s current color */
+  .playback-switch svg {
+    width: 60%;
+    height: 60%;
+    fill: currentColor;
+    transition: fill 0.3s ease-in-out;
+  }
+  
+  /* Group-specific base colors */
+  .playback-switch.move-group-button {
+    color: var(--color1);
+  }
+  
+  .playback-switch.loop-group-button {
+    color: var(--color2);
+  }
+  
+  /* Override global .interaction-button hover/focus for move group */
+  .playback-switch.move-group-button:hover,
+  .playback-switch.move-group-button:focus {
+    color: var(--color1) !important;
+    transform: scale(1.1);
+  }
+  
+  /* Override global .interaction-button hover/focus for loop group */
+  .playback-switch.loop-group-button:hover,
+  .playback-switch.loop-group-button:focus {
+    color: var(--color2) !important;
+    transform: scale(1.1);
+  }
+  
+  /* Active state: add a background highlight (or border, if desired) */
+  .playback-switch.active {
+    background-color: rgba(66, 66, 66, 0.8);
+  }
+  
+  /* In active state, ensure the SVG inherits the button’s currentColor */
+  .playback-switch.active svg {
+    fill: currentColor !important;
+  }

@@ -177,67 +177,87 @@ export class SoundEngine {
    */
     async initWaveSurferPeaks() {
       try {
-        if (!this.trackData.waveformJSONURL) {
-          console.warn("[WaveSurfer] No waveformJSONURL found in trackData. Skipping peaks approach.");
-          return;
-        }
-    
-        console.log("[WaveSurfer] Fetching waveform JSON:", this.trackData.waveformJSONURL);
-        const resp = await fetch(this.trackData.waveformJSONURL);
-        if (!resp.ok) throw new Error(`Waveform JSON fetch failed: ${resp.status}`);
-    
-        const waveData = await resp.json();
-    
-        if (!waveData || !waveData.data || !Array.isArray(waveData.data)) {
-          throw new Error("[WaveSurfer] Invalid waveform JSON format: 'data' array is missing.");
-        }
-    
-        const approximateDuration = waveData.durationSec || 120; // Fallback to 120s if missing
-        const peaks = waveData.data; // Use 'data' from JSON
-    
-        // Ensure we have a valid waveform container in the DOM
-        const waveformContainer = document.querySelector('#waveform');
-        if (!waveformContainer) {
-          throw new Error("[WaveSurfer] Cannot find #waveform container in the DOM.");
-        }
-    
-        // Get CSS variables from the root element
-        const rootStyles = getComputedStyle(document.documentElement);
-        const waveColor = rootStyles.getPropertyValue('--color1').trim();
-        const progressColor = rootStyles.getPropertyValue('--color2').trim();
-        const cursorColor = rootStyles.getPropertyValue('--color2').trim(); // or another color
-        const waveformHeight = getComputedStyle(document.documentElement).getPropertyValue('--waveform-height');
-        // 2) Create WaveSurfer instance (purely for visualization)
-        this.wavesurfer = WaveSurfer.create({
-            container: waveformContainer,
-            interact: true,
-            normalize: true,
-            fillParent: true,
-            height: parseInt(waveformHeight) || 120,  // Use CSS variable, fallback to 120
-            barWidth: 1,
-            barGap: 2,
-            barRadius: 1,
-            // ✅ Dynamically use CSS variables
-            waveColor: waveColor,         // Unplayed waveform color
-            progressColor: progressColor, // Played waveform color
-            cursorColor: cursorColor      // Cursor color
-        });
-      
-        // 3) Load the waveform peaks data (no audio file)
-        this.wavesurfer.load(null, peaks, approximateDuration);
-    
-        // 4) Listen for readiness
-        this.wavesurfer.on('ready', () => {
-          console.log("[WaveSurfer] Precomputed peaks loaded successfully.");
-        });
-    
-        console.log("[WaveSurfer] initWaveSurferPeaks completed.");
+          if (!this.trackData.waveformJSONURL) {
+              console.warn("[WaveSurfer] No waveformJSONURL found in trackData. Skipping peaks approach.");
+              return;
+          }
+  
+          console.log("[WaveSurfer] Fetching waveform JSON:", this.trackData.waveformJSONURL);
+          const resp = await fetch(this.trackData.waveformJSONURL);
+          if (!resp.ok) throw new Error(`Waveform JSON fetch failed: ${resp.status}`);
+  
+          const waveData = await resp.json();
+  
+          if (!waveData || !waveData.data || !Array.isArray(waveData.data)) {
+              throw new Error("[WaveSurfer] Invalid waveform JSON format: 'data' array is missing.");
+          }
+  
+          const approximateDuration = waveData.durationSec || 120; // Fallback to 120s if missing
+          const peaks = waveData.data; // Use 'data' from JSON
+  
+          // Ensure we have a valid waveform container in the DOM
+          const waveformContainer = document.querySelector('#waveform');
+          if (!waveformContainer) {
+              throw new Error("[WaveSurfer] Cannot find #waveform container in the DOM.");
+          }
+  
+          // Get CSS variables from the root element
+          const rootStyles = getComputedStyle(document.documentElement);
+          const waveColor = rootStyles.getPropertyValue('--color1').trim();
+          const progressColor = rootStyles.getPropertyValue('--color2').trim();
+          const cursorColor = rootStyles.getPropertyValue('--color2').trim();
+          const waveformHeight = getComputedStyle(document.documentElement).getPropertyValue('--waveform-height');
+  
+          // 2) Create WaveSurfer instance (SoundCloud-style)
+          this.wavesurfer = WaveSurfer.create({
+              container: waveformContainer,
+              interact: true,
+              normalize: true,
+              fillParent: true,
+              height: parseInt(waveformHeight) || 120,
+              barWidth: 2, // SoundCloud-style bars
+              barGap: 1,
+              barRadius: 1,
+              waveColor: waveColor,
+              progressColor: progressColor,
+              cursorColor: cursorColor
+          });
+  
+          // 3) Load the waveform peaks data (no audio file)
+          this.wavesurfer.load(null, peaks, approximateDuration);
+  
+          // 4) Time display logic
+          const timeEl = document.getElementById('waveform-time');
+          const durationEl = document.getElementById('waveform-duration');
+  
+          this.wavesurfer.on('decode', (duration) => {
+              durationEl.textContent = this.formatTime(duration);
+          });
+  
+          this.wavesurfer.on('timeupdate', (currentTime) => {
+              timeEl.textContent = this.formatTime(currentTime);
+          });
+  
+          // 5) Hover effect
+          const hoverEl = document.getElementById('waveform-hover');
+          waveformContainer.addEventListener('pointermove', (e) => {
+              hoverEl.style.width = `${e.offsetX}px`;
+          });
+  
+          console.log("[WaveSurfer] initWaveSurferPeaks completed.");
       } catch (err) {
-        console.error("[WaveSurfer] Error in initWaveSurferPeaks:", err);
+          console.error("[WaveSurfer] Error in initWaveSurferPeaks:", err);
       }
-    }
-    
-    
+  }
+  
+  /**
+   * Formats time from seconds to MM:SS.
+   */
+  formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const secondsRemainder = Math.round(seconds) % 60;
+      return `${minutes}:${secondsRemainder.toString().padStart(2, '0')}`;
+  }    
 /**
    * Preloads the audio by initializing the device and then suspends the AudioContext.
    *

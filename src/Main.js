@@ -67,6 +67,9 @@ import { SoundEngine } from './SoundEngine.js';
 // Button group module
 import { ButtonGroup } from './ButtonGroup.js';
 
+// Button single module
+import { ButtonSingle } from "./ButtonSingle.js";
+
 // Parameter manager for managing adjustable parameters
 import { ParameterManager } from './ParameterManager.js';
 
@@ -409,10 +412,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
-
+    // Attach event listeners to Bootstrap buttons
     
 });
 
+
+/**
+ * Toggles button state and logs action.
+ * @param {HTMLElement} button - The button element to toggle.
+ * @param {string} actionName - The name of the action for logging.
+ */
+function toggleButtonState(button, actionName) {
+    button.classList.toggle("active");
+    console.log(`[APP] ${actionName} toggled:`, button.classList.contains("active"));
+}
 // -----------------------------
 // Module Exports
 // -----------------------------

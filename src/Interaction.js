@@ -10,6 +10,7 @@
 
 import { ModeManagerInstance } from './ModeManager.js';
 import { ButtonGroup } from './ButtonGroup.js';
+import { ButtonSingle } from './ButtonSingle.js';  // Import ButtonSingle
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED, SENSORS_SUPPORTED, INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE  } from './Constants.js'; // Ensure SENSORS_SUPPORTED is defined
 import notifications from './AppNotifications.js';
@@ -17,61 +18,92 @@ import { SensorController } from './SensorsController.js'; // Import the class i
 
 /**
  * Sets up interactions for dynamic placeholder updates.
- * Initializes ButtonGroups and registers MIDI controllers if supported.
+ * Initializes ButtonGroups and Single Buttons, registers MIDI controllers if supported.
  * @memberof CoreModule 
  * @function setupInteractions
  * @param {DataManager} dataManager - The shared DataManager instance.
  * @param {SoundEngine} soundEngine - The shared SoundEngine instance.
  * @param {User1Manager} user1Manager - The user manager instance.
- * @returns {void}
- * @throws Will log an error if Bootstrap is not loaded.
  */
+
 export function setupInteractions(dataManager, soundEngine, user1Manager) {
     if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
-        return;
+      console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
+      return;
     }
-
-    // Assign user1Manager to ModeManager for access within mode hooks
+  
+    // Assign user1Manager to ModeManager
     ModeManagerInstance.user1Manager = user1Manager;
-
-    // Initialize all button groups
+  
+    // 1) Setup all ButtonGroup dropdowns
     const buttonGroups = [];
     document.querySelectorAll('.button-group-container').forEach(group => {
-        const groupType = group.getAttribute('data-group');
-
-        const buttonGroup = new ButtonGroup(
-            `.button-group-container[data-group="${groupType}"]`, // containerSelector
-            'ul.dropdown-menu',                                    // dropdownSelector
-            'button.dropdown-toggle',                             // buttonSelector
-            'a.dropdown-item',                                    // menuItemsSelector
-            '.button-icon',                                       // iconSelector
-            soundEngine,                                          // soundEngine
-            dataManager,                                           // dataManager
-            user1Manager
-        );
-        buttonGroups.push(buttonGroup);
+      const groupType = group.getAttribute('data-group');
+      const btnGroupInstance = new ButtonGroup(
+        `.button-group-container[data-group="${groupType}"]`,
+        'ul.dropdown-menu',
+        'button.dropdown-toggle',
+        'a.dropdown-item',
+        '.button-icon',
+        soundEngine,
+        dataManager,
+        user1Manager
+      );
+      buttonGroups.push(btnGroupInstance);
     });
-
-    // Register dropdown items with MIDIController for MIDI interactions
+  
+    // 2) Extract WaveSurfer from SoundEngine
+    const wavesurfer = soundEngine?.wavesurfer || null;
+  
+    // 3) Create Single Buttons with "0 or 1 active" logic for both groups
+// Group #1 (moveGroup) - always use color1 for the SVG
+new ButtonSingle(
+    "#playback-move",
+    "public/assets/icons/playback-move.svg",
+    null,
+    "pan-zoom",
+    wavesurfer, // WaveSurfer instance
+    "moveGroup",
+    false // allow 0 or 1 active
+  );
+  new ButtonSingle(
+    "#playback-selector",
+    "public/assets/icons/playback-selector.svg",
+    null,
+    "default",
+    null,
+    "moveGroup",
+    false
+  );
+  
+  // Group #2 (loopGroup) - always use color2 for the SVG
+  new ButtonSingle(
+    "#playback-loop",
+    "public/assets/icons/playback-loop.svg",
+    null,
+    "default",
+    null,
+    "loopGroup",
+    false
+  );
+  new ButtonSingle(
+    "#playback-infinite-loop",
+    "public/assets/icons/playback-infinite.svg",
+    null,
+    "default",
+    null,
+    "loopGroup",
+    false
+  );  
+    // 4) MIDI Setup for dropdown items
     if (MIDI_SUPPORTED && MIDIControllerInstance) {
-        registerMenuItemsWithMIDIController(buttonGroups);
+      registerMenuItemsWithMIDIController(buttonGroups);
     } else {
-        console.warn('MIDI is not supported in this environment. Skipping MIDI setup.');
+      console.warn('MIDI is not supported. Skipping MIDI setup.');
     }
-
-
-/*     const connectExternalSensor = document.getElementById('connect-external-sensor');
-    if (connectExternalSensor) {
-        connectExternalSensor.addEventListener('click', () => {
-            const sensorController = SensorController.getInstance(user1Manager);
-            sensorController.activateSensors();
-        });
-    }
- */
-
-}
-
+  
+    console.log("[Interactions] Both groups allow 0 or 1 active button now.");
+  }
 /**
  * Registers all dropdown items in the initialized ButtonGroups with MIDIController.
  * Ensures that MIDI interactions are properly linked to the corresponding UI elements.

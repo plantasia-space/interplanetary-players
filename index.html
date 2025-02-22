@@ -1119,74 +1119,32 @@
 
       
     </div>
-    <!-- Waveform Visualization Row (Initially Hidden) -->
-      <div class="row" id="waveform-container" style="display: none;">
-        <audio id="audioPlayer" src="" preload="auto"></audio>
-        <div id="waveform" class="waveform"></div>
-      </div>
+
+          <!-- Waveform Visualization -->
+<!-- Waveform Visualization Container -->
+<div id="waveform-container" class="waveform-container" style="display: none;">
+  <!-- Waveform Time (Current Time and Duration) -->
+  <div class="waveform-time-container">
+      <span id="waveform-time">0:00</span>
+      <span id="waveform-duration">0:00</span>
+  </div>
+
+  <!-- Waveform Box -->
+  <div id="waveform" class="waveform">
+      <div id="waveform-hover"></div>
+  </div>
+</div>
+
     </div>
         <!-- Additional Playback Switches -->
-        <div class="container" id="switches-container" style="display: none;">
+        <div class="switches-container" id="switches-container" style="display: none;">
           <div class="row justify-content-center">
-    <div class="col-10 d-flex justify-content-between">
-            <webaudio-switch
-              id="playback-move"
-              data-automatable="true"
-              type="kick"
-              min="0"
-              max="1"
-              state="0"
-              labelpos="center"
-              colors="var(--color2);var(--color1);var(--color3)"
-              class="playback-switch"
-
-              style="display: true;">
-            
-            </webaudio-switch>
-            <webaudio-switch
-              id="playback-selector"
-              data-automatable="true"
-              type="kick"
-              min="0"
-              max="1"
-              state="0"
-              labelpos="center"
-              colors="var(--color2);var(--color1);var(--color3)"
-              class="playback-switch"
-
-              style="display: true;">
-              
-            </webaudio-switch>
-  
-            <!-- Additional Switches -->
-            <webaudio-switch
-              id="playback-loop"
-              data-automatable="true"
-              type="toggle"
-              group="radio-xyz"
-              labelpos="center"
-              root-param="cosmic-radio-xyz"
-              class="playback-switch"
-              colors="var(--color2);var(--color1);var(--color3)"
-              >
-              
-            </webaudio-switch>
-      
-            <!-- Activate Sensors Button -->
-            <webaudio-switch
-              id="playback-infinite-loop"
-              data-automatable="true"
-              type="toggle"
-              min="0"
-              max="1"
-              state="0"
-              class="playback-switch"
-              
-              is-bidirectional="true"
-              midilearn="1"
-              colors="var(--color2);var(--color1);var(--color3)">
-            </webaudio-switch>
-            </div>
+            <div class="col-10 d-flex justify-content-between">
+              <button id="playback-move" class=" interaction-button  playback-switch"></button>
+              <button id="playback-selector" class=" interaction-button  playback-switch"></button>
+              <button id="playback-loop" class=" interaction-button  playback-switch"></button>
+              <button id="playback-infinite-loop" class=" interaction-button  playback-switch"></button>
+          </div>
           </div>
         </div>
 
