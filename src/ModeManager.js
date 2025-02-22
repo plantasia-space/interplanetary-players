@@ -233,6 +233,18 @@ ModeManagerInstance.registerMode('COSMIC_LFO', {
       CosmicLFO.getInstance().exitMode();
     }
   });
+
+  ModeManagerInstance.registerMode('PLAYBACK', {
+    onEnter: () => {
+      console.log('[ModeManager] Entered PLAYBACK mode.');
+      notifications.showToast("Playback mode activated.");
+    },
+    onExit: () => {
+      console.log('[ModeManager] Exited PLAYBACK mode.');
+      notifications.showToast("Exited Playback mode.");
+    }
+  });
+  
 // Optionally, set user1Manager here if it's globally accessible
 // ModeManagerInstance.user1Manager = user1Manager; // Set it when user1Manager is available
 

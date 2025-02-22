@@ -415,6 +415,9 @@ export class ButtonGroup {
             case 'Cosmic LFO':
                 ModeManagerInstance.activateMode('COSMIC_LFO');
                 break;
+            case 'Playback':
+                ModeManagerInstance.activateMode('PLAYBACK');
+                break;
 
             default:
                 console.warn(`[ButtonGroup] Unknown interaction mode selected: ${selectedValue}`);
