@@ -59,7 +59,7 @@ export function setupInteractions(dataManager, soundEngine, user1Manager) {
 // Group #1 (moveGroup) - always use color1 for the SVG
 new ButtonSingle(
     "#playback-move",
-    "public/assets/icons/playback-move.svg",
+    "/assets/icons/playback-move.svg",
     null,
     "pan-zoom",
     wavesurfer, // WaveSurfer instance
@@ -68,7 +68,7 @@ new ButtonSingle(
   );
   new ButtonSingle(
     "#playback-selector",
-    "public/assets/icons/playback-selector.svg",
+    "/assets/icons/playback-selector.svg",
     null,
     "default",
     null,
@@ -79,7 +79,7 @@ new ButtonSingle(
   // Group #2 (loopGroup) - always use color2 for the SVG
   new ButtonSingle(
     "#playback-loop",
-    "public/assets/icons/playback-loop.svg",
+    "/assets/icons/playback-loop.svg",
     null,
     "default",
     null,
@@ -88,7 +88,7 @@ new ButtonSingle(
   );
   new ButtonSingle(
     "#playback-infinite-loop",
-    "public/assets/icons/playback-infinite.svg",
+    "/assets/icons/playback-infinite.svg",
     null,
     "default",
     null,

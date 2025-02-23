@@ -68,6 +68,8 @@ export class ButtonSingle {
         }
     }
 
+    // Revised loadSVG method: fetches the SVG, inlines it,
+    // and applies classes/styles so it looks like the reference.
     async loadSVG() {
         try {
             const response = await fetch(this.svgPath);
@@ -79,12 +81,12 @@ export class ButtonSingle {
             const svgElement = svgDoc.documentElement;
 
             if (svgElement && svgElement.tagName.toLowerCase() === "svg") {
-                // Use "currentColor" so the SVG fill inherits from its parent's CSS,
-                // but we will control that via the injected group class.
+                // Ensure the SVG uses currentColor for fill so it can be styled via CSS.
                 svgElement.setAttribute("fill", "currentColor");
                 svgElement.setAttribute("role", "img");
                 svgElement.classList.add("icon-svg");
 
+                // Clear any existing content and inject the inline SVG.
                 this.button.innerHTML = "";
                 this.button.appendChild(svgElement);
             } else {
