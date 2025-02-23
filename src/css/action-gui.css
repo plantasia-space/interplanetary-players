@@ -529,28 +529,4 @@
   .playback-switch.active svg {
     fill: currentColor !important;
   }
-
-/* Ensure buttons and labels are centered and aligned */
-.button-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
   
-  /* Labels should inherit button color */
-  .switch-label {
-    margin-top: 5px;
-    font-size: 1.9em;
-    background-color: transparent; /* Keep consistent */
-    color: inherit; /* Inherits from button */
-    text-align: center;
-  }
-  
-  /* Ensure the label color matches the respective button */
-  .switch-label.move-group-button {
-    color: var(--color1);
-  }
-  
-  .switch-label.loop-group-button {
-    color: var(--color2);
-  }
