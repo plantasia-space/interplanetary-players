@@ -14,6 +14,12 @@
     fill: currentColor; /* Dynamic color */
 }
 
+/* Remove the default dropdown arrow */
+.btn.dropdown-toggle::after {
+    display: none !important;
+}
+
+
 .action-gui-container {
     display: flex;
     flex-direction: column;
@@ -509,6 +515,14 @@
     cursor: pointer;
     padding: 10px;
     transition: transform 0.2s ease-in-out, background-color 0.3s ease-in-out;
+    width: 13vmin;
+    height: 13vmin;
+        /*border: 2px solid var(--color1);  Add stroke */
+        border-radius: 8px; /* Slightly rounded corners */
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
   }
   
   /* Hover: scale only; no color change */
