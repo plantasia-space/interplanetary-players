@@ -32,8 +32,14 @@
 
 }
 
-.xyz-sensors-toggle {
+/* Update: Remove .xyz-balance entirely.
+   And set .xyz-sensors-toggle to have the same dimensions as .xyz-cosmic-lfo */
+   .xyz-sensors-toggle {
     display: none; /* Hide by default */
+    /* Default dimensions now match LFO buttons */
+    width: 8vmin;
+    height: 8vmin;
+    margin: 0.5vmin;
 }
 
 /* Default (Extra-large screens: xl ≥1200px) */
@@ -43,26 +49,18 @@
     margin-bottom: 1vh;
 }
 
-.xyz-balance, .xyz-sensors-toggle{
-    width: 5vmin;
-    height: 5vmin;
-    margin-bottom: 1vh;
-    margin-top: 1vh;
-
-}
-
-
+/* Removed .xyz-balance; .xyz-sensors-toggle now stands alone */
+ 
 .lfo-interaction-button, .xyz-cosmic-lfo {
     width: 8vmin;
     height: 8vmin;
-    margin: .5vmin;
+    margin: 0.5vmin;
 }
 
-.freq-multiplier-btn-lfo{
+.freq-multiplier-btn-lfo {
     width: 5vmin;
     height: 5vmin;
     padding: 0%;
-    
 }
 
 .xyz-param {
@@ -70,8 +68,6 @@
     height: 2vmin;
     font-size: 1.7vmin;
 }
-
-
 
 .transport-button, .interaction-button {
     width: 13vmin;
@@ -86,28 +82,26 @@
         width: calc(var(--size-knobs) + 2vmin);
         height: calc(var(--size-knobs) + 2vmin);
     }
-
-    .xyz-balance, .xyz-sensors-toggle {
+    /* Removed .xyz-balance; update .xyz-sensors-toggle */
+    .xyz-sensors-toggle {
         width: 5vmin;
         height: 5vmin;
     }
     .playback-switch {
-        width: 10vmin;
-        height: 10vmin;
+        width: 8vmin;
+        height: 8vmin;
     }
-    .lfo-interaction-button, .xyz-cosmic-lfo, {
+    .lfo-interaction-button, .xyz-cosmic-lfo {
         width: 8vmin;
         height: 5vmin;
-
     }
     .xyz-param {
         width: 8vmin;
         height: 3.5vmin;
         font-size: 2.5vmin;
     }
-
     .transport-button,
-     .interaction-button {
+    .interaction-button {
         width: 13vmin;
         height: 13vmin;
     }
@@ -119,27 +113,24 @@
         width: calc(var(--size-knobs) + 5vmin);
         height: calc(var(--size-knobs) + 5vmin);
     }
-
-    .xyz-balance, .xyz-sensors-toggle {
+    /* Removed .xyz-balance; update .xyz-sensors-toggle */
+    .xyz-sensors-toggle {
         width: 8vmin;
         height: 8vmin;
     }
-
     .playback-switch {
         width: 13vmin;
-        height: 13vmin;
+        height: 8vmin;
     }
     .lfo-interaction-button, .xyz-cosmic-lfo {
         width: 13vmin;
         height: 8vmin;
-
     }
     .xyz-param {
         width: 13vmin;
         height: 5vmin;
         font-size: 3vmin;
     }
-
     .transport-button,
     .interaction-button {
         width: 13vmin;
@@ -153,37 +144,30 @@
         width: calc(var(--size-knobs) + 6vmin);
         height: calc(var(--size-knobs) + 6vmin);
     }
-
-    .xyz-balance, .xyz-sensors-toggle {
+    /* Removed .xyz-balance; update .xyz-sensors-toggle */
+    .xyz-sensors-toggle {
         width: 8vmin;
         height: 8vmin;
     }
-
     .playback-switch {
         width: 13vmin;
-        height: 13vmin;
+        height: 8vmin;
     }
     .lfo-interaction-button, .xyz-cosmic-lfo {
         width: 13vmin;
         height: 8vmin;
-
     }
     .xyz-param {
         width: 12vmin;
         height: 5vmin;
         font-size: 3.5vmin;
     }
-
     .transport-button,
-     .interaction-button {
+    .interaction-button {
         width: 13vmin;
         height: 13vmin;
-
     }
 }
-
-
-
 
 /* Container Within Sub-frame */
 .action-gui-subcontainer {
@@ -195,7 +179,6 @@
     gap: 2vmin;
     box-sizing: border-box;
     position: relative; /* Allow absolute children */
-
 }
 
 
@@ -417,7 +400,7 @@
 .waveform-container {
     display: flex;
     margin-top: 2vh; /* Keeps the container at the bottom of the sub-frame */
-    margin-bottom: 4vh; /* Keeps the container at the bottom of the sub-frame */
+    margin-bottom: 2vh; /* Keeps the container at the bottom of the sub-frame */
     flex-direction: column;
     justify-content: center; /* Centers vertically */
     align-items: center;     /* Centers horizontally */
@@ -545,4 +528,29 @@
   /* In active state, ensure the SVG inherits the button’s currentColor */
   .playback-switch.active svg {
     fill: currentColor !important;
+  }
+
+/* Ensure buttons and labels are centered and aligned */
+.button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  /* Labels should inherit button color */
+  .switch-label {
+    margin-top: 5px;
+    font-size: 1.9em;
+    background-color: transparent; /* Keep consistent */
+    color: inherit; /* Inherits from button */
+    text-align: center;
+  }
+  
+  /* Ensure the label color matches the respective button */
+  .switch-label.move-group-button {
+    color: var(--color1);
+  }
+  
+  .switch-label.loop-group-button {
+    color: var(--color2);
   }

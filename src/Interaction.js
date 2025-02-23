@@ -10,7 +10,7 @@
 
 import { ModeManagerInstance } from './ModeManager.js';
 import { ButtonGroup } from './ButtonGroup.js';
-import { ButtonSingle } from './ButtonSingle.js';  // Import ButtonSingle
+import { PlaybackController } from './PlaybackController.js';  // Import PlaybackController
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED, SENSORS_SUPPORTED, INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE  } from './Constants.js'; // Ensure SENSORS_SUPPORTED is defined
 import notifications from './AppNotifications.js';
@@ -57,7 +57,7 @@ export function setupInteractions(dataManager, soundEngine, user1Manager) {
   
     // 3) Create Single Buttons with "0 or 1 active" logic for both groups
 // Group #1 (moveGroup) - always use color1 for the SVG
-new ButtonSingle(
+new PlaybackController(
     "#playback-move",
     "/assets/icons/playback-move.svg",
     null,
@@ -66,7 +66,7 @@ new ButtonSingle(
     "moveGroup",
     false // allow 0 or 1 active
   );
-  new ButtonSingle(
+  new PlaybackController(
     "#playback-selector",
     "/assets/icons/playback-selector.svg",
     null,
@@ -77,7 +77,7 @@ new ButtonSingle(
   );
   
   // Group #2 (loopGroup) - always use color2 for the SVG
-  new ButtonSingle(
+  new PlaybackController(
     "#playback-loop",
     "/assets/icons/playback-loop.svg",
     null,
@@ -86,7 +86,7 @@ new ButtonSingle(
     "loopGroup",
     false
   );
-  new ButtonSingle(
+  new PlaybackController(
     "#playback-infinite-loop",
     "/assets/icons/playback-infinite.svg",
     null,

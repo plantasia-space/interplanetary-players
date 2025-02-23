@@ -1136,19 +1136,33 @@
 </div>
 
     </div>
-        <!-- Additional Playback Switches -->
-        <div class="switches-container" id="switches-container" style="display: none;">
-          <div class="row justify-content-center">
-            <div class="col-10 d-flex justify-content-between">
-              <button id="playback-move" class=" interaction-button  playback-switch"></button>
-              <button id="playback-selector" class=" interaction-button  playback-switch"></button>
-              <button id="playback-loop" class=" interaction-button  playback-switch"></button>
-              <button id="playback-infinite-loop" class=" interaction-button  playback-switch"></button>
-          </div>
-          </div>
-        </div>
-
+    
+<!-- Additional Playback Switches -->
+<!-- Additional Playback Switches -->
+<div class="switches-container" id="switches-container" style="display: none;">
+  <div class="row justify-content-center">
+    <div class="col-10 d-flex justify-content-between align-items-center">
+      <div class="button-container">
+        <button id="playback-move" class="interaction-button playback-switch move-group-button"></button>
+        <span class="switch-label move-group-button">Pan Zoom</span>
+      </div>
+      <div class="button-container">
+        <button id="playback-selector" class="interaction-button playback-switch move-group-button"></button>
+        <span class="switch-label move-group-button">Select Loop</span>
+      </div>
+      <div class="button-container">
+        <button id="playback-loop" class="interaction-button playback-switch loop-group-button"></button>
+        <span class="switch-label loop-group-button">Loop</span>
+      </div>
+      <div class="button-container">
+        <button id="playback-infinite-loop" class="interaction-button playback-switch loop-group-button"></button>
+        <span class="switch-label loop-group-button">Loop All</span>
+      </div>
+    </div>
+  </div>
 </div>
+
+    </div>
               <!-- Cosmic-LFO Button Column (1 column) -->
               <div class="col-1 d-flex justify-content-center">
                 <!-- Interaction Button Group -->
