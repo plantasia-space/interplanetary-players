@@ -68,7 +68,9 @@ import { SoundEngine } from './SoundEngine.js';
 import { ButtonGroup } from './ButtonGroup.js';
 
 // Button single module
-import { PlaybackController } from "./PlaybackController.js";
+import { ButtonSingle } from "./ButtonSingle.js";
+
+
 
 // Parameter manager for managing adjustable parameters
 import { ParameterManager } from './ParameterManager.js';

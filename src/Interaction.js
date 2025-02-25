@@ -10,12 +10,12 @@
 
 import { ModeManagerInstance } from './ModeManager.js';
 import { ButtonGroup } from './ButtonGroup.js';
-import { PlaybackController } from './PlaybackController.js';  // Import PlaybackController
+import { ButtonSingle } from './ButtonSingle.js';  // Import ButtonSingle
 import { MIDIControllerInstance } from './MIDIController.js';
 import { MIDI_SUPPORTED, SENSORS_SUPPORTED, INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE  } from './Constants.js'; // Ensure SENSORS_SUPPORTED is defined
 import notifications from './AppNotifications.js';
 import { SensorController } from './SensorsController.js'; // Import the class instead of instance
-
+import { PlaybackController } from "./PlaybackController.js";
 /**
  * Sets up interactions for dynamic placeholder updates.
  * Initializes ButtonGroups and Single Buttons, registers MIDI controllers if supported.
@@ -51,58 +51,9 @@ export function setupInteractions(dataManager, soundEngine, user1Manager) {
       );
       buttonGroups.push(btnGroupInstance);
     });
-  
-    // 2) Extract WaveSurfer from SoundEngine
-    const wavesurfer = soundEngine?.wavesurfer || null;
-  
-    // 3) Create Single Buttons with "0 or 1 active" logic for both groups
-// Group #1 (moveGroup) - always use color1 for the SVG
-new PlaybackController(
-    "#playback-move",
-    "/assets/icons/playback-move.svg",
-    null,
-    "pan-zoom",
-    wavesurfer, // WaveSurfer instance
-    "moveGroup",
-    false // allow 0 or 1 active
-  );
-  new PlaybackController(
-    "#playback-selector",
-    "/assets/icons/playback-selector.svg",
-    null,
-    "default",
-    null,
-    "moveGroup",
-    false
-  );
-  
-  // Group #2 (loopGroup) - always use color2 for the SVG
-  new PlaybackController(
-    "#playback-loop",
-    "/assets/icons/playback-loop.svg",
-    null,
-    "default",
-    null,
-    "loopGroup",
-    false
-  );
-  new PlaybackController(
-    "#playback-infinite-loop",
-    "/assets/icons/playback-infinite.svg",
-    null,
-    "default",
-    null,
-    "loopGroup",
-    false
-  );  
-    // 4) MIDI Setup for dropdown items
-    if (MIDI_SUPPORTED && MIDIControllerInstance) {
-      registerMenuItemsWithMIDIController(buttonGroups);
-    } else {
-      console.warn('MIDI is not supported. Skipping MIDI setup.');
-    }
-  
-    console.log("[Interactions] Both groups allow 0 or 1 active button now.");
+    // 2) Initialize PlaybackController here
+    const playbackController = new PlaybackController(soundEngine);
+
   }
 /**
  * Registers all dropdown items in the initialized ButtonGroups with MIDIController.
