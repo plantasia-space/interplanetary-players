@@ -496,10 +496,6 @@
     background: rgba(255, 255, 255, 0.2); /* Slightly stronger effect */
 }
 
-/* Played region styling */
-#waveform ::part(region) {
-    background-color: rgba(var(--color2), 0.6) !important;
-}
 
 /* Adjust region marker styling */
 #waveform ::part(marker) {

@@ -9,6 +9,7 @@ import { ButtonSingle } from './ButtonSingle.js';
 import WaveSurfer from 'https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesurfer.esm.js';
 import RegionsPlugin from 'https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/plugins/regions.esm.js';
 
+
 export class PlaybackController {
   /**
    * @param {SoundEngine} soundEngine - An instance of SoundEngine; used to access audio controls.
@@ -147,6 +148,9 @@ export class PlaybackController {
       // Initialize dynamic region selection.
       this.initPlaybackSelector();
       
+      // Initialize zoom
+      this.initZoomHandler();
+
       console.log("[PlaybackController] WaveSurfer and regions initialized.");
     } catch (err) {
       console.error("[PlaybackController] Error in initWaveSurferPeaks:", err);
@@ -156,61 +160,171 @@ export class PlaybackController {
   /**
    * Sets up region selection using a playback selector button.
    */
-  initPlaybackSelector() {
-    const waveformContainer = document.querySelector('#waveform');
-    if (!waveformContainer) {
+/**
+ * Sets up region selection using a playback selector button.
+ */
+initPlaybackSelector() {
+  const waveformContainer = document.querySelector('#waveform');
+  if (!waveformContainer) {
       console.error("[PlaybackController] Cannot find #waveform container for region selection.");
       return;
-    }
-    
-    let isSelectingRegion = false;
-    let regionStart = null;
-    
-    // Create the playback selector button (ensure this element exists in your HTML).
-    const playbackSelectorButton = new ButtonSingle(
-      "#playback-selector-btn",
-      "/icons/selector_pointer.svg",
+  }
+
+  let isSelectingRegion = false;
+  let regionStart = null;
+  let currentRegion = null;
+
+  // Create the playback selector button.
+  const playbackSelectorButton = new ButtonSingle(
+      "#playback-selector",
+      "assets/icons/playback-selector.svg",
       () => {
-        if (playbackSelectorButton.isActive) {
-          console.log("[PlaybackController] Region selection mode enabled.");
-          waveformContainer.style.cursor = "crosshair";
-        } else {
-          console.log("[PlaybackController] Region selection mode disabled.");
-          waveformContainer.style.cursor = "default";
-        }
+          if (playbackSelectorButton.isActive) {
+              console.log("[PlaybackController] Region selection mode enabled.");
+              waveformContainer.style.cursor = "crosshair";
+          } else {
+              console.log("[PlaybackController] Region selection mode disabled.");
+              waveformContainer.style.cursor = "default";
+              isSelectingRegion = false;
+              regionStart = null;
+          }
       },
       "region-selection"
-    );
-    
-    // Listen for clicks on the waveform when region selection is active.
-    waveformContainer.addEventListener("click", (event) => {
+  );
+
+  // Helper function to get time from event
+  const getEventTime = (event) => {
+      const x = event.touches ? event.touches[0].clientX : event.clientX;
+      const rect = waveformContainer.getBoundingClientRect();
+      const relativeX = x - rect.left;
+      const duration = this.wavesurfer.getDuration();
+      return (relativeX / rect.width) * duration;
+  };
+
+  // Handle click/tap
+  const handleClick = (event) => {
       if (!playbackSelectorButton.isActive) return;
-      
-      const clickTime = this.wavesurfer.getCurrentTime();
+
+      const clickTime = getEventTime(event);
+
       if (!isSelectingRegion) {
-        regionStart = clickTime;
-        console.log(`[PlaybackController] Region start set at ${regionStart}`);
-        isSelectingRegion = true;
+          // First tap: set marker in
+          regionStart = clickTime;
+          isSelectingRegion = true;
+          console.log(`[PlaybackController] Region start set at ${regionStart}`);
+
+          // Remove existing region if present
+          if (currentRegion) {
+              currentRegion.remove();
+              currentRegion = null;
+          }
       } else {
-        const regionEnd = clickTime;
-        if (regionEnd > regionStart) {
-          this.regions.addRegion({
-            start: regionStart,
-            end: regionEnd,
-            color: "rgba(255, 0, 0, 0.3)",
-            drag: true,
-            resize: true,
-          });
-          console.log(`[PlaybackController] Region created: ${regionStart} - ${regionEnd}`);
-        } else {
-          console.warn("[PlaybackController] Invalid region: End time must be after start time.");
-        }
-        isSelectingRegion = false;
+          // Second tap: set marker out
+          const regionEnd = clickTime;
+          if (regionEnd > regionStart) {
+              const regionColor = "rgba(255, 255, 255, 0.5)"; // White with 80% opacity
+              console.log(`[PlaybackController] Creating region with color: ${regionColor}`);
+
+              // Remove previous region before adding a new one
+              if (currentRegion) {
+                  currentRegion.remove();
+                  currentRegion = null;
+              }
+
+              currentRegion = this.regions.addRegion({
+                  start: regionStart,
+                  end: regionEnd,
+                  color: regionColor,
+                  drag: true,
+                  resize: true,
+              });
+              console.log(`[PlaybackController] Region created from ${regionStart} to ${regionEnd}`);
+          } else {
+              console.warn("[PlaybackController] Invalid region: End time must be after start time.");
+          }
+
+          // Reset selection state
+          isSelectingRegion = false;
+          regionStart = null;
       }
-    });
-  }
-  
+  };
+
+  // Attach event listeners for desktop and mobile
+  waveformContainer.addEventListener("click", handleClick);
+  waveformContainer.addEventListener("touchend", handleClick, { passive: false });
+}  
+
   /**
+   * Enables zoom when dragging up/down while the playback move button is active.
+   */
+  initZoomHandler() {
+    if (!this.wavesurfer) {
+      console.error("[PlaybackController] Wavesurfer is not initialized.");
+      return;
+    }
+
+    console.log("[PlaybackController] Native zoom initialized.");
+
+    let isZooming = false;
+    let startY = null;
+    const zoomSensitivity = 0.5;
+    const maxZoom = 500;
+    const minZoom = 10;
+
+    const playbackMoveButton = document.querySelector("#playback-move");
+
+    // Get current zoom level
+    const getCurrentZoom = () => this.wavesurfer.params.minPxPerSec || 100;
+
+    // Apply zoom
+    const applyZoom = (delta) => {
+      let currentZoom = getCurrentZoom();
+      let newZoom = Math.max(minZoom, Math.min(maxZoom, currentZoom + delta));
+      console.log(`[PlaybackController] Zoom updated: ${newZoom}`);
+      this.wavesurfer.zoom(newZoom);
+    };
+
+    // Start zoom detection
+    const startZoom = (event) => {
+      if (!playbackMoveButton.classList.contains("active")) return;
+      isZooming = true;
+      startY = event.touches ? event.touches[0].clientY : event.clientY;
+      event.preventDefault();
+    };
+
+    // Handle zoom movement
+    const handleZoom = (event) => {
+      if (!isZooming || startY === null) return;
+
+      let currentY = event.touches ? event.touches[0].clientY : event.clientY;
+      let deltaY = (startY - currentY) * zoomSensitivity;
+
+      if (Math.abs(deltaY) > 5) {
+        applyZoom(deltaY);
+        startY = currentY;
+      }
+    };
+
+    // Stop zooming
+    const stopZoom = () => {
+      isZooming = false;
+      startY = null;
+    };
+
+    // Attach event listeners
+    const waveformContainer = document.querySelector('#waveform');
+    waveformContainer.addEventListener("mousedown", startZoom);
+    waveformContainer.addEventListener("mousemove", handleZoom);
+    waveformContainer.addEventListener("mouseup", stopZoom);
+    waveformContainer.addEventListener("mouseleave", stopZoom);
+
+    waveformContainer.addEventListener("touchstart", startZoom, { passive: false });
+    waveformContainer.addEventListener("touchmove", handleZoom, { passive: false });
+    waveformContainer.addEventListener("touchend", stopZoom);
+  }
+
+
+/**
    * Formats time (in seconds) to mm:ss.
    * @param {number} seconds
    * @returns {string}
