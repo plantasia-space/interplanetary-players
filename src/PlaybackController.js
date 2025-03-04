@@ -16,44 +16,43 @@ export class PlaybackController {
 
     console.debug('[PlaybackController] Constructor - SoundEngine:', soundEngine);
 
-    // Initialize buttons
+    // Initialize the buttons
     this.initPlaybackButtons();
 
-    // Initialize WaveSurfer and attach event listeners
+    // Initialize WaveSurfer + events
     this.initWaveSurferPeaks();
-    // Después de inicializar wavesurfer en initWaveSurferPeaks()
+
+    // For debug/future usage
     this.currentScroll = 0;
   }
 
   /**
-   * Create and set up playback buttons.
+   * Create and set up your buttons.
    */
   initPlaybackButtons() {
     console.debug('[PlaybackController] initPlaybackButtons() called.');
 
-    // Move button (pan/zoom)
     this.moveButton = new ButtonSingle(
       "#playback-move",
       "/assets/icons/playback-move.svg",
-      null, // clickHandler se define en initZoomHandler()
+      null,
       "pan-zoom",
       null,
       "moveGroup",
       false
     );
 
-    // Selector button (for region selection)
     this.selectorButton = new ButtonSingle(
       "#playback-selector",
       "/assets/icons/playback-selector.svg",
-      null, // se define en initPlaybackSelector()
+      null,
       "default",
       null,
       "moveGroup",
       false
     );
 
-    // Loop group buttons
+    // Loop group
     this.loopButton = new ButtonSingle(
       "#playback-loop",
       "/assets/icons/playback-loop.svg",
@@ -78,7 +77,7 @@ export class PlaybackController {
   }
 
   /**
-   * Fetch waveform JSON, create WaveSurfer instance, and attach events.
+   * Fetch waveform JSON, create WaveSurfer, attach events.
    */
   async initWaveSurferPeaks() {
     console.debug('[PlaybackController] initWaveSurferPeaks() called.');
@@ -106,19 +105,18 @@ export class PlaybackController {
         throw new Error("[PlaybackController] Cannot find #waveform container.");
       }
 
-      // Obtener valores de CSS y definir vista inicial:
       const rootStyles = getComputedStyle(document.documentElement);
       const waveColor = rootStyles.getPropertyValue('--color1').trim() || "#888";
       const progressColor = rootStyles.getPropertyValue('--color2').trim() || "#555";
       const cursorColor = rootStyles.getPropertyValue('--color2').trim() || "#333";
       const waveformHeight = parseInt(rootStyles.getPropertyValue('--waveform-height')) || 120;
 
-      console.debug('[PlaybackController] Creating WaveSurfer instance with colors:', waveColor, progressColor, cursorColor);
+      console.debug('[PlaybackController] Creating WaveSurfer instance:', waveColor, progressColor, cursorColor);
 
-      // Preparar plugin Regions
+      // Regions plugin
       this.regions = RegionsPlugin.create();
 
-      // Crear WaveSurfer con scrollParent activado y minPxPerSec configurado en 5 (vista completa)
+      // Build WaveSurfer
       this.wavesurfer = WaveSurfer.create({
         container: waveformContainer,
         waveColor: waveColor,
@@ -126,21 +124,22 @@ export class PlaybackController {
         cursorColor: cursorColor,
         height: waveformHeight,
         scrollParent: true,
-        minPxPerSec: 5, // Vista completa inicial (mínimo zoom)
+        // The key: minPxPerSec=5 => user can see entire wave if wave is big
+        minPxPerSec: 5,
         normalize: true,
-        hideScrollbar: true, // Ocultamos la barra, pero se controla mediante API
+        hideScrollbar: true,
         fillParent: true,
         barWidth: 2,
         barGap: 1,
         barRadius: 1,
-        interact: true, // Comportamiento normal al cargar
+        interact: true,
         plugins: [this.regions]
       });
 
       console.debug('[PlaybackController] Loading peaks with approximateDuration:', approximateDuration);
       this.wavesurfer.load(null, peaks, approximateDuration);
 
-      // Eventos para mostrar tiempo
+      // Hook up time display
       const timeEl = document.getElementById('waveform-time');
       const durationEl = document.getElementById('waveform-duration');
       this.wavesurfer.on('decode', (duration) => {
@@ -155,21 +154,21 @@ export class PlaybackController {
         }
       });
 
-      // Escuchamos eventos para depuración
-      this.wavesurfer.on('zoom', (minPxPerSec) => {
-        console.log(`[WaveSurfer Event] zoom: minPxPerSec = ${minPxPerSec}`);
+      // Debug logs
+      this.wavesurfer.on('zoom', (val) => {
+        console.log(`[WaveSurfer Event] zoom => ${val}`);
       });
       this.wavesurfer.on('scroll', (visibleStartTime, visibleEndTime, scrollLeft, scrollRight) => {
-        console.log(`[WaveSurfer Event] scroll: visibleStartTime=${visibleStartTime}, visibleEndTime=${visibleEndTime}, scrollLeft=${scrollLeft}, scrollRight=${scrollRight}`);
+        console.log(`[WaveSurfer Event] scroll => startTime=${visibleStartTime}, endTime=${visibleEndTime}, scrollLeft=${scrollLeft}, scrollRight=${scrollRight}`);
       });
-      this.wavesurfer.on('interaction', (newTime) => {
-        console.log(`[WaveSurfer Event] interaction: newTime=${newTime}`);
+      this.wavesurfer.on('interaction', (t) => {
+        console.log(`[WaveSurfer Event] interaction => newTime=${t}`);
       });
-      this.wavesurfer.on('click', (relativeX, relativeY) => {
-        console.log(`[WaveSurfer Event] click: relativeX=${relativeX}, relativeY=${relativeY}`);
+      this.wavesurfer.on('click', (rx, ry) => {
+        console.log(`[WaveSurfer Event] click => x=${rx}, y=${ry}`);
       });
 
-      // Inicializar selección de regiones y zoom/pan
+      // Initialize region selection & zoom
       this.initPlaybackSelector();
       this.initZoomHandler();
 
@@ -194,34 +193,33 @@ export class PlaybackController {
     let regionStart = null;
     let currentRegion = null;
 
-    // Click handler for the actual button
+    // Crosshair toggle
     this.selectorButton.clickHandler = () => {
       if (this.selectorButton.isActive) {
-        console.log("[PlaybackController] Selector button activated. Crosshair cursor ON.");
+        console.log("[PlaybackController] Selector => crosshair");
         document.body.style.cursor = "crosshair";
       } else {
-        console.log("[PlaybackController] Selector button deactivated. Cursor back to default.");
+        console.log("[PlaybackController] Selector => default cursor");
         document.body.style.cursor = "default";
         isSelecting = false;
         regionStart = null;
       }
     };
 
-    // Helper: convert a click position to time in the waveform
     const getEventTime = (evt) => {
       const x = evt.touches ? evt.touches[0].clientX : evt.clientX;
       const rect = waveformContainer.getBoundingClientRect();
       const relativeX = x - rect.left;
       const duration = this.wavesurfer.getDuration();
+
       const time = (relativeX / rect.width) * duration;
-      console.debug('[PlaybackController] getEventTime() =>', time.toFixed(2));
+      console.debug('[PlaybackController] getEventTime =>', time.toFixed(2));
       return time;
     };
 
     const handleClick = (evt) => {
-      // Only do region selection if the selector button is active
       if (!this.selectorButton.isActive) {
-        console.debug('[PlaybackController] Selector is not active; ignoring click.');
+        console.debug('[PlaybackController] Selector not active => ignoring click.');
         return;
       }
 
@@ -229,20 +227,19 @@ export class PlaybackController {
       console.debug('[PlaybackController] handleClick => clickTime:', clickTime.toFixed(2));
 
       if (!isSelecting) {
-        // 1st click
+        // 1st click => region start
         regionStart = clickTime;
         isSelecting = true;
-        console.log('[PlaybackController] (Region) First click -> start:', regionStart.toFixed(2));
+        console.log('[PlaybackController] First click => regionStart:', regionStart.toFixed(2));
 
-        // Remove old region if present
         if (currentRegion) {
           currentRegion.remove();
           currentRegion = null;
         }
       } else {
-        // 2nd click
+        // 2nd click => region end
         const regionEnd = clickTime;
-        console.log('[PlaybackController] (Region) Second click -> end:', regionEnd.toFixed(2));
+        console.log('[PlaybackController] Second click => regionEnd:', regionEnd.toFixed(2));
 
         if (regionEnd > regionStart) {
           currentRegion = this.regions.addRegion({
@@ -252,107 +249,111 @@ export class PlaybackController {
             drag: true,
             resize: true
           });
-          console.log(`[PlaybackController] Region created from ${regionStart.toFixed(2)} to ${regionEnd.toFixed(2)}`);
+          console.log(`[PlaybackController] Region => ${regionStart.toFixed(2)} to ${regionEnd.toFixed(2)}`);
         } else {
-          console.warn("[PlaybackController] Region end must be > start. Ignoring.");
+          console.warn("[PlaybackController] Region end must be > start => ignoring.");
         }
-
-        // Reset
         isSelecting = false;
         regionStart = null;
       }
     };
 
-    // Add listeners
     waveformContainer.addEventListener("click", handleClick);
     waveformContainer.addEventListener("touchend", handleClick, { passive: false });
   }
 
+  /**
+   * Zoom/pan logic with pixel-based scroll
+   */
   initZoomHandler() {
     console.debug('[PlaybackController] initZoomHandler() called.');
     if (!this.wavesurfer) {
-      console.error("[PlaybackController] Wavesurfer is not initialized; cannot init zoom handler.");
+      console.error("[PlaybackController] Wavesurfer is not initialized;");
       return;
     }
-  
-    // Valores de zoom y sensibilidad (los que ya te funcionan bien)
-    const minZoom = 30;    // Valor mínimo de minPxPerSec
-    const maxZoom = 3000;  // Valor máximo de minPxPerSec
-    const sensitivity = (maxZoom - minZoom) / 1300;  // Tuning: 1300 px de drag para recorrer todo el rango
-  
+
+    // Let user zoom from 5 px/s up to 3000 px/s
+    const minZoom = 5;    
+    const maxZoom = 3000; 
+    // We define a vertical-drag sensitivity
+    const sensitivity = (maxZoom - minZoom) / 1300; 
+
     let isDragging = false;
     let startX = 0, startY = 0;
     let startZoom = 0;
-    // Usamos la variable global para el scroll; la actualizamos en pointerUp
+
     let initialScroll = 0;
     let updatedScroll = 0;
-  
-    // Al pulsar el botón Move, se deshabilita el interact normal y se muestra el cursor "grab"
+
+    // Move toggles
     this.moveButton.clickHandler = () => {
       if (this.moveButton.isActive) {
-        console.log('[PlaybackController] Move button activated: disabling interact, setting "grab" cursor.');
+        console.log('[PlaybackController] Move => disabling interact, "grab" cursor.');
         this.wavesurfer.setOptions({ interact: false });
         document.body.style.cursor = "grab";
       } else {
-        console.log('[PlaybackController] Move button deactivated: enabling interact, resetting cursor.');
+        console.log('[PlaybackController] Move => enabling interact, default cursor.');
         this.wavesurfer.setOptions({ interact: true });
         document.body.style.cursor = "default";
       }
     };
-  
+
     const pointerDown = (evt) => {
       if (!this.moveButton.isActive) return;
       isDragging = true;
+
       startX = evt.touches ? evt.touches[0].clientX : evt.clientX;
       startY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      // store the wave's current minPxPerSec as baseline
       startZoom = this.wavesurfer.params.minPxPerSec || minZoom;
-      // Aquí usamos el valor almacenado en this.currentScroll (actualizado tras cada arrastre)
-      initialScroll = this.currentScroll || 0;
-      console.log('[pointerDown] startX:', startX, 'startY:', startY, 'startZoom:', startZoom, 'initialScroll:', initialScroll);
+
+      initialScroll = this.wavesurfer.getScroll() || 0;
+
+      console.log('[pointerDown]', { startX, startY, startZoom, initialScroll });
       document.body.style.cursor = "grabbing";
       evt.preventDefault();
     };
-  
+
     const pointerMove = (evt) => {
       if (!isDragging) return;
+
       const currentX = evt.touches ? evt.touches[0].clientX : evt.clientX;
       const currentY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-      const deltaX = startX - currentX; // positivo: arrastre a la izquierda
-      const deltaY = startY - currentY; // positivo: arrastre hacia arriba
-  
-      // Calcula el nuevo zoom basado en deltaY
+      const deltaX = startX - currentX; // pos => left
+      const deltaY = startY - currentY; // pos => up
+
+      // 1) Zoom from vertical drag
       let newZoom = startZoom + sensitivity * deltaY;
       newZoom = Math.max(minZoom, Math.min(newZoom, maxZoom));
-      console.log('[pointerMove] deltaY:', deltaY, '=> newZoom:', newZoom);
       this.wavesurfer.zoom(newZoom);
-  
-      // Calcula el nuevo scroll (horizontal) de forma relativa a initialScroll
+      console.log('[pointerMove]', { deltaY, newZoom });
+
+      // 2) Pan from horizontal drag
       updatedScroll = initialScroll + deltaX;
       this.wavesurfer.setScroll(updatedScroll);
-      console.log('[pointerMove] deltaX:', deltaX, '=> updatedScroll:', updatedScroll);
+      console.log('[pointerMove]', { deltaX, updatedScroll });
     };
-  
-    const pointerUp = (evt) => {
+
+    const pointerUp = () => {
       if (!isDragging) return;
       isDragging = false;
-      // Actualizamos la variable global con el último scroll obtenido
+
       this.currentScroll = updatedScroll;
       document.body.style.cursor = this.moveButton.isActive ? "grab" : "default";
-      console.log('[pointerUp] Drag ended. currentScroll updated to:', this.currentScroll);
+      console.log('[pointerUp] Drag ended => currentScroll:', this.currentScroll);
     };
-  
-    // Adjuntar eventos de pointer globalmente
+
     document.addEventListener('mousedown', pointerDown);
     document.addEventListener('mousemove', pointerMove);
     document.addEventListener('mouseup', pointerUp);
+
     document.addEventListener('touchstart', pointerDown, { passive: false });
     document.addEventListener('touchmove', pointerMove, { passive: false });
     document.addEventListener('touchend', pointerUp);
-  
-    console.debug('[PlaybackController] initZoomHandler() - pointer listeners attached.');
   }
+
   /**
-   * Formats a time value (in seconds) as mm:ss.
+   * Formats time (in seconds) => mm:ss
    */
   formatTime(seconds) {
     const mins = Math.floor(seconds / 60) || 0;
@@ -360,10 +361,11 @@ export class PlaybackController {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  //----- Ejemplo de controles de SoundEngine:
+  // Example SoundEngine controls:
+
   play() {
     if (this.soundEngine && typeof this.soundEngine.play === 'function') {
-      console.debug('[PlaybackController] play() - calling soundEngine.play()');
+      console.debug('[PlaybackController] play() => calling soundEngine.play()');
       this.soundEngine.play();
     } else {
       console.warn('[PlaybackController] soundEngine.play() not available.');
@@ -372,7 +374,7 @@ export class PlaybackController {
   
   pause() {
     if (this.soundEngine && typeof this.soundEngine.pause === 'function') {
-      console.debug('[PlaybackController] pause() - calling soundEngine.pause()');
+      console.debug('[PlaybackController] pause() => calling soundEngine.pause()');
       this.soundEngine.pause();
     } else {
       console.warn('[PlaybackController] soundEngine.pause() not available.');
@@ -380,26 +382,22 @@ export class PlaybackController {
   }
 
   setPlayRange(min = null, max = null) {
-    console.debug('[PlaybackController] setPlayRange() called with', min, max);
+    console.debug('[PlaybackController] setPlayRange()', { min, max });
     if (this.soundEngine && typeof this.soundEngine.sendEvent === 'function') {
-      if (min !== null) {
-        this.soundEngine.sendEvent("setPlayMin", [min]);
-      }
-      if (max !== null) {
-        this.soundEngine.sendEvent("setPlayMax", [max]);
-      }
+      if (min !== null) this.soundEngine.sendEvent("setPlayMin", [min]);
+      if (max !== null) this.soundEngine.sendEvent("setPlayMax", [max]);
     }
   }
 
   loop() {
-    console.debug('[PlaybackController] loop() - sending loop event [1]');
+    console.debug('[PlaybackController] loop() => sending loop event [1]');
     if (this.soundEngine && typeof this.soundEngine.sendEvent === 'function') {
       this.soundEngine.sendEvent("loop", [1]);
     }
   }
 
   unloop() {
-    console.debug('[PlaybackController] unloop() - sending loop event [0]');
+    console.debug('[PlaybackController] unloop() => sending loop event [0]');
     if (this.soundEngine && typeof this.soundEngine.sendEvent === 'function') {
       this.soundEngine.sendEvent("loop", [0]);
     }
