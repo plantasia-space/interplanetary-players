@@ -30,11 +30,10 @@ export class PlaybackController {
    * Create and set up your buttons.
    */
   initPlaybackButtons() {
-    console.debug('[PlaybackController] initPlaybackButtons() called.');
 
-    this.moveButton = new ButtonSingle(
-      "#playback-move",
-      "/assets/icons/playback-move.svg",
+    this.zoomButton = new ButtonSingle(
+      "#playback-zoom",
+      "/assets/icons/playback-zoom.svg",
       null,
       "pan-zoom",
       null,
@@ -56,26 +55,42 @@ export class PlaybackController {
     this.loopButton = new ButtonSingle(
       "#playback-loop",
       "/assets/icons/playback-loop.svg",
-      null,
+      () => { 
+          console.log('[PlaybackController] Loop button clicked');
+          this.setRegionLoopVisualState();
+  
+          if (this.soundEngine) {
+              this.soundEngine.sendEvent('loop', [this.loopButton.isActive ? 1 : 0]);
+          }
+      },
       "default",
       null,
       "loopGroup",
       false
-    );
+  );
 
-    this.infiniteLoopButton = new ButtonSingle(
-      "#playback-infinite-loop",
-      "/assets/icons/playback-infinite.svg",
-      null,
-      "default",
-      null,
-      "loopGroup",
-      false
-    );
 
-    console.debug('[PlaybackController] Playback buttons initialized.');
+
   }
+  setRegionLoopVisualState() {
+    if (!this.activeRegion) {
+        console.warn('[PlaybackController] No active region to update');
+        return;
+    }
 
+    const isLooping = this.loopButton.isActive;
+    console.log(`[PlaybackController] setRegionLoopVisualState(${isLooping}) called`);
+
+    const newColor = isLooping
+        ? 'rgba(215, 215, 215, 0.8)'  // Loop active (visible)
+        : 'rgba(0, 0, 0, 0.0)';       // Loop inactive (hidden)
+
+    // Set style directly — skip all Wavesurfer "update" problems
+    this.activeRegion.element.style.backgroundColor = newColor;
+    this.activeRegion.element.style.transition = 'background-color 0.3s';  // Optional smooth transition
+
+    console.log(`[PlaybackController] Set region element color directly to: ${newColor}`);
+}
   /**
    * Fetch waveform JSON, create WaveSurfer, attach events.
    */
@@ -127,7 +142,7 @@ export class PlaybackController {
         scrollParent: true,
         minPxPerSec: 5, // NEW: ensures starting zoom won't exceed full waveform
         normalize: true,
-        hideScrollbar: true,
+        hideScrollbar: false,
         fillParent: true,
         barWidth: 2,
         barGap: .6,
@@ -178,8 +193,7 @@ export class PlaybackController {
       this.initPlaybackSelector();
       this.initZoomHandler();
 
-      // NEW: Add region-based looping logic
-      this.initLooping();
+
 
       console.log("[PlaybackController] WaveSurfer and regions initialized successfully.");
     } catch (err) {
@@ -207,157 +221,161 @@ initPlaybackSelector() {
   console.debug('[PlaybackController] initPlaybackSelector() called.');
   const waveformContainer = document.querySelector('#waveform');
   if (!waveformContainer) {
-    console.error("[PlaybackController] No #waveform container found for region selection.");
-    return;
+      console.error("[PlaybackController] No #waveform container found for region selection.");
+      return;
   }
 
   // Track the current loop region and the disable function returned by enableDragSelection.
   this.activeRegion = this.activeRegion || null;
   this.disableDragSelectionFn = null;
 
+  // Helper to update waveform cursor dynamically
+  const updateCursor = () => {
+      if (this.selectorButton.isActive) {
+          waveformContainer.style.cursor = "crosshair";
+      } else {
+          waveformContainer.style.cursor = "default";
+      }
+  };
+
   // Toggle selector mode.
   this.selectorButton.clickHandler = () => {
-    if (this.selectorButton.isActive) {
-      console.log("[PlaybackController] Selector active: enabling drag selection and setting crosshair cursor.");
-      document.body.style.cursor = "crosshair";
-      // Enable drag selection if not already enabled.
-      if (!this.disableDragSelectionFn) {
-        this.disableDragSelectionFn = this.regions.enableDragSelection({
-          color: 'rgba(215, 215, 215, 0.8)',
-        });
+      if (this.selectorButton.isActive) {
+          console.log("[PlaybackController] Selector active: enabling drag selection.");
+          if (!this.disableDragSelectionFn) {
+              this.disableDragSelectionFn = this.regions.enableDragSelection({
+                  color: 'rgba(215, 215, 215, 0.8)',
+              });
+          }
+      } else {
+          console.log("[PlaybackController] Selector inactive: disabling drag selection.");
+          this.disableDragSelectionAll();
       }
-    } else {
-      console.log("[PlaybackController] Selector inactive: disabling drag selection and resetting cursor.");
-      document.body.style.cursor = "default";
-      // Disable drag selection but do NOT remove an already created loop region.
-      this.disableDragSelectionAll();
-    }
+      updateCursor();
   };
+
+  // Update cursor when entering/leaving waveform
+  waveformContainer.addEventListener('mousemove', (e) => {
+    if (!this.selectorButton.isActive) {
+        waveformContainer.style.cursor = "default";
+        return;
+    }
+
+    const isOverRegion = e.target.closest('.wavesurfer-region');
+    waveformContainer.style.cursor = isOverRegion ? "move" : "crosshair";
+});
 
   // When a region is created via dragging…
   this.regions.on('region-created', (region) => {
-    // Only allow region creation if the selector tool is active.
-    if (!this.selectorButton.isActive) {
-      region.remove();
-      return;
-    }
-    // Enforce a single loop region: remove any previous one.
-    if (this.activeRegion && this.activeRegion.id !== region.id) {
-      this.activeRegion.remove();
-    }
-    this.activeRegion = region;
-    console.log('[PlaybackController] New loop region created:', region);
+      if (!this.selectorButton.isActive) {
+          region.remove();
+          return;
+      }
+
+      // Enforce a single loop region: remove any previous one.
+      if (this.activeRegion && this.activeRegion.id !== region.id) {
+          this.activeRegion.remove();
+      }
+      this.activeRegion = region;
+
+      // Set color immediately based on loop button state.
+      const color = this.loopButton.isActive
+          ? 'rgba(215, 215, 215, 0.8)'  // Loop active = visible
+          : 'rgba(0, 0, 0, 0.0)';       // Loop inactive = invisible
+
+      this.activeRegion.element.style.backgroundColor = color;
+      this.activeRegion.element.style.transition = 'background-color 0.3s';
+
+      console.log(`[PlaybackController] New region created with color: ${color}`);
   });
 
   // When a region is clicked, mark it as active (only if selector is active).
   this.regions.on('region-clicked', (region, e) => {
-    e.stopPropagation();
-    if (this.selectorButton.isActive) {
-      this.activeRegion = region;
-      console.log('[PlaybackController] Loop region selected:', region);
-    }
+      e.stopPropagation();
+      if (this.selectorButton.isActive) {
+          this.activeRegion = region;
+          console.log('[PlaybackController] Loop region selected:', region);
+      }
   });
-
-  // (Optional) When the user interacts on the waveform outside any region,
-  // we do nothing so that the created loop remains.
 }
+/**
+ * Zoom-only logic with pointer-based dragging:
+ * - When the zoom button is active, vertical dragging adjusts the zoom level.
+ * - Horizontal movement is ignored.
+ * - Vertical movement is clamped to prevent excessive jumps.
+ */
 
-/**
- * Zoom/pan logic with pointer-based dragging:
- * - Vertical drag => zoom in/out.
- * - Horizontal drag => scroll.
- * Also, when the move tool is activated, disable drag selection.
- */
-/**
- * Zoom/pan logic with pointer-based dragging:
- * - Vertical drag => zoom in/out.
- * - Horizontal drag => scroll.
- * Also, when the move tool is activated, disable drag selection.
- */
 initZoomHandler() {
   console.debug('[PlaybackController] initZoomHandler() called.');
   if (!this.wavesurfer) {
-    console.error("[PlaybackController] Wavesurfer is not initialized;");
-    return;
+      console.error("[PlaybackController] Wavesurfer is not initialized;");
+      return;
+  }
+
+  const waveformContainer = document.querySelector('#waveform');
+  if (!waveformContainer) {
+      console.error("[PlaybackController] No #waveform container found.");
+      return;
   }
 
   const minZoom = 5;
   const maxZoom = 3000;
-  // Sensitivity: how many px/s change per vertical pixel of drag.
   const sensitivity = (maxZoom - minZoom) / 1300;
-  // Maximum allowed vertical movement (in pixels) to avoid huge jumps.
-  const maxDeltaY = 60; 
+  const maxDeltaY = 60;
 
   let isDragging = false;
   let startX = 0, startY = 0;
   let startZoom = 0;
-  let initialScroll = 0;
-  let updatedScroll = 0;
 
-  // Toggle move mode: when active, disable drag selection.
-  this.moveButton.clickHandler = () => {
-    // Always disable drag selection when switching to move tool.
-    this.disableDragSelectionAll();
 
-    if (this.moveButton.isActive) {
-      console.log('[PlaybackController] Move active: disabling interact and setting "grab" cursor.');
-      this.wavesurfer.setOptions({ interact: false });
-      document.body.style.cursor = "grab";
-    } else {
-      console.log('[PlaybackController] Move inactive: enabling interact, resetting cursor.');
-      this.wavesurfer.setOptions({ interact: true });
-      document.body.style.cursor = "default";
-    }
+  // ✅ Hook into zoom button click
+  this.zoomButton.clickHandler = () => {
+      this.disableDragSelectionAll();
+
+      if (this.zoomButton.isActive) {
+          console.log('[PlaybackController] Zoom active: disabling waveform interaction.');
+          this.wavesurfer.setOptions({ interact: false });
+      } else {
+          console.log('[PlaybackController] Zoom inactive: enabling waveform interaction.');
+          this.wavesurfer.setOptions({ interact: true });
+      }
+
+      updateCursor();  // Force update when button changes state
   };
 
   const pointerDown = (evt) => {
-    if (!this.moveButton.isActive) return;
-    isDragging = true;
-    startX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-    startY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-    // Use the current zoom state from WaveSurfer (or default to minZoom)
-    startZoom = this.wavesurfer.params.minPxPerSec || minZoom;
-    initialScroll = this.wavesurfer.getScroll() || 0;
-    console.log('[pointerDown]', { startX, startY, startZoom, initialScroll });
-    document.body.style.cursor = "grabbing";
-    evt.preventDefault();
+      if (!this.zoomButton.isActive) return;
+      isDragging = true;
+      startX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      startY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      startZoom = this.wavesurfer.params.minPxPerSec || minZoom;
+      waveformContainer.style.cursor = "grabbing";
+      evt.preventDefault();
   };
 
   const pointerMove = (evt) => {
-    if (!isDragging) return;
-    const currentX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-    const currentY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-    const deltaX = startX - currentX;
-    let deltaY = startY - currentY;
-    // Clamp the vertical drag to avoid huge zoom jumps.
-    if (Math.abs(deltaY) > maxDeltaY) {
-      deltaY = maxDeltaY * Math.sign(deltaY);
-    }
-    let newZoom = startZoom + sensitivity * deltaY;
-    newZoom = Math.max(minZoom, Math.min(newZoom, maxZoom));
-    this.wavesurfer.zoom(newZoom);
-    updatedScroll = initialScroll + deltaX;
-    this.wavesurfer.setScroll(updatedScroll);
-    console.log('[pointerMove]', { deltaY, newZoom, deltaX, updatedScroll });
+      if (!isDragging) return;
+      const currentY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      const deltaY = startY - currentY;
+      let clampedDeltaY = Math.max(-maxDeltaY, Math.min(maxDeltaY, deltaY));
+      let newZoom = startZoom + sensitivity * clampedDeltaY;
+      this.wavesurfer.zoom(Math.max(minZoom, Math.min(maxZoom, newZoom)));
   };
 
   const pointerUp = () => {
-    if (!isDragging) return;
-    isDragging = false;
-    this.currentScroll = updatedScroll;
-    document.body.style.cursor = this.moveButton.isActive ? "grab" : "default";
-    console.log('[pointerUp] Drag ended => currentScroll:', this.currentScroll);
+      if (!isDragging) return;
+      isDragging = false;
+      updateCursor();
   };
 
-  document.addEventListener('mousedown', pointerDown);
+  waveformContainer.addEventListener('mousedown', pointerDown);
   document.addEventListener('mousemove', pointerMove);
   document.addEventListener('mouseup', pointerUp);
-  document.addEventListener('touchstart', pointerDown, { passive: false });
-  document.addEventListener('touchmove', pointerMove, { passive: false });
-  document.addEventListener('touchend', pointerUp);
-}
 
-  /**
+  waveformContainer.addEventListener('touchstart', pointerDown, { passive: false });
+  waveformContainer.addEventListener('touchmove', pointerMove, { passive: false });
+  waveformContainer.addEventListener('touchend', pointerUp);
+}  /**
    * Formats time (in seconds) => mm:ss
    */
   formatTime(seconds) {
