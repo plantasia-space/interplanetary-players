@@ -6,7 +6,8 @@
  * @license MIT
  */
 
-import { Constants } from './Constants.js';
+import { Constants } from "./Constants.js";
+import { ModeManagerInstance } from "./ModeManager.js"; // Import ModeManager
 
 export class SoundEngine {
   constructor(soundEngineData, trackData, userManager, ksteps, rnbo) {
@@ -14,12 +15,16 @@ export class SoundEngine {
       console.error("SoundEngine Error: Missing required data.");
       return;
     }
+    
+    this.playbackController = null; // Add a reference to PlaybackController
+    this._isUpdatingFromUI = false;
+    this.currentCursorMs = 0; 
 
     this.soundEngineData = soundEngineData;
     this.trackData = trackData;
     this.userManager = userManager;
     this.ksteps = ksteps;
-    this.rnbo = rnbo; // Store RNBO object locally
+    this.rnbo = rnbo;
 
     this.context = null;
     this.device = null;
@@ -30,8 +35,19 @@ export class SoundEngine {
     this.amplitude = 0;
     this.initialized = false;
 
-    // WaveSurfer & Regions are now managed by PlaybackController.
-    this.wavesurfer = null;
+    ModeManagerInstance.subscribe((newMode) => {
+      this.currentMode = newMode;
+      console.log(`[SoundEngine] Mode updated to: ${this.currentMode}`);
+    });
+    
+  }
+
+  /**
+   * Allows PlaybackController to pass itself to SoundEngine.
+   */
+  setPlaybackController(playbackController) {
+    this.playbackController = playbackController;
+    console.log("[SoundEngine] Connected to PlaybackController.");
   }
 
   async init() {
@@ -46,7 +62,10 @@ export class SoundEngine {
       const rawPatcher = await fetch(patchExportURL);
       const patcher = await rawPatcher.json();
 
-      this.device = await this.rnbo.createDevice({ context: this.context, patcher });
+      this.device = await this.rnbo.createDevice({
+        context: this.context,
+        patcher,
+      });
       this.device.node.connect(this.context.destination);
 
       await this.loadAudioBuffer();
@@ -74,6 +93,25 @@ export class SoundEngine {
             console.error("Unexpected payload format from 'amp' message:", ev.payload);
           }
         }
+
+        // Capture cursor position from RNBO (playhead position)
+        // Capture cursor position from RNBO (playhead position)
+        if (this.currentMode === "PLAYBACK") {  // Check if we're in playback mode
+
+        if (ev.tag === "playHead") {
+          if (typeof ev.payload === "number") {
+            this.currentCursorMs = ev.payload; 
+      
+            if (this.playbackController) {
+              this.playbackController.setPlayHead(this.currentCursorMs);
+            } else {
+              console.warn("[SoundEngine] PlaybackController is not available.");
+            }
+          } else {
+            console.error(`Unexpected payload format from '${ev.tag}' message:`, ev.payload);
+          }
+        }
+      }
       });
 
       // Subscribe to user parameters.
@@ -102,6 +140,8 @@ export class SoundEngine {
       }
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
+      // Set the total duration (in seconds) for later calculations.
+      this.totalDuration = audioBuffer.duration;
       await this.device.setDataBuffer("world1", audioBuffer);
       console.log(`[SoundEngine] Audio buffer fully loaded. Duration: ${this.totalDuration ? this.totalDuration.toFixed(2) : "unknown"}s`);
     } catch (error) {
@@ -128,6 +168,28 @@ export class SoundEngine {
       console.error("[SoundEngine] Error during preload and suspend:", error);
     }
   }
+
+
+
+
+/**
+ * Sets the engine's cursor position (seek mode) by updating playMin.
+ * Assigns the provided millisecond value to playMin.
+ */
+setCursorPosition(newTimeMs) {
+  if (this._isUpdatingFromUI) return;
+  if (this.totalDuration) {
+    if (this.playMin) {
+      this.playMin.value = newTimeMs;
+      console.log(`[SoundEngine] Updated playMin (cursor) to ${newTimeMs} ms`);
+      
+      // Force RNBO to process the parameter change
+      this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [newTimeMs]));
+    }
+    this.currentCursorMs = newTimeMs;
+  }
+}
+
 
   async play() {
     try {
@@ -185,33 +247,29 @@ export class SoundEngine {
     return this.amplitude;
   }
 
-  getPlayRange() {
-    if (this.playMin && this.playMax) {
-      return {
-        playMin: this.playMin.value,
-        playMax: this.playMax.value
-      };
-    } else {
-      console.warn("[SoundEngine] PlayMin or PlayMax is not defined.");
-      return null;
-    }
-  }
 
-  setPlayRange(min = null, max = null) {
-    if (this.playMin && this.playMax) {
-      if (min !== null) {
-        this.playMin.value = min;
-        console.log(`[SoundEngine] Updated playMin: ${min}`);
-      }
-      if (max !== null) {
-        this.playMax.value = max;
-        console.log(`[SoundEngine] Updated playMax: ${max}`);
-      }
-    } else {
-      console.error("[SoundEngine] Cannot set play range. PlayMin or PlayMax is not defined.");
-    }
-  }
 
+/**
+ * Sets the play range in the engine.
+ * If only min is provided, it updates playMin (seek mode).
+ * If both min and max are provided, it updates the loop range.
+ */
+setPlayRange(min = null, max = null) {
+  if (this.playMin && this.playMax) {
+    console.log(`[SoundEngine] Before update: playMin=${this.playMin.value} ms, playMax=${this.playMax.value} ms`);
+
+    if (min !== null) {
+      this.playMin.value = Math.round(min);
+      console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
+    }
+    if (max !== null) {
+      this.playMax.value = Math.round(max);
+      console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
+    }
+  } else {
+    console.error("[SoundEngine] Cannot set play range. playMin or playMax is not defined.");
+  }
+}
   _sendLoopEvent(loopState) {
     try {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "loop", [loopState]);
