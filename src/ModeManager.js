@@ -241,7 +241,7 @@ ModeManagerInstance.registerMode('COSMIC_LFO', {
         
         // Show waveform and playback switches
         document.getElementById("waveform-container").style.display = "block";
-        document.getElementById("switches-container").style.display = "block";
+        document.getElementById("zoom-container").style.display = "block";
 
         // Hide all elements with class "xyz-cosmic-lfo"
         document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
@@ -254,7 +254,7 @@ ModeManagerInstance.registerMode('COSMIC_LFO', {
 
         // Hide waveform and playback switches
         document.getElementById("waveform-container").style.display = "none";
-        document.getElementById("switches-container").style.display = "none";
+        document.getElementById("zoom-container").style.display = "none";
 
         // Show all elements with class "xyz-cosmic-lfo" again
         document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {

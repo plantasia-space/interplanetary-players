@@ -256,15 +256,22 @@ setCursorPosition(newTimeMs) {
  */
 setPlayRange(min = null, max = null) {
   if (this.playMin && this.playMax) {
-    console.log(`[SoundEngine] Before update: playMin=${this.playMin.value} ms, playMax=${this.playMax.value} ms`);
+    console.log(`[SoundEngine] setPlayRange called with min=${min} ms, max=${max} ms`);
 
     if (min !== null) {
       this.playMin.value = Math.round(min);
       console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
+
+      // ✅ Force RNBO to process the change
+      this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [this.playMin.value]));
     }
+
     if (max !== null) {
       this.playMax.value = Math.round(max);
       console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
+
+      // ✅ Force RNBO to process the change
+      this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMax", [this.playMax.value]));
     }
   } else {
     console.error("[SoundEngine] Cannot set play range. playMin or playMax is not defined.");
@@ -281,11 +288,28 @@ setPlayRange(min = null, max = null) {
   }
 
   loop() {
-    this._sendLoopEvent(1);
     console.log("[SoundEngine] Looping enabled.");
+    this._sendLoopEvent(1);
   }
-
+  
   unloop() {
+    console.log("[SoundEngine] Looping disabled.");
+    this._sendLoopEvent(0);
+  }
+  
+    // Reset play range to the full track duration
+    this.playMin.value = 0;
+    this.playMax.value = this.totalDuration * 1000; // Convert seconds to milliseconds
+  
+    console.log(`[SoundEngine] Unlooping: Resetting play range to full track.`);
+    console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
+    console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
+  
+    // Ensure RNBO updates immediately
+    this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [this.playMin.value]));
+    this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMax", [this.playMax.value]));
+  
+    // Send loop off command
     this._sendLoopEvent(0);
     console.log("[SoundEngine] Looping disabled.");
   }

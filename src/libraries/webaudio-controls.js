@@ -995,8 +995,10 @@ try {
         <style>
           ${this.basestyle}
           :host {
-            display: inline-block;
+      display: flex;
             position: relative;
+            justify-content: center; /* Centers horizontally */
+            align-items: center; /* Centers vertically */
             margin: 0;
             padding: 0;
             font-family: sans-serif;

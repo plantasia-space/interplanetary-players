@@ -23,9 +23,6 @@ export class PlaybackController {
       this.soundEngine.setPlaybackController(this);
     }
 
-    // Initialize the buttons
-    this.initPlaybackButtons();
-
     // Initialize WaveSurfer + events
     this.initWaveSurferPeaks();
 
@@ -33,54 +30,7 @@ export class PlaybackController {
     this.currentScroll = 0;
   }
 
-  /**
-   * Create and set up your buttons.
-   */
-  initPlaybackButtons() {
-    this.zoomButton = new ButtonSingle(
-      "#playback-zoom",
-      "/assets/icons/playback-zoom.svg",
-      null,
-      "pan-zoom",
-      null,
-      "moveGroup",
-      false,
-    );
 
-    this.selectorButton = new ButtonSingle(
-      "#playback-selector",
-      "/assets/icons/playback-selector.svg",
-      null,
-      "default",
-      null,
-      "moveGroup",
-      false,
-    );
-
-    // Loop group button: toggles loop mode and sets the visual state.
-    this.loopButton = new ButtonSingle(
-      "#playback-loop",
-      "/assets/icons/playback-loop.svg",
-      () => {
-        console.log("[PlaybackController] Loop button clicked");
-        this.setRegionLoopVisualState();
-
-        if (this.soundEngine) {
-          if (this.loopButton.isActive) {
-            this.soundEngine.loop();
-          } else {
-            this.soundEngine.unloop();
-          }
-        } else {
-          console.warn("[PlaybackController] SoundEngine not available.");
-        }
-      },
-      "default",
-      null,
-      "loopGroup",
-      false,
-    );
-  }
 
 
   /**
@@ -194,8 +144,23 @@ export class PlaybackController {
       });
       this.wavesurfer.on("interaction", (newTime) => {
         console.log(`[WaveSurfer Event] interaction => newTime=${newTime}`);
-/*         this.soundEngine.setCursorPosition(newTime);
- */    });
+    
+        if (this.soundEngine) {
+            const newTimeMs = Math.round(newTime * 1000); // Convert seconds to ms
+            console.log(`[PlaybackController] Moving playhead to ${newTimeMs} ms`);
+    
+            // ✅ Instead of click event, update SoundEngine here!
+            this.soundEngine.setPlayRange(this.soundEngine.totalDuration * 1000, this.soundEngine.totalDuration * 1000);
+            this.soundEngine.setPlayRange(newTimeMs, this.soundEngine.totalDuration * 1000);
+            this.soundEngine.loop();
+            this.soundEngine.unloop();
+
+            // Optional: Log confirmation after update
+            console.log(`[PlaybackController] SoundEngine playMin updated to ${this.soundEngine.playMin.value} ms`);
+        } else {
+            console.warn("[PlaybackController] SoundEngine is not available.");
+        }
+    });
       this.wavesurfer.on("click", (rx, ry) => {
         console.log(`[WaveSurfer Event] click => x=${rx}, y=${ry}`);
       });
@@ -228,7 +193,8 @@ export class PlaybackController {
  * Region selection using drag.
  */
 initPlaybackSelector() {
-  console.debug("[PlaybackController] initPlaybackSelector() called.");
+  console.debug("[PlaybackController] Initializing default playback selector behavior.");
+
   const waveformContainer = document.querySelector("#waveform");
   if (!waveformContainer) {
     console.error("[PlaybackController] No #waveform container found for region selection.");
@@ -236,152 +202,145 @@ initPlaybackSelector() {
   }
 
   this.activeRegion = null;
-  this.disableDragSelectionFn = null;
+  this.isLooping = false; // New flag for loop state
 
-  const updateCursor = () => {
-    waveformContainer.style.cursor = this.selectorButton.isActive ? "crosshair" : "default";
-  };
+  // Enable drag selection **without** requiring a button click
+  this.disableDragSelectionFn = this.regions.enableDragSelection({ color: "rgba(215, 215, 215, 0.8)" });
 
-  this.selectorButton.clickHandler = () => {
-    if (this.selectorButton.isActive) {
-      console.log("[PlaybackController] Selector active: enabling drag selection.");
-      if (!this.disableDragSelectionFn) {
-        this.disableDragSelectionFn = this.regions.enableDragSelection({ color: "rgba(215, 215, 215, 0.8)" });
-      }
-    } else {
-      console.log("[PlaybackController] Selector inactive: disabling drag selection.");
-      this.disableDragSelectionAll();
-    }
-    updateCursor();
-  };
-
-  waveformContainer.addEventListener("mousemove", (e) => {
-    waveformContainer.style.cursor = this.selectorButton.isActive
-      ? (e.target.closest(".wavesurfer-region") ? "move" : "crosshair")
-      : "default";
-  });
+  // Ensure cursor updates
+  waveformContainer.style.cursor = "crosshair";
 
   // ✅ Ensure only one region exists at a time
   this.regions.on("region-created", (region) => {
-    if (!this.selectorButton.isActive) {
-      region.remove();
-      return;
-    }
-
     if (this.activeRegion) {
-      this.activeRegion.remove();
+      this.activeRegion.remove(); // Remove previous selection
     }
-
+  
     this.activeRegion = region;
-    const color = this.loopButton.isActive ? "rgba(215, 215, 215, 0.8)" : "rgba(0, 0, 0, 0.0)";
-    this.activeRegion.element.style.backgroundColor = color;
-    this.activeRegion.element.style.transition = "background-color 0.3s";
-    console.log(`[PlaybackController] New loop region created: start=${region.start}, end=${region.end}`);
-    this.updateSoundEngineLoopRange(region.start, region.end);
-
+    this.isLooping = true; // ✅ Enable loop immediately
+  
+    console.log(`[PlaybackController] Default loop region created: start=${region.start}, end=${region.end}`);
+  
+    // ✅ Ensure region is visually active and looping
+    this.setRegionLoopState(region, this.isLooping);
+    this.updateSoundEngineLoop(this.isLooping, region.start, region.end);
   });
 
-// ✅ Send loop start and end times in SECONDS after the user finishes adjusting
-this.regions.on("region-updated", (region) => {
-  if (!this.activeRegion || this.activeRegion.id !== region.id) {
-    return;
-  }
-
-  console.log(`[PlaybackController] Loop region updated: start=${region.start}s, end=${region.end}s`);
-
-  // Pass region start and end in seconds (converted to milliseconds inside the function)
-  this.updateSoundEngineLoopRange(region.start, region.end);
-});
-
-  // ✅ Allow the user to select the region and change loop settings
-  this.regions.on("region-clicked", (region, e) => {
-    e.stopPropagation();
-    if (this.selectorButton.isActive) {
-      this.activeRegion = region;
-      console.log("[PlaybackController] Loop region selected:", region);
-    }
-  });
-
-  // ✅ Remove loop when clicking outside the region
+  // ✅ Update loop when the user adjusts the region
   this.regions.on("region-updated", (region) => {
     if (!this.activeRegion || this.activeRegion.id !== region.id) {
       return;
     }
-  
-    console.log(`[PlaybackController] Loop region updated:`);
-    console.log(`    Start (seconds): ${region.start}s`);
-    console.log(`    End (seconds): ${region.end}s`);
-  
-    // 🔹 Pass values in seconds to be converted in `updateSoundEngineLoopRange`
+
+    console.log(`[PlaybackController] Loop region updated: start=${region.start}s, end=${region.end}s`);
     this.updateSoundEngineLoopRange(region.start, region.end);
   });
+
+  // ✅ Toggle loop mode when clicking on a region
+  this.regions.on("region-clicked", (region, e) => {
+    e.stopPropagation();
+    this.activeRegion = region;
+    this.isLooping = !this.isLooping; // Toggle loop state
+
+    console.log(`[PlaybackController] Loop mode ${this.isLooping ? "activated" : "deactivated"} for region.`);
+    
+    // Update region color and SoundEngine loop state
+    this.setRegionLoopState(region, this.isLooping);
+    this.updateSoundEngineLoop(this.isLooping, region.start, region.end);
+  });
+
+  
+  // ✅ Remove loop when clicking outside the region
+  waveformContainer.addEventListener("click", (event) => {
+    if (!event.target.closest(".wavesurfer-region")) {
+      if (this.activeRegion) {
+        console.log("[PlaybackController] Loop region removed.");
+        this.soundEngine.unloop();
+        this.activeRegion.remove();
+        this.activeRegion = null;
+      }
+    }
+  });
+
+  console.log("[PlaybackController] Default region selection enabled.");
 }
-  /**
+/**
+ * Updates the region visual state based on loop activation.
+ * @param {object} region - The WaveSurfer region object.
+ * @param {boolean} isLooping - Whether looping is active.
+ */
+setRegionLoopState(region, isLooping) {
+  const newColor = isLooping
+    ? "rgba(215, 215, 215, 0.8)" // Loop active (visible)
+    : "rgba(0, 0, 0, 0.0)";      // Loop inactive (hidden)
+
+  region.element.style.backgroundColor = newColor;
+  region.element.style.transition = "background-color 0.3s";
+
+  console.log(`[PlaybackController] Region color updated: ${newColor}`);
+}
+
+/**
+ * Sends loop state to the SoundEngine.
+ * @param {boolean} isLooping - Whether looping is active.
+ * @param {number} startSec - Start time in seconds.
+ * @param {number} endSec - End time in seconds.
+ */
+updateSoundEngineLoop(isLooping, startSec, endSec) {
+  if (!this.soundEngine) {
+    console.warn("[PlaybackController] SoundEngine not available.");
+    return;
+  }
+
+  if (isLooping) {
+    console.log(`[PlaybackController] Activating loop: ${startSec}s - ${endSec}s`);
+    this.soundEngine.setPlayRange(startSec * 1000, endSec * 1000);
+    this.soundEngine.loop();
+
+  } else {
+    console.log("[PlaybackController] Deactivating loop.");
+    this.soundEngine.unloop();
+  }
+}
+
+/**
    * Zoom-only logic with pointer-based dragging.
    */
   initZoomHandler() {
-    console.debug("[PlaybackController] initZoomHandler() called.");
+    console.debug("[PlaybackController] Initializing zoom slider control.");
+  
     if (!this.wavesurfer) {
-      console.error("[PlaybackController] Wavesurfer is not initialized;");
+      console.error("[PlaybackController] Wavesurfer is not initialized.");
       return;
     }
-    const waveformContainer = document.querySelector("#waveform");
-    if (!waveformContainer) {
-      console.error("[PlaybackController] No #waveform container found.");
+  
+    const zoomSlider = document.querySelector("#zoomSliderHorz");
+    if (!zoomSlider) {
+      console.error("[PlaybackController] No #zoomSliderHorz found.");
       return;
     }
+  
+    // Define min/max zoom levels
     const minZoom = 1;
-    const maxZoom = 3000;
-    const sensitivity = (maxZoom - minZoom) / 1300;
-    const maxDeltaY = 60;
-    let isDragging = false;
-    let startX = 0, startY = 0, startZoom = 0;
-    const updateCursor = () => {
-      waveformContainer.style.cursor = this.zoomButton.isActive
-        ? (isDragging ? "grabbing" : "grab")
-        : "default";
+    const maxZoom = 600;
+  
+    // Helper function to map 0-100 range to 1-3000
+    const mapSliderToZoom = (sliderValue) => {
+      return minZoom + (sliderValue / 100) * (maxZoom - minZoom);
     };
-    this.zoomButton.clickHandler = () => {
-      this.disableDragSelectionAll();
-      if (this.zoomButton.isActive) {
-        console.log("[PlaybackController] Zoom active: disabling waveform interaction.");
-        this.wavesurfer.setOptions({ interact: false });
-      } else {
-        console.log("[PlaybackController] Zoom inactive: enabling waveform interaction.");
-        this.wavesurfer.setOptions({ interact: true });
-      }
-      updateCursor();
-    };
-    const pointerDown = (evt) => {
-      if (!this.zoomButton.isActive) return;
-      isDragging = true;
-      startX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-      startY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-      startZoom = this.wavesurfer.params.minPxPerSec || minZoom;
-      waveformContainer.style.cursor = "grabbing";
-      evt.preventDefault();
-    };
-    const pointerMove = (evt) => {
-      if (!isDragging) return;
-      const currentY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-      const deltaY = startY - currentY;
-      let clampedDeltaY = Math.max(-maxDeltaY, Math.min(maxDeltaY, deltaY));
-      let newZoom = startZoom + sensitivity * clampedDeltaY;
-      this.wavesurfer.zoom(Math.max(minZoom, Math.min(maxZoom, newZoom)));
-    };
-    const pointerUp = () => {
-      if (!isDragging) return;
-      isDragging = false;
-      updateCursor();
-    };
-    waveformContainer.addEventListener("mousedown", pointerDown);
-    document.addEventListener("mousemove", pointerMove);
-    document.addEventListener("mouseup", pointerUp);
-    waveformContainer.addEventListener("touchstart", pointerDown, { passive: false });
-    waveformContainer.addEventListener("touchmove", pointerMove, { passive: false });
-    waveformContainer.addEventListener("touchend", pointerUp);
+  
+    // When the user interacts with the slider, update zoom
+    zoomSlider.addEventListener("input", (event) => {
+      const sliderValue = parseFloat(event.target.value);
+      const zoomValue = mapSliderToZoom(sliderValue);
+  
+      console.log(`[PlaybackController] Zoom Slider changed: ${sliderValue} → Zoom: ${zoomValue}`);
+      this.wavesurfer.zoom(zoomValue);
+    });
+  
+    // Set initial slider value based on WaveSurfer's default zoom
+    zoomSlider.value = 0; // Start at 0 (which maps to minZoom = 1)
   }
-
   /**
    * Formats time (in seconds) => mm:ss
    */
