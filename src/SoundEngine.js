@@ -288,14 +288,15 @@ setPlayRange(min = null, max = null) {
   }
 
   loop() {
-    console.log("[SoundEngine] Looping enabled.");
     this._sendLoopEvent(1);
+    console.log("[SoundEngine] Looping enabled.");
   }
-  
+
   unloop() {
-    console.log("[SoundEngine] Looping disabled.");
-    this._sendLoopEvent(0);
-  }
+    if (!this.playMin || !this.playMax || !this.totalDuration) {
+      console.warn("[SoundEngine] Cannot unloop: playMin, playMax, or totalDuration not available.");
+      return;
+    }
   
     // Reset play range to the full track duration
     this.playMin.value = 0;
