@@ -98,11 +98,12 @@ html, body {
 }
 
 .loading-text {
-  font-size: 2.5vw;
+  font-size: clamp(16px, 2.5vw, 32px); /* Min: 16px, Preferred: 2.5vw, Max: 32px */
   font-weight: bold;
   max-width: 90%;
   text-align: center;
   min-height: 3vh;
+  max-height: 6vh;
 }
 
 webaudio-slider {
