@@ -1551,7 +1551,7 @@ try {
       this.setValue(this.defvalue, true);
     
       // Optional: You can add a visual indication or sound effect here if needed
-      console.log(`Slider reset to default value: ${this.defvalue}`);
+     // console.log(`Slider reset to default value: ${this.defvalue}`);
     }
     /**
      * Handles wheel events for adjusting the slider value.
@@ -2143,14 +2143,14 @@ try {
           window.webaudioSwitchGroups[this.group] = [];
         }
         window.webaudioSwitchGroups[this.group].push(this);
-        console.log(`Switch ID: ${this.id} registered to group '${this.group}'`);
+        //console.log(`Switch ID: ${this.id} registered to group '${this.group}'`);
       }
 
       // Global registration
       window.webaudioSwitches = window.webaudioSwitches || {};
       if (this.id) {
         window.webaudioSwitches[this.id] = this;
-        console.log(`Switch ID: ${this.id} registered globally`);
+        //console.log(`Switch ID: ${this.id} registered globally`);
       }
 
       // Initialize min, max, step
@@ -2201,12 +2201,12 @@ try {
         const priority = getPriority("webaudio-switch");
 
         user1Manager.subscribe(this, this.rootParam, priority);
-        console.log(`Switch ID: ${this.id} subscribed to root parameter '${this.rootParam}'`);
+        //console.log(`Switch ID: ${this.id} subscribed to root parameter '${this.rootParam}'`);
       }
 
       // Add a click event listener for debugging
       this.elem.addEventListener('click', (e) => {
-        console.log(`Switch clicked: ID=${this.id}, Type=${this.type}, Group=${this.group}`);
+        //console.log(`Switch clicked: ID=${this.id}, Type=${this.type}, Group=${this.group}`);
       });
 
       // Event listeners
@@ -2223,12 +2223,12 @@ try {
         }
       });
       this.resizeObserver.observe(this);
-      console.log(`Switch ID: ${this.id} - ResizeObserver attached`);
+      //console.log(`Switch ID: ${this.id} - ResizeObserver attached`);
 
       // Add to widget manager
       if (window.webAudioControlsWidgetManager) {
         window.webAudioControlsWidgetManager.addWidget(this);
-        console.log(`Switch ID: ${this.id} added to widget manager`);
+        //console.log(`Switch ID: ${this.id} added to widget manager`);
       }
     }
 
@@ -2245,7 +2245,7 @@ try {
       // Unobserve ResizeObserver
       if (this.resizeObserver) {
         this.resizeObserver.unobserve(this);
-        console.log(`Switch ID: ${this.id} - ResizeObserver detached`);
+        //console.log(`Switch ID: ${this.id} - ResizeObserver detached`);
       }
 
       // Additional cleanup
@@ -2256,19 +2256,19 @@ try {
       // Unsubscribe from ParameterManager
       if (this.rootParam) {
         user1Manager.unsubscribe(this, this.rootParam);
-        console.log(`Switch ID: ${this.id} unsubscribed from root parameter '${this.rootParam}'`);
+        //console.log(`Switch ID: ${this.id} unsubscribed from root parameter '${this.rootParam}'`);
       }
 
       // Remove from widget manager
       if (window.webAudioControlsWidgetManager) {
         window.webAudioControlsWidgetManager.removeWidget(this);
-        console.log(`Switch ID: ${this.id} removed from widget manager`);
+        //console.log(`Switch ID: ${this.id} removed from widget manager`);
       }
 
       // Remove from group if radio
       if (this.type === "radio" && this.group && window.webaudioSwitchGroups[this.group]) {
         window.webaudioSwitchGroups[this.group] = window.webaudioSwitchGroups[this.group].filter(sw => sw !== this);
-        console.log(`Switch ID: ${this.id} removed from group '${this.group}'`);
+        //console.log(`Switch ID: ${this.id} removed from group '${this.group}'`);
       }
     }
 
@@ -2301,7 +2301,7 @@ try {
       this.centerX = this._width / 2;
       this.centerY = this._height / 2;
 
-      console.log(`Switch ID: ${this.id} - Canvas setup: width=${this._width}, height=${this._height}, radius=${this.radius}`);
+      //console.log(`Switch ID: ${this.id} - Canvas setup: width=${this._width}, height=${this._height}, radius=${this.radius}`);
     }
 
     redraw() {
@@ -2329,7 +2329,7 @@ try {
           this.updatingFromSwitch = true;
           this.linkedParam.value = this._state;
           this.updatingFromSwitch = false;
-          console.log(`Switch ID: ${this.id} - Linked parameter updated to ${this._state}`);
+          //console.log(`Switch ID: ${this.id} - Linked parameter updated to ${this._state}`);
         }
       }
     }
@@ -2353,7 +2353,7 @@ try {
           drawSquare(ctx, this.centerX, this.centerY, innerSize, this.coltab[1], this.coltab[0]);
         }
 
-        console.log(`Drawing Toggle Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+       // console.log(`Drawing Toggle Switch ID: ${this.id} - isActive: ${this.isActive()}`);
       } else if (this.type === 'toggle') {
 
 
@@ -2376,7 +2376,7 @@ try {
         ctx.stroke();
 
         // Log active state
-        console.log(`Drawing Radio Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+        //console.log(`Drawing Radio Switch ID: ${this.id} - isActive: ${this.isActive()}`);
 
         // Note: Labels are handled by the `.webaudioctrl-label` div and do not need to be drawn on the canvas
       } else {
@@ -2390,7 +2390,7 @@ try {
         ctx.stroke();
 
         // Log active state
-        console.log(`Drawing Switch ID: ${this.id} - isActive: ${this.isActive()}`);
+        //console.log(`Drawing Switch ID: ${this.id} - isActive: ${this.isActive()}`);
 
         // For active state, fill a smaller circle
         if (this.isActive()) {
@@ -2427,7 +2427,7 @@ try {
       // Draw the text if it's not empty
       if (text) {
         ctx.fillText(text, this.centerX, this.centerY);
-        console.log(`Switch ID: ${this.id} - Mode Indicator: ${text}`);
+        //console.log(`Switch ID: ${this.id} - Mode Indicator: ${text}`);
       }
     }
 
@@ -2468,26 +2468,26 @@ try {
       v = parseInt(v);
       let changed = false;
 
-      console.log(`_setState called for Switch ID: ${this.id}, Current State: ${this._state}, New State: ${v}`);
+     // console.log(`_setState called for Switch ID: ${this.id}, Current State: ${this._state}, New State: ${v}`);
 
       if (this.type === 'toggle') {
         v = v ? 1 : 0;
         if (v !== this._state) {
-          console.log(`Toggle: State changed from ${this._state} to ${v}`);
+         // console.log(`Toggle: State changed from ${this._state} to ${v}`);
           this._state = v;
           changed = true;
         }
       } else if (this.type === 'radio') {
         // Log for debugging radio behavior
-        console.log(`Radio: Processing Switch ID: ${this.id}, Group: ${this.group}, New State: ${v}`);
+        //console.log(`Radio: Processing Switch ID: ${this.id}, Group: ${this.group}, New State: ${v}`);
         v = v ? 1 : 0;
         if (v !== this._state) {
-          console.log(`Radio: State changed for ${this.id} from ${this._state} to ${v}`);
+         // console.log(`Radio: State changed for ${this.id} from ${this._state} to ${v}`);
           this._state = v;
           changed = true;
 
           if (v === 1 && this.group && window.webaudioSwitchGroups[this.group]) {
-            console.log(`Radio: Deactivating other switches in group: ${this.group}`);
+          //  console.log(`Radio: Deactivating other switches in group: ${this.group}`);
             window.webaudioSwitchGroups[this.group].forEach(sw => {
               if (sw !== this) {
                 console.log(`Radio: Turning off Switch ID: ${sw.id}`);
@@ -2500,20 +2500,20 @@ try {
       } else if (this.type === 'sequential') {
         // Sequential type logic
         if (v !== this._state) {
-          console.log(`Sequential: State changed from ${this._state} to ${v}`);
+          //console.log(`Sequential: State changed from ${this._state} to ${v}`);
           this._state = v;
           changed = true;
         }
       } else if (this.type === 'kick') {
         if (v !== this._state) {
-          console.log(`Kick: State changed from ${this._state} to ${v}`);
+          //console.log(`Kick: State changed from ${this._state} to ${v}`);
           this._state = v;
           changed = true;
         }
       }
 
       if (changed) {
-        console.log(`Switch ID: ${this.id} - State changed to: ${this._state}`);
+        //console.log(`Switch ID: ${this.id} - State changed to: ${this._state}`);
         this.fireflag = true;
         this.redraw(); // Trigger visual update
         return true;
@@ -2523,14 +2523,14 @@ try {
     }
 
     setState(v, fire = false) {
-      console.log(`setState called for Switch ID: ${this.id}, Type: ${this.type}, New Value: ${v}, Fire: ${fire}`);
+      //console.log(`setState called for Switch ID: ${this.id}, Type: ${this.type}, New Value: ${v}, Fire: ${fire}`);
 
       this._setState(v);
 
       if (fire) {
         this.sendEvent('input');
         this.sendEvent('change');
-        console.log(`Dispatching events for Switch ID: ${this.id}`);
+       // console.log(`Dispatching events for Switch ID: ${this.id}`);
       }
 
       // Redraw to update the visual state and label color
@@ -2544,9 +2544,9 @@ try {
      */
     onParameterChanged(parameterName, newValue) {
       if (this.rootParam === parameterName) {
-        console.log(`Parameter '${parameterName}' changed to ${newValue} for Switch ID: ${this.id}`);
+       // console.log(`Parameter '${parameterName}' changed to ${newValue} for Switch ID: ${this.id}`);
         if (this.isBidirectional && this._state !== newValue) {
-          console.log(`Updating Switch ID: ${this.id} state to ${newValue} based on parameter change`);
+         // console.log(`Updating Switch ID: ${this.id} state to ${newValue} based on parameter change`);
           this.setState(newValue, false); // Avoid triggering another update to ParameterManager
         }
       }
@@ -2664,7 +2664,7 @@ try {
      * Toggles the switch state (for toggle type).
      */
     toggleState() {
-      console.log(`toggleState called for Switch ID: ${this.id}`);
+      //console.log(`toggleState called for Switch ID: ${this.id}`);
       const newState = this._state ? 0 : 1;
       this.setState(newState, true);
     }
@@ -2693,7 +2693,7 @@ try {
      * Accepts an optional delta to increment/decrement.
      */
     cycleState(delta = 1) {
-      console.log(`cycleState called for Switch ID: ${this.id}, Delta: ${delta}`);
+      //console.log(`cycleState called for Switch ID: ${this.id}, Delta: ${delta}`);
       let newState = this._state + delta * this._step;
       if (newState > this._max) {
         newState = this._min;
@@ -2707,18 +2707,18 @@ try {
      * Activates the radio switch, ensuring only this switch is active in its group.
      */
     activateRadio() {
-      console.log(`activateRadio called for Switch ID: ${this.id}`);
+      //console.log(`activateRadio called for Switch ID: ${this.id}`);
       if (this.type !== "radio") return;
       this.setState(1, true); // Activate this radio button
     }
 
     // Handle changes from the linked param
     handleParamChange(e) {
-      console.log(`handleParamChange called for Switch ID: ${this.id}`);
+   //   console.log(`handleParamChange called for Switch ID: ${this.id}`);
       if (this.updatingFromSwitch) return; // Prevent circular update
       const newValue = parseInt(e.target.value);
       if (!isNaN(newValue) && newValue !== this._state) {
-        console.log(`Switch ID: ${this.id} - Updating state to ${newValue} from parameter change`);
+        //console.log(`Switch ID: ${this.id} - Updating state to ${newValue} from parameter change`);
         this.setState(newValue, false);
       }
     }
@@ -2731,7 +2731,7 @@ try {
           this.updatingFromSwitch = true;
           this.linkedParam.value = this._state;
           this.updatingFromSwitch = false;
-          console.log(`Switch ID: ${this.id} - Linked parameter updated to ${this._state}`);
+          //console.log(`Switch ID: ${this.id} - Linked parameter updated to ${this._state}`);
         }
       }
     }
@@ -3192,7 +3192,6 @@ onParameterChanged(parameterName, newValue) {
 
       pointerdown(ev) {
         ev.preventDefault(); // Stop default behavior
-        console.log("Debug: pointerdown triggered", ev);
   
         if (!this.enable) return;
   
@@ -3200,7 +3199,6 @@ onParameterChanged(parameterName, newValue) {
         if (!ev.touches && (e.buttons !== 1 && e.button !== 0)) return;
   
         this.elem.focus();
-        console.log("Debug: Focus set on element", this.elem);
         this.redraw();
       }
     });

@@ -43,8 +43,9 @@
 // Import Statements
 // -----------------------------
 
-// Scene and rendering utilities
+// Import scene setup and space elements
 import { initScene, initRenderer, addLights } from './Scene.js';
+import { initSpaceScene } from './SceneSpace.js'; // ✅ This handles the cubemap loading!
 
 // Model loader
 import { loadAndDisplayModel } from './Loaders.js';
@@ -94,6 +95,11 @@ const { scene, camera, controls } = initScene(canvas3D);
 
 // Initialize the renderer for the scene
 const renderer = initRenderer(canvas3D);
+
+// ✅ Set the cubemap skybox
+initSpaceScene(scene);
+
+
 
 // Add lighting to the scene
 addLights(scene);
@@ -337,12 +343,12 @@ window.addEventListener('resize', () => {
  * Animation loop for the application.
  * Updates controls and renders the scene.
  * @function animate
- * @memberof 3DGUI 
  */
 function animate() {
-    controls.update(); // Update camera controls
-    renderer.render(scene, camera); // Render the scene from the perspective of the camera
-    requestAnimationFrame(animate); // Request the next frame
+    requestAnimationFrame(animate);
+    
+    controls.update();
+    renderer.render(scene, camera);
 }
 
 // -----------------------------

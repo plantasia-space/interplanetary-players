@@ -444,7 +444,5 @@ export class ButtonGroup {
             }
         });
 
-        console.log(`[ButtonGroup] MIDI support: ${MIDI_SUPPORTED ? 'Enabled' : 'Disabled'}`);
-        console.log(`[ButtonGroup] Sensors support: ${sensorsAvailable ? 'Available' : 'Unavailable'}`);
     }
 }

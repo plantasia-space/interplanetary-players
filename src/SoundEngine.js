@@ -370,13 +370,11 @@ setPlayRange(min = null, max = null, isFromUI = false) {
   }
 
   onParameterChanged(parameterName, value) {
-    console.log("SoundEngine received parameter change:", parameterName, value);
     switch (parameterName) {
       case "body-level": {
         const normValue = this.userManager.getNormalizedValue("body-level");
         if (this.inputGain !== null) {
           this.inputGain.value = normValue;
-          console.log("SoundEngine: Updated inputGain (body-level) to", normValue);
         } else {
           console.warn("SoundEngine: inputGain is not defined.");
         }
@@ -386,7 +384,6 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         const rawValue = this.userManager.getRawValue("x");
         if (this.inputX !== null) {
           this.inputX.value = rawValue;
-          console.log("SoundEngine: Updated inputX to", rawValue);
         } else {
           console.warn("SoundEngine: inputX is not defined.");
         }
@@ -396,7 +393,6 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         const rawValue = this.userManager.getRawValue("y");
         if (this.inputY !== null) {
           this.inputY.value = rawValue;
-          console.log("SoundEngine: Updated inputY to", rawValue);
         } else {
           console.warn("SoundEngine: inputY is not defined.");
         }
@@ -406,7 +402,6 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         const rawValue = this.userManager.getRawValue("z");
         if (this.inputZ !== null) {
           this.inputZ.value = rawValue;
-          console.log("SoundEngine: Updated inputZ to", rawValue);
         } else {
           console.warn("SoundEngine: inputZ is not defined.");
         }

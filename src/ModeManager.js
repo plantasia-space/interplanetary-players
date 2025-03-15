@@ -23,12 +23,12 @@ export class ModeManager {
             return;
         }
     
-        console.log(`[ModeManager] Switching mode from "${this.currentMode}" to "${newMode}".`);
+        //console.log(`[ModeManager] Switching mode from "${this.currentMode}" to "${newMode}".`);
     
         // Exit current mode
         const oldMode = this.currentMode;
         if (this.modes[oldMode] && this.modes[oldMode].onExit) {
-            console.log(`[ModeManager] Exiting mode: ${oldMode}`);
+           // console.log(`[ModeManager] Exiting mode: ${oldMode}`);
             this.modes[oldMode].onExit();
         }
     
@@ -37,7 +37,7 @@ export class ModeManager {
     
         // Enter new mode
         if (this.modes[newMode] && this.modes[newMode].onEnter) {
-            console.log(`[ModeManager] Entering mode: ${newMode}`);
+            //console.log(`[ModeManager] Entering mode: ${newMode}`);
             this.modes[newMode].onEnter();
         } else {
             console.warn(`[ModeManager] No onEnter function defined for mode: ${newMode}`);
@@ -61,7 +61,7 @@ export const ModeManagerInstance = new ModeManager();
 // Register all modes here
 ModeManagerInstance.registerMode('JAM', {
     onEnter: () => {
-      console.log('[ModeManager] Entered JAM mode.');
+      //console.log('[ModeManager] Entered JAM mode.');
       notifications.showToast("Switched to Jam mode.");
   
       // Hide dropdowns that are exclusive to Cosmic LFO mode.
@@ -103,14 +103,14 @@ ModeManagerInstance.registerMode('JAM', {
       // The knob containers and webaudio-param elements remain visible by default.
     },
     onExit: () => {
-      console.log('[ModeManager] Exited JAM mode.');
+      //console.log('[ModeManager] Exited JAM mode.');
       // Clean up any JAM mode–specific UI changes here if necessary.
     }
   });
 
 ModeManagerInstance.registerMode('MIDI_LEARN', {
     onEnter: async () => {
-      console.log('[ModeManager] Entered MIDI_LEARN mode.');
+      //console.log('[ModeManager] Entered MIDI_LEARN mode.');
       try {
         // Show sensor toggle buttons as part of MIDI Learn mode
         document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
@@ -143,7 +143,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
       }
     },
     onExit: () => {
-      console.log('[ModeManager] Exited MIDI_LEARN mode.');
+      //console.log('[ModeManager] Exited MIDI_LEARN mode.');
       if (MIDIControllerInstance) {
         MIDIControllerInstance.exitMidiLearnMode();
         console.log('[ModeManager] MIDI Learn functionality disabled.');
@@ -170,7 +170,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
   
   ModeManagerInstance.registerMode('SENSORS', {
     onEnter: async () => {
-        console.log('[ModeManager] Entering SENSORS mode...');
+        //console.log('[ModeManager] Entering SENSORS mode...');
 
         if (ModeManagerInstance.user1Manager) {
             const sensorController = SensorController.getInstance(ModeManagerInstance.user1Manager);
@@ -190,7 +190,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
                     notifications.showToast('Permission denied for internal sensors.', 'error');
                 }
             } else if (!INTERNAL_SENSORS_USABLE && EXTERNAL_SENSORS_USABLE) {
-                console.log('[ModeManager] Switching to external sensors via WebRTC...');
+                //console.log('[ModeManager] Switching to external sensors via WebRTC...');
                 sensorController.switchSensorSource(true); // External sensors
                 if (webRTCManager) {
                    // webRTCManager.generateConnectionModal();
@@ -223,12 +223,12 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
 });
 ModeManagerInstance.registerMode('COSMIC_LFO', {
     onEnter: () => {
-      console.log('[ModeManager] Entered COSMIC_LFO mode.');
+      //console.log('[ModeManager] Entered COSMIC_LFO mode.');
       notifications.showToast("Cosmic LFO mode activated.");
       CosmicLFO.getInstance().enterMode();
     },
     onExit: () => {
-      console.log('[ModeManager] Exited COSMIC_LFO mode.');
+      //console.log('[ModeManager] Exited COSMIC_LFO mode.');
       notifications.showToast("Exited Cosmic LFO mode.");
       CosmicLFO.getInstance().exitMode();
     }
@@ -236,7 +236,7 @@ ModeManagerInstance.registerMode('COSMIC_LFO', {
 
   ModeManagerInstance.registerMode('PLAYBACK', {
     onEnter: () => {
-        console.log('[ModeManager] Entered PLAYBACK mode.');
+        //console.log('[ModeManager] Entered PLAYBACK mode.');
         notifications.showToast("Playback mode activated.");
         
         // Show waveform and playback switches
@@ -249,7 +249,7 @@ ModeManagerInstance.registerMode('COSMIC_LFO', {
         });
     },
     onExit: () => {
-        console.log('[ModeManager] Exited PLAYBACK mode.');
+        //console.log('[ModeManager] Exited PLAYBACK mode.');
         notifications.showToast("Exited Playback mode.");
 
         // Hide waveform and playback switches
