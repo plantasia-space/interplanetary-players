@@ -46,55 +46,62 @@ html, body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.85);
   color: var(--color1);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  text-align: center;
+  font-size: 2.5vw;
   font-weight: bold;
   z-index: 9999;
   transition: opacity 0.5s ease-in-out;
 }
 
-#loading-screen.hidden {
-  opacity: 0;
-  pointer-events: none;
+/* 🚀 Flex container to center both orbit and text */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Full height ensures everything stays centered */
+  gap: 3vh; /* Space between orbit and text */
 }
 
-/* Static text */
-.loading-text {
-  font-size: 28px;
-  font-weight: bold;
-  text-transform: uppercase;
-  opacity: 1;
-}
-
-/* Orbiting dot */
+/* Orbiting dot container */
 .orbit-container {
-  position: absolute;
-  width: 100px;
-  height: 100px;
+  position: relative;
+  width: 10vw;
+  height: 10vw;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* Orbiting dot */
 .orbit-dot {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 1.5vw;
+  height: 1.5vw;
   background-color: var(--color2);
   border-radius: 50%;
   animation: orbit 1.8s linear infinite;
 }
 
+/* Circular orbit effect */
 @keyframes orbit {
-  0% { transform: rotate(0deg) translateX(50px) rotate(0deg); }
-  100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+  0% { transform: rotate(0deg) translateX(5vw) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(5vw) rotate(-360deg); }
+}
+
+/* 🚀 Text now perfectly centered below the orbit */
+.loading-text {
+  font-size: 2.5vw;
+  font-weight: bold;
+  max-width: 90%;
+  min-height: 3vh; /* Prevents text shifting */
 }
 
 webaudio-slider {

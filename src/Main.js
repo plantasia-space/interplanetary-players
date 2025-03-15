@@ -449,12 +449,14 @@ function updateLoadingScreen() {
     else if (!loadingStates.modelLoaded) message = "Loading 3D Model...";
     else if (!loadingStates.uiReady) message = "Finalizing User Interface...";
 
-    // Update loading screen content
+    // 🚀 Ensure everything stays centered
     loadingScreen.innerHTML = `
-        <div class="orbit-container">
-            <div class="orbit-dot"></div>
+        <div class="loading-container">
+            <div class="orbit-container">
+                <div class="orbit-dot"></div>
+            </div>
+            <div class="loading-text">${message} (${completedSteps}/${totalSteps})</div>
         </div>
-        <div class="loading-text">${message} (${completedSteps}/${totalSteps})</div>
     `;
 
     // Hide loading screen when done
