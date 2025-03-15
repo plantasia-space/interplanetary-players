@@ -91,6 +91,41 @@ export const Constants = {
      */
     TRACK_DATA: null,
 
+
+        /** 
+     * Centralized loading state for tracking application initialization.
+     */
+        LOADING_STATE: {
+            trackLoaded: false,
+            soundEngineLoaded: false,
+            modelLoaded: false,
+            uiReady: false,
+        },
+    
+        /**
+         * Updates the loading state and calls updateLoadingScreen().
+         * Ensures that only valid keys are updated.
+         * @param {string} key - The loading step (e.g., "trackLoaded").
+         * @param {boolean} value - True if the step is completed.
+         */
+        setLoadingState(key, value) {
+            if (this.LOADING_STATE.hasOwnProperty(key)) {
+                this.LOADING_STATE[key] = value;
+                updateLoadingScreen(); // Automatically update the loading screen
+            } else {
+                console.warn(`[Constants] Attempted to set unknown loading state: ${key}`);
+            }
+        },
+    
+        /**
+         * Retrieves the current loading state.
+         * @returns {object} The current state of all loading steps.
+         */
+        getLoadingState() {
+            return this.LOADING_STATE;
+        },
+
+        
     /**
      * Sets and caches track data for the specified trackId.
      * @param {string} trackId - The unique identifier for the track.
@@ -139,6 +174,7 @@ export const Constants = {
         console.log(`[CACHE] Cleared track data for trackId: ${trackId}`);
     }
 };
+
 
 /**
  * @constant

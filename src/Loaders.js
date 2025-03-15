@@ -9,6 +9,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { Constants } from './Constants.js';  
 
 /**
  * Maximum number of retry attempts for loading a GLB model.
@@ -88,6 +89,7 @@ export async function loadAndDisplayModel(scene, trackData) {
     try {
         const { interplanetaryPlayer } = trackData;
         const { modelURL } = interplanetaryPlayer;
+        Constants.setLoadingState("modelLoaded", false); // ⏳ Start loading
 
         if (!modelURL) {
             throw new Error('Missing modelURL in interplanetaryPlayer data.');
@@ -101,6 +103,7 @@ export async function loadAndDisplayModel(scene, trackData) {
 
         // Add the loaded model to the scene
         scene.add(model);
+        Constants.setLoadingState("modelLoaded", true);
 
         console.log('[ModelLoader] GLB model loaded and added to the scene successfully.');
     } catch (error) {

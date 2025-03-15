@@ -168,6 +168,10 @@ async function initializeApp() {
       // Load and display the 3D model (your other initialization logic)
       await loadAndDisplayModel(scene, cachedData);
       console.log('[APP] Model loaded successfully.');
+
+        // ✅ Mark UI as ready
+        Constants.setLoadingState("uiReady", true);
+
   
     } catch (error) {
       console.error('[APP] Error during application initialization:', error);
@@ -428,6 +432,43 @@ function toggleButtonState(button, actionName) {
     button.classList.toggle("active");
     console.log(`[APP] ${actionName} toggled:`, button.classList.contains("active"));
 }
+
+function updateLoadingScreen() {
+    const loadingScreen = document.getElementById("loading-screen");
+    if (!loadingScreen) return;
+
+    // Get current loading state
+    const loadingStates = Constants.getLoadingState();
+    const totalSteps = Object.keys(loadingStates).length;
+    const completedSteps = Object.values(loadingStates).filter(Boolean).length;
+
+    // Update progress message
+    let message = "Initializing...";
+    if (!loadingStates.trackLoaded) message = "Loading Track Data...";
+    else if (!loadingStates.soundEngineLoaded) message = "Loading Sound Engine...";
+    else if (!loadingStates.modelLoaded) message = "Loading 3D Model...";
+    else if (!loadingStates.uiReady) message = "Finalizing User Interface...";
+
+    // Update loading screen content
+    loadingScreen.innerHTML = `
+        <div class="orbit-container">
+            <div class="orbit-dot"></div>
+        </div>
+        <div class="loading-text">${message} (${completedSteps}/${totalSteps})</div>
+    `;
+
+    // Hide loading screen when done
+    if (completedSteps === totalSteps) {
+        loadingScreen.classList.add("hidden");
+        setTimeout(() => {
+            loadingScreen.style.display = "none";
+        }, 500);
+    }
+}
+
+// Expose updateLoadingScreen globally for Constants.js to use
+window.updateLoadingScreen = updateLoadingScreen;
+
 // -----------------------------
 // Module Exports
 // -----------------------------

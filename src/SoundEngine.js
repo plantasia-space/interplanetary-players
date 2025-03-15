@@ -40,7 +40,8 @@ export class SoundEngine {
       this.currentMode = newMode;
       console.log(`[SoundEngine] Mode updated to: ${this.currentMode}`);
     });
-    
+    Constants.setLoadingState("soundEngineLoaded", false);
+
   }
 
   /**
@@ -128,6 +129,10 @@ export class SoundEngine {
 
       this.initialized = true;
       console.log("[SoundEngine] Initialized successfully.");
+          // Track initialization completion
+    Constants.setLoadingState("soundEngineLoaded", true);
+
+
     } catch (error) {
       console.error("[SoundEngine] Error in init():", error);
     }
@@ -279,7 +284,7 @@ setCursorPosition(newTimeMs) {
   getAmplitude() {
     return this.amplitude;
   }
-  
+
   _forcePlayState(value) {
     // value=1 or 0
     try {

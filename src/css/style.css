@@ -42,7 +42,60 @@ html, body {
     height: 100%;
     font-family: 'SpaceMono', sans-serif;
 }
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--color1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  z-index: 9999;
+  transition: opacity 0.5s ease-in-out;
+}
 
+#loading-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Static text */
+.loading-text {
+  font-size: 28px;
+  font-weight: bold;
+  text-transform: uppercase;
+  opacity: 1;
+}
+
+/* Orbiting dot */
+.orbit-container {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.orbit-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: var(--color2);
+  border-radius: 50%;
+  animation: orbit 1.8s linear infinite;
+}
+
+@keyframes orbit {
+  0% { transform: rotate(0deg) translateX(50px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+}
 
 webaudio-slider {
     width: 50%;

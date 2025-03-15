@@ -42,19 +42,20 @@ export class DataManager {
      */
     async fetchAndUpdateConfig(trackId) {
         console.log(`[DataManager] Starting fetch and update for trackId: ${trackId}`);
-
+    
         try {
-            // Fetch track data from the server or cache
             await this.fetchTrackData(trackId);
-
-            // Update the placeholder configuration based on fetched data
             this.updatePlaceholderConfig();
             console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
+    
+            // ✅ Update loading state using Constants
+            Constants.setLoadingState("trackLoaded", true);
         } catch (error) {
             console.error(`[DataManager] Error fetching and updating config: ${error.message}`);
         }
     }
 
+    
     /**
      * Updates the configuration for UI placeholders using the retrieved track data.
      * @private
