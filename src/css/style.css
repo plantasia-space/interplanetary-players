@@ -60,17 +60,20 @@ html, body {
   transition: opacity 0.5s ease-in-out;
 }
 
-/* 🚀 Flex container to center both orbit and text */
+#loading-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh; /* Full height ensures everything stays centered */
-  gap: 3vh; /* Space between orbit and text */
+  height: 100vh;
+  gap: 3vh;
 }
 
-/* Orbiting dot container */
 .orbit-container {
   position: relative;
   width: 10vw;
@@ -80,7 +83,6 @@ html, body {
   align-items: center;
 }
 
-/* Orbiting dot */
 .orbit-dot {
   position: absolute;
   width: 1.5vw;
@@ -90,18 +92,17 @@ html, body {
   animation: orbit 1.8s linear infinite;
 }
 
-/* Circular orbit effect */
 @keyframes orbit {
   0% { transform: rotate(0deg) translateX(5vw) rotate(0deg); }
   100% { transform: rotate(360deg) translateX(5vw) rotate(-360deg); }
 }
 
-/* 🚀 Text now perfectly centered below the orbit */
 .loading-text {
   font-size: 2.5vw;
   font-weight: bold;
   max-width: 90%;
-  min-height: 3vh; /* Prevents text shifting */
+  text-align: center;
+  min-height: 3vh;
 }
 
 webaudio-slider {

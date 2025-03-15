@@ -442,22 +442,31 @@ function updateLoadingScreen() {
     const totalSteps = Object.keys(loadingStates).length;
     const completedSteps = Object.values(loadingStates).filter(Boolean).length;
 
-    // Update progress message
+    // Determine current step message
     let message = "Initializing...";
     if (!loadingStates.trackLoaded) message = "Loading Track Data...";
     else if (!loadingStates.soundEngineLoaded) message = "Loading Sound Engine...";
     else if (!loadingStates.modelLoaded) message = "Loading 3D Model...";
     else if (!loadingStates.uiReady) message = "Finalizing User Interface...";
 
-    // 🚀 Ensure everything stays centered
-    loadingScreen.innerHTML = `
-        <div class="loading-container">
-            <div class="orbit-container">
-                <div class="orbit-dot"></div>
+    // Check if the loading container already exists
+    let loadingContainer = loadingScreen.querySelector(".loading-container");
+    if (!loadingContainer) {
+        // Create static structure only once
+        loadingScreen.innerHTML = `
+            <div class="loading-container">
+                <div class="orbit-container">
+                    <div class="orbit-dot"></div>
+                </div>
+                <div class="loading-text"></div>
             </div>
-            <div class="loading-text">${message} (${completedSteps}/${totalSteps})</div>
-        </div>
-    `;
+        `;
+        loadingContainer = loadingScreen.querySelector(".loading-container");
+    }
+    
+    // Update only the text element, leaving the spinner untouched
+    const loadingText = loadingContainer.querySelector(".loading-text");
+    loadingText.textContent = `${message} (${completedSteps}/${totalSteps})`;
 
     // Hide loading screen when done
     if (completedSteps === totalSteps) {
