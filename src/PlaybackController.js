@@ -70,7 +70,7 @@ export class PlaybackController {
       if (!waveData || !waveData.data || !Array.isArray(waveData.data)) {
         throw new Error("[PlaybackController] Invalid waveform JSON: 'data' array missing.");
       }
-      const approximateDuration = waveData.durationSec || 120;
+      const approximateDuration = (waveData.length * waveData.samples_per_pixel) / waveData.sample_rate;      
       const peaks = waveData.data;
       const waveformContainer = document.querySelector("#waveform");
       if (!waveformContainer) {
@@ -115,6 +115,7 @@ export class PlaybackController {
       // After decoding, ensure default zoom and reset scroll.
       const timeEl = document.getElementById("waveform-time");
       this.wavesurfer.on("decode", (duration) => {
+
         this.wavesurfer.zoom(1);
         this.wavesurfer.setScroll(0);
         console.log(`[PlaybackController] Initial zoom set to 1 for duration ${duration}s`);
@@ -142,25 +143,41 @@ export class PlaybackController {
       this.wavesurfer.on("scroll", (start, end, scrollLeft, scrollRight) => {
         console.log(`[WaveSurfer Event] scroll => startTime=${start}, endTime=${end}, scrollLeft=${scrollLeft}, scrollRight=${scrollRight}`);
       });
-      this.wavesurfer.on("interaction", (newTime) => {
-        console.log(`[WaveSurfer Event] interaction => newTime=${newTime}`);
-    
-        if (this.soundEngine) {
-            const newTimeMs = Math.round(newTime * 1000); // Convert seconds to ms
-            console.log(`[PlaybackController] Moving playhead to ${newTimeMs} ms`);
-    
-            // ✅ Instead of click event, update SoundEngine here!
-            this.soundEngine.setPlayRange(this.soundEngine.totalDuration * 1000, this.soundEngine.totalDuration * 1000);
-            this.soundEngine.setPlayRange(newTimeMs, this.soundEngine.totalDuration * 1000);
-            this.soundEngine.loop();
-            this.soundEngine.unloop();
 
-            // Optional: Log confirmation after update
-            console.log(`[PlaybackController] SoundEngine playMin updated to ${this.soundEngine.playMin.value} ms`);
-        } else {
-            console.warn("[PlaybackController] SoundEngine is not available.");
+
+      this.wavesurfer.on("interaction", (newTime) => {
+        if (!this.soundEngine) {
+          console.warn("[PlaybackController] SoundEngine is not available.");
+          return;
         }
-    });
+      
+        const newTimeMs = Math.round(newTime * 1000);
+        console.log(`[PlaybackController] User clicked at ${newTimeMs} ms`);
+      
+        // Prevent SoundEngine from overriding our manual seek
+        this.soundEngine._isUpdatingFromUI = true;
+      
+        if (this.soundEngine.isPlaying()) {
+          // ─────────────────────────────────────────────────
+          // CASE A: Playing => "jump-to-end" workaround
+          // ─────────────────────────────────────────────────
+          this.doPlayingSeek(newTimeMs);
+      
+        } else if (this.soundEngine.playState === "paused") {
+          // ─────────────────────────────────────────────────
+          // CASE B: Paused => short "play→pause" trick
+          // ─────────────────────────────────────────────────
+          this.doPausedSeek(newTimeMs);
+      
+        } else {
+          // ─────────────────────────────────────────────────
+          // CASE C: Stopped => direct set is usually enough
+          // ─────────────────────────────────────────────────
+          this.doStoppedSeek(newTimeMs);
+        }
+      });
+
+
       this.wavesurfer.on("click", (rx, ry) => {
         console.log(`[WaveSurfer Event] click => x=${rx}, y=${ry}`);
       });
@@ -186,6 +203,71 @@ export class PlaybackController {
     }
   }
 
+
+  doPlayingSeek(newTimeMs) {
+    this.soundEngine.setPlayRange(
+      this.soundEngine.totalDuration * 1000,
+      this.soundEngine.totalDuration * 1000
+    );
+  
+    setTimeout(() => {
+      this.soundEngine.setPlayRange(
+        newTimeMs,
+        this.soundEngine.totalDuration * 1000
+      );
+      this.soundEngine.loop();
+  
+      setTimeout(() => {
+        this.soundEngine.unloop();
+        this.soundEngine.loop();
+        this.soundEngine.setPlayRange(0, this.soundEngine.totalDuration * 1000);
+  
+        // Force WaveSurfer UI cursor to newTime
+        this.setPlayHead(newTimeMs);
+  
+        this.soundEngine._isUpdatingFromUI = false;
+      }, 100);
+    }, 50);
+  }
+  doPausedSeek(newTimeMs) {
+    // 1) Stop just to clear any leftover constraints or loops
+    this.soundEngine.stop();
+  
+    // 2) Set new range so RNBO knows "start reading from newTimeMs"
+    this.soundEngine.setPlayRange(
+      newTimeMs,
+      this.soundEngine.totalDuration * 1000
+    );
+  
+    // 3) Kick RNBO into "play" for 100ms so it actually *moves* pointer
+    this.soundEngine.play();
+    setTimeout(() => {
+      // 4) Return to "pause" immediately
+      this.soundEngine.pause();
+  
+      // 5) WaveSurfer cursor to newTimeMs 
+      this.setPlayHead(newTimeMs);
+  
+      this.soundEngine._isUpdatingFromUI = false;
+    }, 1);
+  }
+
+
+  doStoppedSeek(newTimeMs) {
+    // Just set newTime → end
+    this.soundEngine.setPlayRange(
+      newTimeMs,
+      this.soundEngine.totalDuration * 1000
+    );
+  
+    // Visually place the WaveSurfer cursor
+    this.setPlayHead(newTimeMs);
+  
+    setTimeout(() => {
+      this.soundEngine._isUpdatingFromUI = false;
+    }, 50);
+  }
+  
   /**
    * Region selection using drag.
    */

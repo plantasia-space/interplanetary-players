@@ -25,6 +25,7 @@ export class SoundEngine {
     this.userManager = userManager;
     this.ksteps = ksteps;
     this.rnbo = rnbo;
+    this.playState = "stopped"; // could be "playing", "paused", or "stopped"
 
     this.context = null;
     this.device = null;
@@ -98,18 +99,23 @@ export class SoundEngine {
         // Capture cursor position from RNBO (playhead position)
         if (this.currentMode === "PLAYBACK") {  // Check if we're in playback mode
 
-        if (ev.tag === "playHead") {
-          if (typeof ev.payload === "number") {
-            this.currentCursorMs = ev.payload; 
-      
-            if (this.playbackController) {
-              this.playbackController.setPlayHead(this.currentCursorMs);
+          if (ev.tag === "playHead") {
+            if (typeof ev.payload === "number") {
+                this.currentCursorMs = ev.payload;
+        
+                // **Check if we are currently in a manual seek operation**
+                if (!this._isUpdatingFromUI) {
+                    if (this.playbackController) {
+                        this.playbackController.setPlayHead(this.currentCursorMs);
+                    } else {
+                        console.warn("[SoundEngine] PlaybackController is not available.");
+                    }
+                } else {
+                    console.log("[SoundEngine] Ignoring playHead update due to manual user seek.");
+                }
             } else {
-              console.warn("[SoundEngine] PlaybackController is not available.");
+                console.error(`Unexpected payload format from '${ev.tag}' message:`, ev.payload);
             }
-          } else {
-            console.error(`Unexpected payload format from '${ev.tag}' message:`, ev.payload);
-          }
         }
       }
       });
@@ -191,20 +197,7 @@ setCursorPosition(newTimeMs) {
 }
 
 
-  async play() {
-    try {
-      if (!this.initialized) {
-        await this.init();
-      }
-      if (this.context.state === "suspended") {
-        await this.context.resume();
-        console.log("[SoundEngine] Audio context resumed.");
-      }
-      this._sendPlayEvent();
-    } catch (error) {
-      console.error("[SoundEngine] Error during play:", error);
-    }
-  }
+
 
   _sendPlayEvent() {
     try {
@@ -216,20 +209,60 @@ setCursorPosition(newTimeMs) {
     }
   }
 
+  /**
+   * Returns true if the engine is currently playing.
+   */
+  isPlaying() {
+    return this.playState === "playing";
+  }
+
+  async play() {
+    try {
+      if (!this.initialized) {
+        await this.init();
+      }
+      if (this.context.state === "suspended") {
+        await this.context.resume();
+        console.log("[SoundEngine] Audio context resumed.");
+      }
+      this._sendPlayEvent();
+      this.playState = "playing"; // <--- Update state
+    } catch (error) {
+      console.error("[SoundEngine] Error during play:", error);
+    }
+  }
+
   pause() {
     try {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "play", [0]);
       this.device.scheduleEvent(messageEvent);
-      console.log("SoundEngine: Pause command sent.");
+      this.playState = "paused"; // <--- Update state
+      console.log("[SoundEngine] Pause command sent.");
     } catch (err) {
-      console.error("SoundEngine: Failed to schedule pause event:", err);
+      console.error("[SoundEngine] Failed to schedule pause event:", err);
     }
   }
 
   stop() {
+    // 1) Send RNBO "stop" event
     const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "stop", [1]);
     this.device.scheduleEvent(messageEvent);
-    console.log("SoundEngine: Stop command processed.");
+  
+    // 2) Force our local sampler range to 0 → end
+    if (this.playMin && this.playMax && this.totalDuration) {
+      this.playMin.value = 0;
+      this.playMax.value = Math.round(this.totalDuration * 1000);
+      // Force RNBO to accept it right now
+      this.device.scheduleEvent(new RNBO.MessageEvent(RNBO.TimeNow, "sampler/playMin", [0]));
+      this.device.scheduleEvent(new RNBO.MessageEvent(RNBO.TimeNow, "sampler/playMax", [this.playMax.value]));
+  
+      // Also keep track of local cursor
+      this.currentCursorMs = 0;
+    }
+  
+    // 3) Mark engine state
+    this.playState = "stopped";
+    console.log("[SoundEngine] Stop command processed, sampler reset to 0.");
   }
 
   setVolume(volume) {
@@ -246,35 +279,51 @@ setCursorPosition(newTimeMs) {
   getAmplitude() {
     return this.amplitude;
   }
-
+  
+  _forcePlayState(value) {
+    // value=1 or 0
+    try {
+      const msg = new RNBO.MessageEvent(RNBO.TimeNow, "play", [value]);
+      this.device.scheduleEvent(msg);
+      console.log(`[SoundEngine] Nudging RNBO with play=${value} (no local state change)`);
+    } catch (err) {
+      console.error("[SoundEngine] _forcePlayState error:", err);
+    }
+  }
 
 
 /**
  * Sets the play range in the engine.
- * If only min is provided, it updates playMin (seek mode).
- * If both min and max are provided, it updates the loop range.
  */
-setPlayRange(min = null, max = null) {
+setPlayRange(min = null, max = null, isFromUI = false) {
   if (this.playMin && this.playMax) {
-    console.log(`[SoundEngine] setPlayRange called with min=${min} ms, max=${max} ms`);
+      console.log(`[SoundEngine] setPlayRange called with min=${min} ms, max=${max} ms`);
 
-    if (min !== null) {
-      this.playMin.value = Math.round(min);
-      console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
+      if (isFromUI) {
+          console.log("[SoundEngine] Preventing loop: User-set play range.");
+          this._isUpdatingFromUI = true;
+      } else {
+          console.log("[SoundEngine] Preventing loop: Engine-set play range.");
+          this._isUpdatingFromEngine = true;
+      }
 
-      // ✅ Force RNBO to process the change
-      this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [this.playMin.value]));
-    }
+      if (min !== null) {
+          this.playMin.value = Math.round(min);
+          this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [this.playMin.value]));
+      }
 
-    if (max !== null) {
-      this.playMax.value = Math.round(max);
-      console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
+      if (max !== null) {
+          this.playMax.value = Math.round(max);
+          this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMax", [this.playMax.value]));
+      }
 
-      // ✅ Force RNBO to process the change
-      this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMax", [this.playMax.value]));
-    }
+      // **Reset flags after a delay**
+      setTimeout(() => {
+          this._isUpdatingFromUI = false;
+          this._isUpdatingFromEngine = false;
+      }, 100);
   } else {
-    console.error("[SoundEngine] Cannot set play range. playMin or playMax is not defined.");
+      console.error("[SoundEngine] Cannot set play range. playMin or playMax is not defined.");
   }
 }
   _sendLoopEvent(loopState) {
