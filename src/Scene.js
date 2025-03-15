@@ -50,7 +50,7 @@ export function initScene(canvas) {
     controls.enablePan = false;
     controls.enableZoom = true;
     controls.minDistance = 5;
-    controls.maxDistance = 100;
+    controls.maxDistance = 60;
 
     return { scene, camera, controls };
 }
@@ -73,13 +73,11 @@ export function initRenderer(canvas) {
         canvas,
         antialias: true,
         alpha: true,
-        preserveDrawingBuffer: true, // ✅ Avoids low-resolution downscaling
+        preserveDrawingBuffer: true, // Prevent downscaling
     });
 
-    // ✅ Increase resolution & pixel clarity
+    renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1); // High-DPI screens
-
     return renderer;
 }
 
