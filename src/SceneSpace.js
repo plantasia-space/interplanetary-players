@@ -1,20 +1,29 @@
 import * as THREE from 'three';
 
 /**
- * Loads a high-quality cubemap texture from the provided new skybox images.
+ * Loads a cubemap texture dynamically based on screen resolution.
+ * Uses high-res textures for desktops and low-res textures for mobile.
  * @returns {THREE.CubeTexture} The loaded cubemap texture.
  */
 function loadCubemap() {
     const loader = new THREE.CubeTextureLoader();
 
-    // Load the 6 cubemap faces using the correct order:
+    // ✅ Define texture sets for different resolutions
+    const isMobile = window.innerWidth <= 768; // Adjust threshold if needed
+    const resolutionPath = isMobile
+        ? 'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube_low'
+        : 'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube';
+
+    console.log(`[SKYBOX] Loading ${isMobile ? 'LOW' : 'HIGH'} resolution cubemap.`);
+
+    // Load cubemap with dynamically chosen resolution
     const cubemap = loader.load([
-        'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube/right.png',  // Right (+X)
-        'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube/left.png',   // Left (-X)
-        'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube/top.png',    // Top (+Y)
-        'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube/bottom.png', // Bottom (-Y)
-        'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube/front.png',  // Front (+Z)
-        'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube/back.png'    // Back (-Z)
+        `${resolutionPath}/right.png`,  // Right (+X)
+        `${resolutionPath}/left.png`,   // Left (-X)
+        `${resolutionPath}/top.png`,    // Top (+Y)
+        `${resolutionPath}/bottom.png`, // Bottom (-Y)
+        `${resolutionPath}/front.png`,  // Front (+Z)
+        `${resolutionPath}/back.png`    // Back (-Z)
     ]);
 
     // ✅ Enhance Texture Quality
@@ -27,7 +36,7 @@ function loadCubemap() {
 }
 
 /**
- * Initializes the space scene by setting the high-quality cubemap skybox.
+ * Initializes the space scene by setting the dynamically loaded cubemap skybox.
  * @param {THREE.Scene} scene - The Three.js scene.
  */
 export function initSpaceScene(scene) {
