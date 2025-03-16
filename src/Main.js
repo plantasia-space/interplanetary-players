@@ -72,7 +72,6 @@ import { ButtonGroup } from './ButtonGroup.js';
 import { ButtonSingle } from "./ButtonSingle.js";
 
 
-
 // Parameter manager for managing adjustable parameters
 import { ParameterManager } from './ParameterManager.js';
 
@@ -91,7 +90,7 @@ import notifications from './AppNotifications.js';
 const canvas3D = document.getElementById('canvas3D');
 
 // Initialize the 3D scene, camera, and controls
-const { scene, camera, controls } = initScene(canvas3D);
+const { scene, camera, controls, startAnimation } = initScene(canvas3D);
 
 // Initialize the renderer for the scene
 const renderer = initRenderer(canvas3D);
@@ -346,10 +345,18 @@ window.addEventListener('resize', () => {
  */
 function animate() {
     requestAnimationFrame(animate);
-    
+
+    // Apply rotation based on parameter values
+    scene.rotation.x += rotationSpeedX;
+    scene.rotation.y += rotationSpeedY;
+
+    // Apply distance mapping
+    camera.position.z = THREE.MathUtils.lerp(controls.minDistance, controls.maxDistance, distanceZ);
+
     controls.update();
     renderer.render(scene, camera);
 }
+
 
 // -----------------------------
 // Collapse Menu Alignment Function
@@ -416,16 +423,14 @@ function setupCollapseMenuAlignment() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log("[APP] DOMContentLoaded: Application initialized.");
 
-    // Initialize the application and start the animation loop upon successful initialization
+    // Initialize the app
     initializeApp().then(() => {
         console.log("[APP] Starting animation loop.");
-        animate();
+        startAnimation(renderer); // ✅ Start animation here!
     });
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
-    // Attach event listeners to Bootstrap buttons
-    
 });
 
 

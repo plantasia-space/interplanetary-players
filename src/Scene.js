@@ -26,47 +26,100 @@
  */
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ParameterManager } from './ParameterManager.js';
+import { getPlaybackState } from "./Constants.js";
 
-/**
- * Initializes the Three.js scene, camera, and orbit controls.
- * @param {HTMLCanvasElement} canvas - The HTML canvas element where the scene will be rendered.
- * @returns {Object} An object containing { scene, camera, controls }.
- */
 export function initScene(canvas) {
-    const scene = new THREE.Scene(); // Background is now managed in SceneSpace.js
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    10000
+  );
+  camera.position.set(0, 0, 30);
 
-    const camera = new THREE.PerspectiveCamera(
-        45,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        10000
-    );
-    camera.position.set(0, 0, 100);
+  const paramManager = ParameterManager.getInstance();
+  const spherical = new THREE.Spherical();
+  spherical.setFromVector3(camera.position);
 
-    const controls = new OrbitControls(camera, canvas);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enablePan = false;
-    controls.enableZoom = true;
-    controls.minDistance = 5;
-    controls.maxDistance = 60;
+  let azimuthSpeed = 0;
+  let polarSpeed = 0;
+  let userRadius  = spherical.radius;
 
-    return { scene, camera, controls };
+  // X => horizontal rotation speed
+  paramManager.subscribe(
+    {
+      onParameterChanged: (paramName, rawValue) => {
+        const normalizedX = paramManager.getNormalizedValue('x');
+        azimuthSpeed = (normalizedX - 0.5) * 0.003;
+      }
+    },
+    'x'
+  );
+
+  // Y => vertical rotation speed
+  paramManager.subscribe(
+    {
+      onParameterChanged: (paramName, rawValue) => {
+        const normalizedY = paramManager.getNormalizedValue('y');
+        polarSpeed = (normalizedY - 0.5) * 0.003;
+      }
+    },
+    'y'
+  );
+
+  // Z => distance
+  paramManager.subscribe(
+    {
+      onParameterChanged: (paramName, rawValue) => {
+        const normZ = paramManager.getNormalizedValue('z');
+        userRadius = THREE.MathUtils.lerp(30, 2, normZ); // Adjust camera zoom dynamically
+      }
+    },
+    'z'
+  );
+
+  let isAnimating = false;
+
+  function startAnimation(renderer) {
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const playbackState = getPlaybackState();
+
+      if (playbackState === "playing") {
+        if (!isAnimating) {
+          console.log("[Scene] Resuming animation...");
+          isAnimating = true;
+        }
+
+        // Apply updates only if playing
+        spherical.theta += azimuthSpeed;
+        spherical.phi   += polarSpeed;
+        spherical.radius += (userRadius - spherical.radius) * 0.1;
+
+        camera.position.setFromSpherical(spherical);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+      } else {
+        if (isAnimating) {
+          console.log(`[Scene] Animation paused at ${playbackState}.`);
+          isAnimating = false;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  }
+
+  return { scene, camera, startAnimation };
 }
 
 /**
  * Initializes the Three.js WebGL renderer.
- * Configures the renderer with antialiasing and transparency, and sets its size and pixel ratio.
- * @memberof 3DGUI 
- * @function initRenderer
  * @param {HTMLCanvasElement} canvas - The HTML canvas element where the scene will be rendered.
- * 
- * @returns {THREE.WebGLRenderer} The initialized Three.js WebGL renderer.
- * 
- * @example
- * const canvas = document.getElementById('three-canvas');
- * const renderer = initRenderer(canvas);
+ * @returns {THREE.WebGLRenderer} The initialized renderer.
  */
 export function initRenderer(canvas) {
     const renderer = new THREE.WebGLRenderer({

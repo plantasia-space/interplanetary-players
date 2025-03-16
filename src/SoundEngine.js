@@ -6,7 +6,7 @@
  * @license MIT
  */
 
-import { Constants } from "./Constants.js";
+import { Constants, setPlaybackState } from "./Constants.js";
 import { ModeManagerInstance } from "./ModeManager.js"; // Import ModeManager
 
 export class SoundEngine {
@@ -26,6 +26,7 @@ export class SoundEngine {
     this.ksteps = ksteps;
     this.rnbo = rnbo;
     this.playState = "stopped"; // could be "playing", "paused", or "stopped"
+    setPlaybackState("stopped"); // Initialize global state
 
     this.context = null;
     this.device = null;
@@ -232,6 +233,8 @@ setCursorPosition(newTimeMs) {
       }
       this._sendPlayEvent();
       this.playState = "playing"; // <--- Update state
+      setPlaybackState("playing"); // Update global state
+
     } catch (error) {
       console.error("[SoundEngine] Error during play:", error);
     }
@@ -242,6 +245,8 @@ setCursorPosition(newTimeMs) {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "play", [0]);
       this.device.scheduleEvent(messageEvent);
       this.playState = "paused"; // <--- Update state
+      setPlaybackState("paused"); // Update global state
+
       console.log("[SoundEngine] Pause command sent.");
     } catch (err) {
       console.error("[SoundEngine] Failed to schedule pause event:", err);
@@ -267,6 +272,8 @@ setCursorPosition(newTimeMs) {
   
     // 3) Mark engine state
     this.playState = "stopped";
+    setPlaybackState("stopped"); // Update global state
+
     console.log("[SoundEngine] Stop command processed, sampler reset to 0.");
   }
 

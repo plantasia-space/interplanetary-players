@@ -206,14 +206,48 @@ export const PRIORITY_MAP = {
     "webaudio-numeric-keyboard": 5,
     "webaudio-param": 6,
     "webaudio-keyboard": 7,
+
+    // NEW: Visual controllers inserted in priority
+    "visual-x": 7.5,
+    "visual-y": 8.5,
+    "visual-z": 9.5,
+
+    // Existing sensors
     "sensor-x": 8,
     "sensor-y": 9,
     "sensor-z": 10,
+
+    // Cosmic LFOs (background modulations)
     "cosmic-lfo-A": 11,
     "cosmic-lfo-B": 12,
     "cosmic-lfo-C": 13,
-    // Additional controller types can be added here with their respective priorities
 };
+/**
+ * @constant
+ * @description Tracks the current playback state of the sound engine.
+ */
+export let PLAYBACK_STATE = "stopped"; // Can be "playing", "paused", "stopped"
+
+/**
+ * Updates the `PLAYBACK_STATE` global variable.
+ * @param {string} state - The new playback state ("playing", "paused", "stopped").
+ */
+export function setPlaybackState(state) {
+    if (["playing", "paused", "stopped"].includes(state)) {
+        PLAYBACK_STATE = state;
+        console.log(`[Constants] Playback state updated: ${PLAYBACK_STATE}`);
+    } else {
+        console.warn(`[Constants] Invalid playback state: ${state}`);
+    }
+}
+
+/**
+ * Retrieves the current playback state.
+ * @returns {string} The current playback state.
+ */
+export function getPlaybackState() {
+    return PLAYBACK_STATE;
+}
 
 /**
  * @constant
