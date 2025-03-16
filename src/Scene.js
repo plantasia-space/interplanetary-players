@@ -52,7 +52,7 @@ export function initScene(canvas) {
     {
       onParameterChanged: (paramName, rawValue) => {
         const normalizedX = paramManager.getNormalizedValue('x');
-        azimuthSpeed = (normalizedX - 0.5) * 0.003;
+        azimuthSpeed = (normalizedX - 0.5) * 0.01;
       }
     },
     'x'
@@ -74,7 +74,7 @@ export function initScene(canvas) {
     {
       onParameterChanged: (paramName, rawValue) => {
         const normZ = paramManager.getNormalizedValue('z');
-        userRadius = THREE.MathUtils.lerp(30, 2, normZ); // Adjust camera zoom dynamically
+        userRadius = THREE.MathUtils.lerp(10, 2, normZ); // Adjust camera zoom dynamically
       }
     },
     'z'
