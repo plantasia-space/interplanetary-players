@@ -37,7 +37,7 @@ export function initScene(canvas) {
     0.1,
     10000
   );
-  camera.position.set(0, 0, 30);
+  camera.position.set(0, 0, 6);
 
   const paramManager = ParameterManager.getInstance();
   const spherical = new THREE.Spherical();
