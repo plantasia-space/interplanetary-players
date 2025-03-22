@@ -219,7 +219,7 @@ export class DataManager {
             return cachedData;
         }
 
-        const BASE_URL = 'https://media.maar.world:443/api';
+        const BASE_URL = 'https://api.plantasia.space:443/api';
         try {
             // Fetch data from the server
             const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`);
