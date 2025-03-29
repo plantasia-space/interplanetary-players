@@ -82,6 +82,8 @@ import { logarithmic } from './Transformations.js';
 import notifications from './AppNotifications.js';
 
 
+import { CosmicLFO } from './CosmicLFO.js';
+
 // -----------------------------
 // Initialization of Core Components
 // -----------------------------
@@ -114,6 +116,7 @@ const user1Manager = new ParameterManager();
 
 // Flag to control the animation loop
 let animationRunning = false;
+
 
 // -----------------------------
 // Application Initialization Function
@@ -156,6 +159,7 @@ async function initializeApp() {
       const ksteps = 255;
       user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps, rnbo);
   
+
     // Attach the clean-up listener once the SoundEngine is created
     window.addEventListener('beforeunload', () => {
         if (user1SoundEngine) {
@@ -422,7 +426,9 @@ function setupCollapseMenuAlignment() {
  */
 document.addEventListener('DOMContentLoaded', () => {
     console.log("[APP] DOMContentLoaded: Application initialized.");
-
+    // Initialize and obtain the CosmicLFO manager
+    const cosmicLFOManager = initializeCosmicLFOs();
+    
     // Initialize the app
     initializeApp().then(() => {
         console.log("[APP] Starting animation loop.");
@@ -431,7 +437,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
+
 });
+
+/**
+ * Initializes the CosmicLFO instances for x, y, and z axes,
+ * attaches their corresponding switch elements, and returns a manager object.
+ * @returns {object} An object with properties x, y, z, startAll, and stopAll.
+ */
+function initializeCosmicLFOs() {
+    // Instantiate the LFOs for each axis
+    const cosmicLFO_X = new CosmicLFO('x');
+    const cosmicLFO_Y = new CosmicLFO('y');
+    const cosmicLFO_Z = new CosmicLFO('z');
+  
+    // Attach the switch controls to each LFO instance
+    cosmicLFO_X.attachSwitch('xCosmicLFO');
+    cosmicLFO_Y.attachSwitch('yCosmicLFO');
+    cosmicLFO_Z.attachSwitch('zCosmicLFO');
+  
+    return {
+      x: cosmicLFO_X,
+      y: cosmicLFO_Y,
+      z: cosmicLFO_Z,
+      startAll() {
+        cosmicLFO_X.start();
+        cosmicLFO_Y.start();
+        cosmicLFO_Z.start();
+      },
+      stopAll() {
+        cosmicLFO_X.stop();
+        cosmicLFO_Y.stop();
+        cosmicLFO_Z.stop();
+      }
+    };
+  }
+  
+  export const cosmicLFOManager = initializeCosmicLFOs();
 
 
 /**

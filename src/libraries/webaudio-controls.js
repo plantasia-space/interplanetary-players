@@ -2012,6 +2012,83 @@ try {
     ctx.lineWidth = 1;
     ctx.stroke();
   }
+  function drawTriangle(
+    ctx,
+    x, 
+    y, 
+    size, 
+    fillStyle, 
+    strokeStyle, 
+    rotation = 0, 
+    direction = 'up'
+  ) {
+    // Save the canvas state
+    ctx.save();
+    
+    // Decide how much to shift the arrow in each direction.
+    // The exact offset depends on how far you want it to move.
+    // For an equilateral triangle of side `size`, its “radius” is ~ `size/2`.
+    // If you want a more pronounced offset, increase these values.
+    let xOffset = 0;
+    let yOffset = 0;
+    
+    switch (direction.toLowerCase()) {
+      case 'left':
+        // Move arrow to the right side
+        xOffset = size * 0.2;   // Tweak this factor as needed
+        break;
+      case 'right':
+        // Move arrow to the left side
+        xOffset = -size * 0.2;  // Tweak this factor as needed
+        break;
+      case 'up':
+        // Move arrow downward
+        yOffset = size * 0.2;
+        break;
+      case 'down':
+        // Move arrow upward
+        yOffset = -size * 0.2;
+        break;
+    }
+  
+    // First move to the overall center (x, y) ...
+    ctx.translate(x, y);
+    // ... and then apply your offset to push it to the “opposite” side
+    ctx.translate(xOffset, yOffset);
+    
+    // Now rotate it by the specified angle
+    ctx.rotate(rotation);
+  
+    // We’re drawing the triangle around (0,0), so that translations above
+    // easily move the whole shape around.
+    
+    // Compute the height of the equilateral triangle
+    const h = size * Math.sqrt(3) / 2;
+  
+    // The tip is “up” at y = -(2*h/3) if rotation = 0
+    const x1 = 0;
+    const y1 = -(2 * h) / 3;
+    const x2 = -size / 2;
+    const y2 = h / 3;
+    const x3 = size / 2;
+    const y3 = h / 3;
+    
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
+    
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Restore the canvas state
+    ctx.restore();
+  }
 
   customElements.define("webaudio-switch", class WebAudioSwitch extends WebAudioControlsWidget {
     constructor() {
@@ -2117,6 +2194,10 @@ try {
       this.group = this.getAttribute("group") || null; // Group name for radio switches
       this._colors = this.getAttribute("colors") || "#e00;#333"; // background; stroke/fill
       this.outline = this.getAttribute("outline") || "2px solid #444";
+      // NEW: initialize the direction attribute (valid options: "up", "down", "left", "right")
+      this.direction = this.getAttribute("direction") || "right";
+
+
       this.setupLabel();
 
       // Process colors
@@ -2313,15 +2394,16 @@ try {
         this.showtip(0);
         this.fireflag = false;
       }
+      this.style.setProperty('--label-color', this.coltab[1]);
 
       // Now apply to all types (toggle, kick, radio, sequential, etc.)
-      if (this.isActive()) {
+/*       if (this.isActive()) {
         // Use coltab[0] for an "active" label color
-        this.style.setProperty('--label-color', this.coltab[0]);
+        this.style.setProperty('--label-color', this.coltab[1]);
       } else {
         // Use coltab[1] for an "inactive" label color
-        this.style.setProperty('--label-color', this.coltab[1]);
-      }
+        this.style.setProperty('--label-color', this.coltab[0]);
+      } */
 
       // Update linked param if exists
       if (this.linkedParam) {
@@ -2342,17 +2424,50 @@ try {
       ctx.clearRect(0, 0, this._width, this._height);
 
       if (this.type === 'kick') {
-
-        // Draw the main square using the outer colors
-        const fullSize = this.radius * 2;
-        drawSquare(ctx, this.centerX, this.centerY, fullSize, this.coltab[0], this.coltab[1]);
-
-        // If active, draw the inner square
-        if (this.kickVisualActive) {
-          const innerSize = fullSize * 0.77;
-          drawSquare(ctx, this.centerX, this.centerY, innerSize, this.coltab[1], this.coltab[0]);
+        const direction = this.getAttribute("direction") || "up";
+        let rotation = 0;
+        switch (direction.toLowerCase()) {
+          case "up":
+            rotation = 0;
+            break;
+          case "right":
+            rotation = Math.PI / 2;
+            break;
+          case "down":
+            rotation = Math.PI;
+            break;
+          case "left":
+            rotation = -Math.PI / 2;
+            break;
         }
-
+      
+        // Draw main triangle
+        const fullSize = this.radius * 2;
+        drawTriangle(
+          ctx, 
+          this.centerX, 
+          this.centerY, 
+          fullSize, 
+          this.coltab[0], 
+          this.coltab[1], 
+          rotation, 
+          direction
+        );
+      
+        // Inner triangle
+        if (this.kickVisualActive) {
+          drawTriangle(
+            ctx, 
+            this.centerX, 
+            this.centerY, 
+            fullSize, 
+            this.coltab[1], 
+            this.coltab[0], 
+            rotation,
+            direction
+          );
+        }
+        
        // console.log(`Drawing Toggle Switch ID: ${this.id} - isActive: ${this.isActive()}`);
       } else if (this.type === 'toggle') {
 
@@ -2675,7 +2790,7 @@ try {
     triggerKick() {
       console.log(`triggerKick called for Switch ID: ${this.id}`);
       // Existing behavior - do not change parameter logic
-      user1Manager.setToMiddle(this.rootParam); // sets param to 0.5 or whatever is needed
+      //user1Manager.setToMiddle(this.rootParam); // sets param to 0.5 or whatever is needed
 
       // Now add the visual effect
       this.kickVisualActive = true;
