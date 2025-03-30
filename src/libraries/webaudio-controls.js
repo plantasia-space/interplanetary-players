@@ -541,10 +541,12 @@ try {
         this.elem.addEventListener('focus', this.onFocus);
         this.elem.addEventListener('blur', this.onBlur);
         this.elem.addEventListener('pointerdown', this.onPointerDown);
+        this.elem.addEventListener('dblclick', () => {
+          this.setValue(this.defvalue, true);
+        });
       } else {
         console.error('webaudio-knob: this.elem is not assigned correctly.');
       }
-
 
       // Add to widget manager
       if (window.webAudioControlsWidgetManager)

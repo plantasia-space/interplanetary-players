@@ -136,15 +136,6 @@ export class PlaybackController {
       });
       resizeObserver.observe(waveformContainer);
 
-      // Debug logging for interactions.
-      this.wavesurfer.on("zoom", (val) => {
-        console.log(`[WaveSurfer Event] zoom => ${val}`);
-      });
-      this.wavesurfer.on("scroll", (start, end, scrollLeft, scrollRight) => {
-        console.log(`[WaveSurfer Event] scroll => startTime=${start}, endTime=${end}, scrollLeft=${scrollLeft}, scrollRight=${scrollRight}`);
-      });
-
-
       this.wavesurfer.on("interaction", (newTime) => {
         if (!this.soundEngine) {
           console.warn("[PlaybackController] SoundEngine is not available.");
