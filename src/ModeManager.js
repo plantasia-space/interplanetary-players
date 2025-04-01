@@ -5,6 +5,7 @@ import notifications from './AppNotifications.js';
 import { MIDIControllerInstance } from './MIDIController.js'; // Ensure MIDIController is properly exported
 import { INTERNAL_SENSORS_USABLE, EXTERNAL_SENSORS_USABLE, SENSORS_USABLE, setExternalSensorsUsable } from './Constants.js';
 import { WebRTCManager } from './WebRTCManager.js';
+import { cosmicLFOManager } from './Main.js';  // Import the manager
 
 export class ModeManager {
     constructor() {
@@ -71,7 +72,7 @@ ModeManagerInstance.registerMode('JAM', {
   
       // Process Cosmic LFO extra switches:
       // Hide switches with IDs ending in '1' or '2' (e.g., xCosmic1, xCosmic2)
-      // but show the toggles (those with IDs ending in '3', e.g., xCosmic3, yCosmic3, zCosmic3).
+      // but show the toggles (those with IDs ending in '3', e.g., xCosmicLFO, yCosmicLFO, zCosmicLFO).
       document.querySelectorAll('[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"]').forEach(el => {
         if (el.id.endsWith('1') || el.id.endsWith('2')) {
           el.style.display = 'none';
@@ -221,18 +222,20 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
         });
     }
 });
-ModeManagerInstance.registerMode('COSMIC_LFO', {
-    onEnter: () => {
-      //console.log('[ModeManager] Entered COSMIC_LFO mode.');
-      notifications.showToast("Cosmic LFO mode activated.");
-      CosmicLFO.getInstance().enterMode();
-    },
-    onExit: () => {
-      //console.log('[ModeManager] Exited COSMIC_LFO mode.');
-      notifications.showToast("Exited Cosmic LFO mode.");
-      CosmicLFO.getInstance().exitMode();
-    }
-  });
+    ModeManagerInstance.registerMode('COSMIC_LFO', {
+      onEnter: () => {
+        notifications.showToast("Cosmic LFO mode activated.");
+        cosmicLFOManager.x.enterMode();
+        cosmicLFOManager.y.enterMode();
+        cosmicLFOManager.z.enterMode();
+      },
+      onExit: () => {
+        notifications.showToast("Exited Cosmic LFO mode.");
+        cosmicLFOManager.x.exitMode();
+        cosmicLFOManager.y.exitMode();
+        cosmicLFOManager.z.exitMode();
+      }
+    });
 
   ModeManagerInstance.registerMode('PLAYBACK', {
     onEnter: () => {

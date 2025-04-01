@@ -294,7 +294,7 @@
 /*     border: 1px solid var(--color1); 
     border-radius: 8px; /* Slightly rounded corners */
     background-color: transparent;
-    color: var(--color2); /* Dynamic color for stroke */
+    color: var(--color1); /* Dynamic color for stroke */
     transition: transform 0.3s ease, border-color 0.3s ease, color 0.3s ease;
     padding: 0.1em; /* Consistent padding */
 }
