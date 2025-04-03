@@ -135,6 +135,7 @@ async function initializeApp() {
       console.log('[APP] Starting application...');
       const urlParams = new URLSearchParams(window.location.search);
       const trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
+      Constants.TRACK_ID = trackId;
   
       // Fetch configuration data and update cache, then fetch RNBO library
       await dataManager.fetchAndUpdateConfig(trackId);
