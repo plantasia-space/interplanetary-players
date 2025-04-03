@@ -156,8 +156,23 @@ export class DataManager {
                 placeholder_14: "",
             },
         };
-    
-        console.log("[DataManager] PlaceholderConfig updated:", this.placeholderConfig);
+
+        // If running inside an iframe, post the placeholder config to the parent window
+        if (window.parent && window.parent !== window) {
+            // Extract track id if available from TRACK_DATA
+            const trackId = Constants.TRACK_DATA && Constants.TRACK_DATA.track ? Constants.TRACK_DATA.track._id : null;
+            window.parent.postMessage({
+                type: "playerData",
+                data: {
+                    trackId: trackId,
+                    monitorInfo: this.placeholderConfig.monitorInfo,
+                    trackInfo: this.placeholderConfig.trackInfo,
+                    interplanetaryPlayerInfo: this.placeholderConfig.interplanetaryPlayerInfo,
+                    soundEngineInfo: this.placeholderConfig.soundEngineInfo
+                }
+            }, '*');
+            console.log("[DataManager] PostMessage sent to parent with playerData.");
+        }
     }
     /**
      * Populates the UI placeholders with the configured data.
