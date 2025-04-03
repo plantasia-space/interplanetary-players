@@ -41,15 +41,23 @@ export class DataManager {
      * @throws Will log an error if fetching or updating fails.
      */
     async fetchAndUpdateConfig(trackId) {
-        console.log(`[DataManager] Starting fetch and update for trackId: ${trackId}`);
+        const startTime = new Date();
+        console.log(`[DataManager] [Timing] fetchAndUpdateConfig started at: ${startTime.toISOString()} for trackId: ${trackId}`);
     
         try {
             await this.fetchTrackData(trackId);
+            const afterFetchTime = new Date();
+            console.log(`[DataManager] [Timing] fetchTrackData completed at: ${afterFetchTime.toISOString()}`);
+    
             this.updatePlaceholderConfig();
+            const afterUpdateTime = new Date();
+            console.log(`[DataManager] [Timing] updatePlaceholderConfig completed at: ${afterUpdateTime.toISOString()}`);
             console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
     
-            // ✅ Update loading state using Constants
+            // Update loading state using Constants
             Constants.setLoadingState("trackLoaded", true);
+            const endTime = new Date();
+            console.log(`[DataManager] [Timing] fetchAndUpdateConfig finished at: ${endTime.toISOString()}`);
         } catch (error) {
             console.error(`[DataManager] Error fetching and updating config: ${error.message}`);
         }
@@ -61,6 +69,9 @@ export class DataManager {
      * @private
      */
     updatePlaceholderConfig() {
+        const updateStartTime = new Date();
+        console.log(`[DataManager] [Timing] updatePlaceholderConfig started at: ${updateStartTime.toISOString()}`);
+    
         if (!Constants.TRACK_DATA) {
             console.error("[DataManager] TRACK_DATA is not available for placeholder configuration.");
             return;
@@ -171,7 +182,8 @@ export class DataManager {
                     soundEngineInfo: this.placeholderConfig.soundEngineInfo
                 }
             }, '*');
-            console.log("[DataManager] PostMessage sent to parent with playerData.");
+            const postMessageTime = new Date();
+            console.log(`[DataManager] [Timing] PostMessage sent at: ${postMessageTime.toISOString()} with playerData.`);
         }
     }
     /**
@@ -227,6 +239,9 @@ export class DataManager {
      * @throws Will throw an error if the fetch fails or the data is invalid.
      */
     async fetchTrackData(trackId) {
+        const fetchStartTime = new Date();
+        console.log(`[DataManager] [Timing] fetchTrackData started at: ${fetchStartTime.toISOString()} for trackId: ${trackId}`);
+       
         // Attempt to retrieve cached data
         const cachedData = Constants.getTrackData(trackId);
         if (cachedData) {
@@ -249,6 +264,8 @@ export class DataManager {
 
             // Cache the retrieved data for future use
             Constants.setTrackData(trackId, result.data);
+            const fetchEndTime = new Date();
+            console.log(`[DataManager] [Timing] fetchTrackData finished at: ${fetchEndTime.toISOString()}`);
             return result.data;
         } catch (error) {
             console.error(`[DataManager] Failed to fetch track data: ${error.message}`);
