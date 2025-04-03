@@ -49,7 +49,7 @@ export class DataManager {
             const afterFetchTime = new Date();
             console.log(`[DataManager] [Timing] fetchTrackData completed at: ${afterFetchTime.toISOString()}`);
     
-            this.updatePlaceholderConfig();
+            this.updatePlaceholderConfig(trackId);
             const afterUpdateTime = new Date();
             console.log(`[DataManager] [Timing] updatePlaceholderConfig completed at: ${afterUpdateTime.toISOString()}`);
             console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
@@ -68,7 +68,7 @@ export class DataManager {
      * Updates the configuration for UI placeholders using the retrieved track data.
      * @private
      */
-    updatePlaceholderConfig() {
+    updatePlaceholderConfig(trackId) {
         const updateStartTime = new Date();
         console.log(`[DataManager] [Timing] updatePlaceholderConfig started at: ${updateStartTime.toISOString()}`);
     
@@ -171,7 +171,8 @@ export class DataManager {
         // If running inside an iframe, post the placeholder config to the parent window
         if (window.parent && window.parent !== window) {
             // Extract track id if available from TRACK_DATA
-            const trackId = Constants.TRACK_DATA && Constants.TRACK_DATA.track ? Constants.TRACK_DATA.track._id : null;
+            console.log("[DataManager-TRACK-ID]",trackId);
+
             window.parent.postMessage({
                 type: "playerData",
                 data: {
