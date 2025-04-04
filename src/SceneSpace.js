@@ -14,7 +14,7 @@ function loadCubemap() {
         ? 'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube_low'
         : 'https://mw-storage.fra1.cdn.digitaloceanspaces.com/default/skybox/01_skycube';
 
-    console.log(`[SKYBOX] Loading ${isMobile ? 'LOW' : 'HIGH'} resolution cubemap.`);
+    //console.log(`[SKYBOX] Loading ${isMobile ? 'LOW' : 'HIGH'} resolution cubemap.`);
 
     // Load cubemap with dynamically chosen resolution
     const cubemap = loader.load([

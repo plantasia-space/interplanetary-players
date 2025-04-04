@@ -46,7 +46,7 @@ async function loadGLBModelWithRetry(url, retries = MAX_RETRIES) {
             const gltf = await new Promise((resolve, reject) => {
                 loader.load(url, resolve, undefined, reject);
             });
-            console.log(`[ModelLoader] Model loaded successfully on attempt ${attempt}`);
+            //console.log(`[ModelLoader] Model loaded successfully on attempt ${attempt}`);
             return gltf.scene;
         } catch (error) {
             console.warn(`[ModelLoader] Attempt ${attempt} failed to load model from ${url}: ${error.message}`);
@@ -79,7 +79,7 @@ async function loadGLBModelWithRetry(url, retries = MAX_RETRIES) {
  * 
  * loadAndDisplayModel(scene, trackData)
  *   .then(() => {
- *     console.log('Model loaded and added to the scene.');
+ *     //console.log('Model loaded and added to the scene.');
  *   })
  *   .catch(error => {
  *     console.error('Error loading model:', error);
@@ -95,7 +95,7 @@ export async function loadAndDisplayModel(scene, trackData) {
             throw new Error('Missing modelURL in interplanetaryPlayer data.');
         }
 
-        console.log('[ModelLoader] Initiating GLB model loading...');
+        //console.log('[ModelLoader] Initiating GLB model loading...');
         const model = await loadGLBModelWithRetry(modelURL);
 
         // Set the model's position or any other transformations if needed
@@ -105,7 +105,7 @@ export async function loadAndDisplayModel(scene, trackData) {
         scene.add(model);
         Constants.setLoadingState("modelLoaded", true);
 
-        console.log('[ModelLoader] GLB model loaded and added to the scene successfully.');
+        //console.log('[ModelLoader] GLB model loaded and added to the scene successfully.');
     } catch (error) {
         console.error('[ModelLoader] Error loading GLB model:', error);
         throw error;

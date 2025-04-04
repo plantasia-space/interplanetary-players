@@ -132,7 +132,7 @@ let animationRunning = false;
  */
 async function initializeApp() {
     try {
-      console.log('[APP] Starting application...');
+      //console.log('[APP] Starting application...');
       const urlParams = new URLSearchParams(window.location.search);
       const trackId = urlParams.get('trackId') || DEFAULT_TRACK_ID;
       Constants.TRACK_ID = trackId;
@@ -165,7 +165,7 @@ async function initializeApp() {
         cosmicLFOManager.z.attachTriggerSwitch('zCosmic1');
         cosmicLFOManager.z.attachTriggerSwitch('zCosmic2');
 
-        //console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
+        ////console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
       }
   
       // Initialize root parameters, apply colors, update knobs, etc.
@@ -195,7 +195,7 @@ async function initializeApp() {
   
       // Load and display the 3D model (your other initialization logic)
       await loadAndDisplayModel(scene, cachedData);
-      console.log('[APP] Model loaded successfully.');
+      //console.log('[APP] Model loaded successfully.');
 
         // ✅ Mark UI as ready
         Constants.setLoadingState("uiReady", true);
@@ -205,7 +205,7 @@ async function initializeApp() {
         if (closeBtn) {
           setTimeout(() => {
             closeBtn.click();
-            console.log('[DataManager] Grid closed programmatically after data loaded.');
+            //console.log('[DataManager] Grid closed programmatically after data loaded.');
           }, 100);
         }
   
@@ -220,7 +220,7 @@ async function initializeApp() {
  * @returns {Promise<object>} Resolves with the RNBO object after loading the script.
  */
 async function loadRNBOLibrary(patchExportURL) {
-    console.log(`[RNBO] Fetching patch metadata from: ${patchExportURL}`);
+    //console.log(`[RNBO] Fetching patch metadata from: ${patchExportURL}`);
     const response = await fetch(patchExportURL);
     if (!response.ok) {
         throw new Error(`[RNBO] Failed to fetch patcher: ${response.statusText}`);
@@ -233,7 +233,7 @@ async function loadRNBOLibrary(patchExportURL) {
     }
 
     const scriptUrl = `https://cdn.cycling74.com/rnbo/${rnboversion}/rnbo.min.js`;
-    console.log(`[RNBO] Loading script from: ${scriptUrl}`);
+    //console.log(`[RNBO] Loading script from: ${scriptUrl}`);
 
     await new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -243,7 +243,7 @@ async function loadRNBOLibrary(patchExportURL) {
         document.head.appendChild(script);
     });
 
-    console.log("[RNBO] RNBO script loaded successfully.");
+    //console.log("[RNBO] RNBO script loaded successfully.");
     return window.RNBO;
 }
 
@@ -312,7 +312,7 @@ function initializeRootParams(parameterManager, trackData) {
                         inputTransform, // Input transformation function
                         outputTransform // Output transformation function
                     );
-                    console.debug(`[initializeRootParams] Added parameter '${paramName}' with transformations.`, config);
+                    //console.debug(`[initializeRootParams] Added parameter '${paramName}' with transformations.`, config);
                 } else {
                     // Add parameter without transformation functions, defaulting to linear scale
                     parameterManager.addParameter(
@@ -322,7 +322,7 @@ function initializeRootParams(parameterManager, trackData) {
                         max,
                         true // Bidirectional parameter
                     );
-                    console.debug(`[initializeRootParams] Added parameter '${paramName}' without transformations.`, config);
+                    //console.debug(`[initializeRootParams] Added parameter '${paramName}' without transformations.`, config);
                 }
             } else {
                 console.error(`[initializeRootParams] Invalid config for parameter: ${paramName}`, config);
@@ -362,7 +362,7 @@ window.addEventListener('resize', () => {
     // Set the pixel ratio for high-DPI screens, capped at 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    //console.log('[APP] Renderer and camera updated on resize.');
+    ////console.log('[APP] Renderer and camera updated on resize.');
 });
 
 // -----------------------------
@@ -429,7 +429,7 @@ function setupCollapseMenuAlignment() {
         collapseMenu.style.top = `${calculatedTop}px`;
         collapseMenu.style.left = `${calculatedLeft}px`;
 
-        //console.debug('[APP] Collapse menu aligned:', { top: calculatedTop, left: calculatedLeft });
+        ////console.debug('[APP] Collapse menu aligned:', { top: calculatedTop, left: calculatedLeft });
     };
 
     // Align initially
@@ -453,12 +453,12 @@ function setupCollapseMenuAlignment() {
  * @memberof CoreModule 
  */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("[APP] DOMContentLoaded: Application initialized.");
+    //console.log("[APP] DOMContentLoaded: Application initialized.");
     // CosmicLFO manager is already initialized and exported globally.
     
     // Initialize the app
     initializeApp().then(() => {
-        console.log("[APP] Starting animation loop.");
+        //console.log("[APP] Starting animation loop.");
         startAnimation(renderer); // ✅ Start animation here!
     });
 
@@ -511,7 +511,7 @@ function initializeCosmicLFOs() {
  */
 function toggleButtonState(button, actionName) {
     button.classList.toggle("active");
-    console.log(`[APP] ${actionName} toggled:`, button.classList.contains("active"));
+    //console.log(`[APP] ${actionName} toggled:`, button.classList.contains("active"));
 }
 
 function updateLoadingScreen() {

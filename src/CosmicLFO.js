@@ -28,7 +28,7 @@ export class CosmicLFO {
     this.debug = false; // Set to true to enable debug logging
     this.currentExoplanet = null; // Initialize current exoplanet
     this.currentMultiplier = 1;   // New: cumulative multiplier for base frequency
-    console.log(`CosmicLFO (${this.axis}): Initialized.`);
+    //console.log(`CosmicLFO (${this.axis}): Initialized.`);
   }
 /**
  * Attaches a trigger switch to this Cosmic LFO.
@@ -41,7 +41,7 @@ attachTriggerSwitch(switchId) {
     return;
   }
   triggerSwitch.addEventListener('click', () => {
-    console.log(`CosmicLFO (${this.axis}): Trigger switch "${switchId}" clicked.`);
+    //console.log(`CosmicLFO (${this.axis}): Trigger switch "${switchId}" clicked.`);
     this.triggerKick(switchId);
   });
 }
@@ -63,13 +63,10 @@ attachTriggerSwitch(switchId) {
     switchEl.addEventListener('change', () => {
       const wantsActive = switchEl.state; // or switchEl.value, whichever is your ON/OFF property
   
-      console.log(
-        `CosmicLFO (${this.axis}): Switch "${switchId}" changed => wantsActive=${wantsActive}, current isActive=${this.isActive}`
-      );
   
       // 1) If the new wantsActive == lastWantsActive, skip repeated toggles
       if (wantsActive === lastWantsActive) {
-        console.log(`CosmicLFO (${this.axis}): Skipping repeated toggle => ${wantsActive}`);
+        //console.log(`CosmicLFO (${this.axis}): Skipping repeated toggle => ${wantsActive}`);
         return;
       }
       // 2) Otherwise, store this as the new last state
@@ -192,7 +189,7 @@ if (this.debug) {
    */
   setWaveform(newWaveform) {
     this.waveform = newWaveform.replace(`${this.axis}-waveform-`, '');
-    console.log(`CosmicLFO (${this.axis}): Waveform set to ${newWaveform}.`);
+    //console.log(`CosmicLFO (${this.axis}): Waveform set to ${newWaveform}.`);
   }
 
   /**
@@ -203,7 +200,7 @@ if (this.debug) {
     this.baseFrequency = freq;
     this.updateFrequencyMonitor();
     this.update(); // Force an immediate update so the oscillator output uses the new frequency.
-    console.log(`CosmicLFO (${this.axis}): Base frequency set to ${freq} Hz.`);
+    //console.log(`CosmicLFO (${this.axis}): Base frequency set to ${freq} Hz.`);
   }
 
   /**
@@ -211,7 +208,7 @@ if (this.debug) {
    * Shows Cosmic LFO UI elements and starts the LFO.
    */
   enterMode() {
-    console.log(`CosmicLFO (${this.axis}): Entering Cosmic LFO mode.`);
+    //console.log(`CosmicLFO (${this.axis}): Entering Cosmic LFO mode.`);
     const cosmicElements = document.querySelectorAll(
       '[data-group$="-waveform-dropdown"], ' +
       '[data-group$="-exo-lfo-dropdown"], ' +
@@ -236,7 +233,7 @@ if (this.debug) {
    * Hides Cosmic LFO UI elements and stops the LFO.
    */
   exitMode() {
-    console.log(`CosmicLFO (${this.axis}): Exiting Cosmic LFO mode.`);
+    //console.log(`CosmicLFO (${this.axis}): Exiting Cosmic LFO mode.`);
     const cosmicElements = document.querySelectorAll(
       '[data-group$="-waveform-dropdown"], ' +
       '[data-group$="-exo-lfo-dropdown"], ' +
@@ -254,7 +251,7 @@ if (this.debug) {
 
   /** Optional: If you need exoplanet-based logic **/
   handleSelectionChange(type, value) {
-    console.log(`CosmicLFO (${this.axis}): handleSelectionChange triggered with type=${type}, value=${value}`);
+    //console.log(`CosmicLFO (${this.axis}): handleSelectionChange triggered with type=${type}, value=${value}`);
     if (type === 'waveform') {
       this.setWaveform(value);
     } else if (type === 'exo') {
@@ -267,7 +264,7 @@ setCurrentExoplanet(exoplanetValue) {
   this.currentExoplanet = exoplanetValue;
   this.baseFrequency = this.exoFrequencies[this.currentExoplanet] * this.currentMultiplier;
   this.updateFrequencyMonitor();
-  console.log(`CosmicLFO (${this.axis}): Current exoplanet set to ${exoplanetValue}. Base frequency set to ${this.baseFrequency} Hz.`);
+  //console.log(`CosmicLFO (${this.axis}): Current exoplanet set to ${exoplanetValue}. Base frequency set to ${this.baseFrequency} Hz.`);
 }
   
   /**
@@ -288,12 +285,12 @@ setExoFrequencies(exoData) {
       ? parseFloat(exoData.closestNeighbor2.minimum_cosmic_lfo)
       : 0.3
   };
-  console.log(`CosmicLFO (${this.axis}): Exo frequencies set:`, this.exoFrequencies);
+  //console.log(`CosmicLFO (${this.axis}): Exo frequencies set:`, this.exoFrequencies);
 
   // If no current exoplanet is selected, default to 'exo-a'
   if (!this.currentExoplanet) {
     this.currentExoplanet = 'exo-a';
-    console.log(`CosmicLFO (${this.axis}): Default current exoplanet set to ${this.currentExoplanet}.`);
+    //console.log(`CosmicLFO (${this.axis}): Default current exoplanet set to ${this.currentExoplanet}.`);
   }
   
   // Update the base frequency using the currentMultiplier.
@@ -303,7 +300,7 @@ setExoFrequencies(exoData) {
   // Store the initial base frequency if not already set.
   if (!this.initialBaseFrequency) {
     this.initialBaseFrequency = this.exoFrequencies[this.currentExoplanet];
-    console.log(`CosmicLFO (${this.axis}): initialBaseFrequency set to ${this.initialBaseFrequency} Hz.`);
+    //console.log(`CosmicLFO (${this.axis}): initialBaseFrequency set to ${this.initialBaseFrequency} Hz.`);
   }
 }
 
@@ -321,13 +318,13 @@ applyTriggerMultiplier(multiplier) {
   
   // If the new frequency is above 100 Hz, do not update.
   if (newBaseFrequency > 100) {
-    console.log(`CosmicLFO (${this.axis}): New frequency ${newBaseFrequency} Hz exceeds maximum 100 Hz. Keeping current frequency ${this.baseFrequency} Hz.`);
+    //console.log(`CosmicLFO (${this.axis}): New frequency ${newBaseFrequency} Hz exceeds maximum 100 Hz. Keeping current frequency ${this.baseFrequency} Hz.`);
     return;
   }
   
   // If the new frequency is below 0.01 Hz, do not update.
   if (newBaseFrequency < 0.01) {
-    console.log(`CosmicLFO (${this.axis}): New frequency ${newBaseFrequency} Hz is below minimum 0.01 Hz. Keeping current frequency ${this.baseFrequency} Hz.`);
+    //console.log(`CosmicLFO (${this.axis}): New frequency ${newBaseFrequency} Hz is below minimum 0.01 Hz. Keeping current frequency ${this.baseFrequency} Hz.`);
     return;
   }
   
@@ -336,7 +333,7 @@ applyTriggerMultiplier(multiplier) {
   this.baseFrequency = newBaseFrequency;
   this.updateFrequencyMonitor();
   this.update(); // Force an immediate update using the new frequency.
-  console.log(`CosmicLFO (${this.axis}): Base frequency updated to ${this.baseFrequency} Hz using multiplier ${multiplier}.`);
+  //console.log(`CosmicLFO (${this.axis}): Base frequency updated to ${this.baseFrequency} Hz using multiplier ${multiplier}.`);
 }
 
   triggerKick(triggerLabel) {
@@ -353,7 +350,7 @@ applyTriggerMultiplier(multiplier) {
   }
 
   initialize(exoData) {
-    console.log(`CosmicLFO (${this.axis}): initialize() with exoData=`, exoData);
+    //console.log(`CosmicLFO (${this.axis}): initialize() with exoData=`, exoData);
   }
 
   computeFrequenciesFromExoData() {

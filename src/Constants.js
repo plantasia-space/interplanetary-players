@@ -45,7 +45,7 @@ export let EXTERNAL_SENSORS_USABLE = !isMobileDevice(); // Default to true for d
  */
 export function setExternalSensorsUsable(status) {
     EXTERNAL_SENSORS_USABLE = status;
-    console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
+    //console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
 }
 
 /**
@@ -138,7 +138,7 @@ export const Constants = {
         }
         this.TRACK_DATA = trackData;
         lscache.set(trackId, trackData, this.CACHE_EXPIRY_MINUTES);
-        console.log(`[CACHE] Cached track data for trackId: ${trackId}`, trackData);
+        //console.log(`[CACHE] Cached track data for trackId: ${trackId}`, trackData);
     },
 
     /**
@@ -153,7 +153,7 @@ export const Constants = {
         }
         const cachedData = lscache.get(trackId);
         if (cachedData) {
-            console.log(`[CACHE] Found track data for trackId: ${trackId}`, cachedData);
+            //console.log(`[CACHE] Found track data for trackId: ${trackId}`, cachedData);
             this.TRACK_DATA = cachedData;
             return cachedData;
         }
@@ -171,7 +171,7 @@ export const Constants = {
             throw new Error('Invalid trackId. Must be a string.');
         }
         lscache.remove(trackId);
-        console.log(`[CACHE] Cleared track data for trackId: ${trackId}`);
+        //console.log(`[CACHE] Cleared track data for trackId: ${trackId}`);
     }
 };
 
@@ -235,7 +235,7 @@ export let PLAYBACK_STATE = "stopped"; // Can be "playing", "paused", "stopped"
 export function setPlaybackState(state) {
     if (["playing", "paused", "stopped"].includes(state)) {
         PLAYBACK_STATE = state;
-        console.log(`[Constants] Playback state updated: ${PLAYBACK_STATE}`);
+        //console.log(`[Constants] Playback state updated: ${PLAYBACK_STATE}`);
     } else {
         console.warn(`[Constants] Invalid playback state: ${state}`);
     }
@@ -280,9 +280,9 @@ export function getUniqueId() {
     if (!uniqueId) {
         uniqueId = 'unique-' + Math.random().toString(36).substr(2, 16);
         lscache.set(UNIQUE_ID_KEY, uniqueId, 60); // Expires in 60 minutes
-        console.log(`[SENSORS] Generated new uniqueId: ${uniqueId}`);
+        //console.log(`[SENSORS] Generated new uniqueId: ${uniqueId}`);
     } else {
-        console.log(`[SENSORS] Retrieved existing uniqueId from cache: ${uniqueId}`);
+        //console.log(`[SENSORS] Retrieved existing uniqueId from cache: ${uniqueId}`);
     }
 
     return uniqueId;
@@ -298,7 +298,7 @@ export const UNIQUE_ID = getUniqueId();
 /**
  * Logs sensor detection states for debugging.
  */
-console.log(`[SENSORS] Supported: ${SENSORS_SUPPORTED()}`);
-console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
-console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
-console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);
+//console.log(`[SENSORS] Supported: ${SENSORS_SUPPORTED()}`);
+//console.log(`[SENSORS] Internal Sensors Usable: ${INTERNAL_SENSORS_USABLE}`);
+//console.log(`[SENSORS] External Sensors Usable: ${EXTERNAL_SENSORS_USABLE}`);
+//console.log(`[SENSORS] Sensors Usable: ${SENSORS_USABLE}`);

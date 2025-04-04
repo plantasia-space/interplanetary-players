@@ -16,7 +16,7 @@ export class PlaybackController {
     this.wavesurfer = null;
     this._isUpdatingFromEngine = false;
 
-    console.debug("[PlaybackController] Constructor - SoundEngine:", soundEngine);
+    //console.debug("[PlaybackController] Constructor - SoundEngine:", soundEngine);
 
     // Pass PlaybackController reference to SoundEngine
     if (this.soundEngine) {
@@ -47,21 +47,21 @@ export class PlaybackController {
       : "rgba(0, 0, 0, 0.0)";       // Loop inactive (hidden)
     this.activeRegion.element.style.backgroundColor = newColor;
     this.activeRegion.element.style.transition = "background-color 0.3s";
-    console.log(`[PlaybackController] Set region element color directly to: ${newColor}`);
+    //console.log(`[PlaybackController] Set region element color directly to: ${newColor}`);
   }
 
   /**
    * Fetch waveform JSON, create WaveSurfer, and attach events.
    */
   async initWaveSurferPeaks() {
-    console.debug("[PlaybackController] initWaveSurferPeaks() called.");
+    //console.debug("[PlaybackController] initWaveSurferPeaks() called.");
     try {
       const waveformJSONURL = this.soundEngine?.trackData?.waveformJSONURL;
       if (!waveformJSONURL) {
         console.warn("[PlaybackController] No waveformJSONURL provided.");
         return;
       }
-      console.log("[PlaybackController] Fetching waveform JSON from:", waveformJSONURL);
+      //console.log("[PlaybackController] Fetching waveform JSON from:", waveformJSONURL);
       const resp = await fetch(waveformJSONURL);
       if (!resp.ok) {
         throw new Error(`Waveform JSON fetch failed: ${resp.status}`);
@@ -84,7 +84,7 @@ export class PlaybackController {
       const cursorColor = rootStyles.getPropertyValue("--color2").trim() || "#333";
       const waveformHeight = parseInt(rootStyles.getPropertyValue("--waveform-height")) || 120;
 
-      console.debug("[PlaybackController] Creating WaveSurfer instance:", waveColor, progressColor, cursorColor);
+      //console.debug("[PlaybackController] Creating WaveSurfer instance:", waveColor, progressColor, cursorColor);
 
       // Regions plugin for loop selection
       this.regions = RegionsPlugin.create();
@@ -108,7 +108,7 @@ export class PlaybackController {
         plugins: [this.regions],
       });
 
-      console.debug("[PlaybackController] Loading peaks with approximateDuration:", approximateDuration);
+      //console.debug("[PlaybackController] Loading peaks with approximateDuration:", approximateDuration);
       // Load the waveform data.
       this.wavesurfer.load(null, peaks, approximateDuration);
 
@@ -118,7 +118,7 @@ export class PlaybackController {
 
         this.wavesurfer.zoom(1);
         this.wavesurfer.setScroll(0);
-        console.log(`[PlaybackController] Initial zoom set to 1 for duration ${duration}s`);
+        //console.log(`[PlaybackController] Initial zoom set to 1 for duration ${duration}s`);
       });
 
       // Update current time display.
@@ -132,7 +132,7 @@ export class PlaybackController {
       const resizeObserver = new ResizeObserver(() => {
         if (!this.wavesurfer) return;
         this.wavesurfer.zoom(1);
-        console.log("[PlaybackController] Resize observed, maintaining zoom at 1");
+        //console.log("[PlaybackController] Resize observed, maintaining zoom at 1");
       });
       resizeObserver.observe(waveformContainer);
 
@@ -143,7 +143,7 @@ export class PlaybackController {
         }
       
         const newTimeMs = Math.round(newTime * 1000);
-        console.log(`[PlaybackController] User clicked at ${newTimeMs} ms`);
+        //console.log(`[PlaybackController] User clicked at ${newTimeMs} ms`);
       
         // Prevent SoundEngine from overriding our manual seek
         this.soundEngine._isUpdatingFromUI = true;
@@ -170,14 +170,14 @@ export class PlaybackController {
 
 
       this.wavesurfer.on("click", (rx, ry) => {
-        console.log(`[WaveSurfer Event] click => x=${rx}, y=${ry}`);
+        //console.log(`[WaveSurfer Event] click => x=${rx}, y=${ry}`);
       });
 
       // Initialize region selection and zoom handler.
       this.initPlaybackSelector();
       this.initZoomHandler();
 
-      console.log("[PlaybackController] WaveSurfer and regions initialized successfully.");
+      //console.log("[PlaybackController] WaveSurfer and regions initialized successfully.");
     } catch (err) {
       console.error("[PlaybackController] Error in initWaveSurferPeaks():", err);
     }
@@ -190,7 +190,7 @@ export class PlaybackController {
     if (this.disableDragSelectionFn) {
       this.disableDragSelectionFn();
       this.disableDragSelectionFn = null;
-      console.log("[PlaybackController] Drag selection disabled.");
+      //console.log("[PlaybackController] Drag selection disabled.");
     }
   }
 
@@ -266,7 +266,7 @@ export class PlaybackController {
  * Region selection using drag.
  */
 initPlaybackSelector() {
-  console.debug("[PlaybackController] Initializing default playback selector behavior.");
+  //console.debug("[PlaybackController] Initializing default playback selector behavior.");
 
   const waveformContainer = document.querySelector("#waveform");
   if (!waveformContainer) {
@@ -292,7 +292,7 @@ initPlaybackSelector() {
     this.activeRegion = region;
     this.isLooping = true; // ✅ Enable loop immediately
   
-    console.log(`[PlaybackController] Default loop region created: start=${region.start}, end=${region.end}`);
+    //console.log(`[PlaybackController] Default loop region created: start=${region.start}, end=${region.end}`);
   
     // ✅ Ensure region is visually active and looping
     this.setRegionLoopState(region, this.isLooping);
@@ -305,7 +305,7 @@ initPlaybackSelector() {
       return;
     }
 
-    console.log(`[PlaybackController] Loop region updated: start=${region.start}s, end=${region.end}s`);
+    //console.log(`[PlaybackController] Loop region updated: start=${region.start}s, end=${region.end}s`);
     this.updateSoundEngineLoopRange(region.start, region.end);
   });
 
@@ -315,7 +315,7 @@ initPlaybackSelector() {
     this.activeRegion = region;
     this.isLooping = !this.isLooping; // Toggle loop state
 
-    console.log(`[PlaybackController] Loop mode ${this.isLooping ? "activated" : "deactivated"} for region.`);
+    //console.log(`[PlaybackController] Loop mode ${this.isLooping ? "activated" : "deactivated"} for region.`);
     
     // Update region color and SoundEngine loop state
     this.setRegionLoopState(region, this.isLooping);
@@ -327,7 +327,7 @@ initPlaybackSelector() {
   waveformContainer.addEventListener("click", (event) => {
     if (!event.target.closest(".wavesurfer-region")) {
       if (this.activeRegion) {
-        console.log("[PlaybackController] Loop region removed.");
+        //console.log("[PlaybackController] Loop region removed.");
         this.soundEngine.unloop();
         this.activeRegion.remove();
         this.activeRegion = null;
@@ -335,7 +335,7 @@ initPlaybackSelector() {
     }
   });
 
-  console.log("[PlaybackController] Default region selection enabled.");
+  //console.log("[PlaybackController] Default region selection enabled.");
 }
 /**
  * Updates the region visual state based on loop activation.
@@ -350,7 +350,7 @@ setRegionLoopState(region, isLooping) {
   region.element.style.backgroundColor = newColor;
   region.element.style.transition = "background-color 0.3s";
 
-  console.log(`[PlaybackController] Region color updated: ${newColor}`);
+  //console.log(`[PlaybackController] Region color updated: ${newColor}`);
 }
 
 /**
@@ -366,12 +366,12 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
   }
 
   if (isLooping) {
-    console.log(`[PlaybackController] Activating loop: ${startSec}s - ${endSec}s`);
+    //console.log(`[PlaybackController] Activating loop: ${startSec}s - ${endSec}s`);
     this.soundEngine.setPlayRange(startSec * 1000, endSec * 1000);
     this.soundEngine.loop();
 
   } else {
-    console.log("[PlaybackController] Deactivating loop.");
+    //console.log("[PlaybackController] Deactivating loop.");
     this.soundEngine.unloop();
   }
 }
@@ -380,7 +380,7 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
    * Zoom-only logic with pointer-based dragging.
    */
   initZoomHandler() {
-    console.debug("[PlaybackController] Initializing zoom slider control.");
+    //console.debug("[PlaybackController] Initializing zoom slider control.");
   
     if (!this.wavesurfer) {
       console.error("[PlaybackController] Wavesurfer is not initialized.");
@@ -407,7 +407,7 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
       const sliderValue = parseFloat(event.target.value);
       const zoomValue = mapSliderToZoom(sliderValue);
   
-      console.log(`[PlaybackController] Zoom Slider changed: ${sliderValue} → Zoom: ${zoomValue}`);
+      //console.log(`[PlaybackController] Zoom Slider changed: ${sliderValue} → Zoom: ${zoomValue}`);
       this.wavesurfer.zoom(zoomValue);
     });
   
@@ -435,7 +435,7 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
       const currentTime = this.wavesurfer.getCurrentTime();
       const duration = this.wavesurfer.getDuration();
       const normValue = duration > 0 ? currentTime / duration : 0;
-      console.log(`[PlaybackController] getCursorPosition: ${normValue}`);
+      //console.log(`[PlaybackController] getCursorPosition: ${normValue}`);
       return normValue;
     }
     return 0;
@@ -455,11 +455,11 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
     const startMs = Math.round(startSec * 1000);
     const endMs = Math.round(endSec * 1000);
   
-    console.log(`[PlaybackController] Updating SoundEngine loop range:`);
-    console.log(`    Start Time (seconds): ${startSec}s`);
-    console.log(`    End Time (seconds): ${endSec}s`);
-    console.log(`    Converted Start (ms): ${startMs} ms`);
-    console.log(`    Converted End (ms): ${endMs} ms`);
+    //console.log(`[PlaybackController] Updating SoundEngine loop range:`);
+    //console.log(`    Start Time (seconds): ${startSec}s`);
+    //console.log(`    End Time (seconds): ${endSec}s`);
+    //console.log(`    Converted Start (ms): ${startMs} ms`);
+    //console.log(`    Converted End (ms): ${endMs} ms`);
   
     // 🔹 Update active region first
     if (this.activeRegion) {
@@ -493,7 +493,7 @@ setPlayHead(msValue) {
 
   play() {
     if (this.soundEngine && typeof this.soundEngine.play === "function") {
-      console.debug("[PlaybackController] play() => calling soundEngine.play()");
+      //console.debug("[PlaybackController] play() => calling soundEngine.play()");
       this.soundEngine.play();
     } else {
       console.warn("[PlaybackController] soundEngine.play() not available.");
@@ -502,7 +502,7 @@ setPlayHead(msValue) {
 
   pause() {
     if (this.soundEngine && typeof this.soundEngine.pause === "function") {
-      console.debug("[PlaybackController] pause() => calling soundEngine.pause()");
+      //console.debug("[PlaybackController] pause() => calling soundEngine.pause()");
       this.soundEngine.pause();
     } else {
       console.warn("[PlaybackController] soundEngine.pause() not available.");

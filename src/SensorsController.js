@@ -254,9 +254,9 @@ export class SensorController {
         this.initialBeta = beta;
         this.initialGamma = gamma;
         this.calibrated = true;
-        console.log('SensorController: Calibration completed.', {
+/*         console.log('SensorController: Calibration completed.', {
           alpha, beta, gamma
-        });
+        }); */
       }
 
 
@@ -506,7 +506,7 @@ normalizeAngle(angle) {
             } else {
                 this.activeAxes[axis] = isActive;
             }
-            console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${isActive ? 'active' : 'inactive'}.`);
+            //console.log(`SensorController: Axis '${axis.toUpperCase()}' is now ${isActive ? 'active' : 'inactive'}.`);
 
             if (isActive) {
                 if (!this.isSensorActive) this.activateSensors();
@@ -548,7 +548,7 @@ normalizeAngle(angle) {
             console.warn('SensorController: Calibration button icon element not found.');
             return;
         }
-        console.log('SensorController: LOADING SVG for calibration button.');
+        //console.log('SensorController: LOADING SVG for calibration button.');
 
         const src = calibrationButtonIcon.getAttribute('data-src');
         if (src) {
@@ -565,7 +565,7 @@ normalizeAngle(angle) {
      */
     fetchAndSetSVG(src, element, isInline = true) {
         if (!isInline) return;
-        console.log('SensorController: Fetching SVG for calibration button.');
+        //console.log('SensorController: Fetching SVG for calibration button.');
 
         fetch(src)
             .then(response => {
@@ -583,7 +583,7 @@ normalizeAngle(angle) {
                     svgElement.classList.add('icon-svg');
                     element.innerHTML = ''; // Clear existing content
                     element.appendChild(svgElement); // Insert the SVG
-                    console.log('SensorController: SVG loaded and injected.');
+                    //console.log('SensorController: SVG loaded and injected.');
                 } else {
                     console.error(`Invalid SVG content fetched from: ${src}`);
                 }
@@ -605,7 +605,7 @@ normalizeAngle(angle) {
 
         // Attach an event listener for calibration
         calibrationButton.addEventListener('click', () => {
-            console.log('SensorController: Calibration button clicked.');
+            //console.log('SensorController: Calibration button clicked.');
             calibrationButton.disabled = true; // Disable button during calibration
             this.calibrateDevice();
 
@@ -647,10 +647,10 @@ normalizeAngle(angle) {
         this.useInternalSensors = !useExternal;
 
         if (useExternal) {
-            console.log('[SensorController] Switched to external sensor input.');
+            //console.log('[SensorController] Switched to external sensor input.');
             this.stopListening(); // Stop internal sensor listeners
         } else {
-            console.log('[SensorController] Switched to internal sensor input.');
+            //console.log('[SensorController] Switched to internal sensor input.');
             this.startListening(); // Start internal sensor listeners
         }
     }

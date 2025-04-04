@@ -42,22 +42,22 @@ export class DataManager {
      */
     async fetchAndUpdateConfig(trackId) {
         const startTime = new Date();
-        console.log(`[DataManager] [Timing] fetchAndUpdateConfig started at: ${startTime.toISOString()} for trackId: ${trackId}`);
+        //console.log(`[DataManager] [Timing] fetchAndUpdateConfig started at: ${startTime.toISOString()} for trackId: ${trackId}`);
     
         try {
             await this.fetchTrackData(trackId);
             const afterFetchTime = new Date();
-            console.log(`[DataManager] [Timing] fetchTrackData completed at: ${afterFetchTime.toISOString()}`);
+            //console.log(`[DataManager] [Timing] fetchTrackData completed at: ${afterFetchTime.toISOString()}`);
     
             this.updatePlaceholderConfig(trackId);
             const afterUpdateTime = new Date();
-            console.log(`[DataManager] [Timing] updatePlaceholderConfig completed at: ${afterUpdateTime.toISOString()}`);
-            console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
+            //console.log(`[DataManager] [Timing] updatePlaceholderConfig completed at: ${afterUpdateTime.toISOString()}`);
+            //console.log('[DataManager] PlaceholderConfig updated successfully:', this.placeholderConfig);
     
             // Update loading state using Constants
             Constants.setLoadingState("trackLoaded", true);
             const endTime = new Date();
-            console.log(`[DataManager] [Timing] fetchAndUpdateConfig finished at: ${endTime.toISOString()}`);
+            //console.log(`[DataManager] [Timing] fetchAndUpdateConfig finished at: ${endTime.toISOString()}`);
         } catch (error) {
             console.error(`[DataManager] Error fetching and updating config: ${error.message}`);
         }
@@ -70,7 +70,7 @@ export class DataManager {
      */
     updatePlaceholderConfig(trackId) {
         const updateStartTime = new Date();
-        console.log(`[DataManager] [Timing] updatePlaceholderConfig started at: ${updateStartTime.toISOString()}`);
+       // console.log(`[DataManager] [Timing] updatePlaceholderConfig started at: ${updateStartTime.toISOString()}`);
     
         if (!Constants.TRACK_DATA) {
             console.error("[DataManager] TRACK_DATA is not available for placeholder configuration.");
@@ -241,12 +241,12 @@ export class DataManager {
      */
     async fetchTrackData(trackId) {
         const fetchStartTime = new Date();
-        console.log(`[DataManager] [Timing] fetchTrackData started at: ${fetchStartTime.toISOString()} for trackId: ${trackId}`);
+        //console.log(`[DataManager] [Timing] fetchTrackData started at: ${fetchStartTime.toISOString()} for trackId: ${trackId}`);
        
         // Attempt to retrieve cached data
         const cachedData = Constants.getTrackData(trackId);
         if (cachedData) {
-            console.log('[DataManager] Track data found in cache:', cachedData);
+            //console.log('[DataManager] Track data found in cache:', cachedData);
             return cachedData;
         }
 
@@ -266,7 +266,7 @@ export class DataManager {
             // Cache the retrieved data for future use
             Constants.setTrackData(trackId, result.data);
             const fetchEndTime = new Date();
-            console.log(`[DataManager] [Timing] fetchTrackData finished at: ${fetchEndTime.toISOString()}`);
+            //console.log(`[DataManager] [Timing] fetchTrackData finished at: ${fetchEndTime.toISOString()}`);
             return result.data;
         } catch (error) {
             console.error(`[DataManager] Failed to fetch track data: ${error.message}`);

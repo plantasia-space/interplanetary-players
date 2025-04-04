@@ -39,7 +39,7 @@ export class SoundEngine {
 
     ModeManagerInstance.subscribe((newMode) => {
       this.currentMode = newMode;
-      console.log(`[SoundEngine] Mode updated to: ${this.currentMode}`);
+      //console.log(`[SoundEngine] Mode updated to: ${this.currentMode}`);
     });
     Constants.setLoadingState("soundEngineLoaded", false);
 
@@ -50,14 +50,14 @@ export class SoundEngine {
    */
   setPlaybackController(playbackController) {
     this.playbackController = playbackController;
-    console.log("[SoundEngine] Connected to PlaybackController.");
+    //console.log("[SoundEngine] Connected to PlaybackController.");
   }
 
   async init() {
     if (this.initialized) return;
     try {
       const patchExportURL = this.soundEngineData.soundEngineJSONURL;
-      console.log("[SoundEngine] Fetching RNBO patch from:", patchExportURL);
+      //console.log("[SoundEngine] Fetching RNBO patch from:", patchExportURL);
 
       const WAContext = window.AudioContext || window.webkitAudioContext;
       this.context = new WAContext();
@@ -84,7 +84,7 @@ export class SoundEngine {
       if (this.playMin && this.playMax && this.totalDuration) {
         this.playMin.value = 0;
         this.playMax.value = this.totalDuration * 1000;
-        console.log(`[SoundEngine] Set playMin to ${this.playMin.value}, playMax to ${this.playMax.value} ms`);
+        //console.log(`[SoundEngine] Set playMin to ${this.playMin.value}, playMax to ${this.playMax.value} ms`);
       }
 
       // Subscribe to RNBO message events.
@@ -113,7 +113,7 @@ export class SoundEngine {
                         console.warn("[SoundEngine] PlaybackController is not available.");
                     }
                 } else {
-                    console.log("[SoundEngine] Ignoring playHead update due to manual user seek.");
+                    //console.log("[SoundEngine] Ignoring playHead update due to manual user seek.");
                 }
             } else {
                 console.error(`Unexpected payload format from '${ev.tag}' message:`, ev.payload);
@@ -129,7 +129,7 @@ export class SoundEngine {
       this.userManager.subscribe(this, "z", 1);
 
       this.initialized = true;
-      console.log("[SoundEngine] Initialized successfully.");
+      //console.log("[SoundEngine] Initialized successfully.");
           // Track initialization completion
     Constants.setLoadingState("soundEngineLoaded", true);
 
@@ -145,7 +145,7 @@ export class SoundEngine {
       if (!audioURL) {
         throw new Error("[SoundEngine] No audio file URL provided.");
       }
-      console.log("[SoundEngine] Fetching audio file:", audioURL);
+      //console.log("[SoundEngine] Fetching audio file:", audioURL);
       const response = await fetch(audioURL, { cache: "reload" });
       if (!response.ok) {
         throw new Error(`[SoundEngine] Network response was not OK. Status: ${response.status}`);
@@ -155,7 +155,7 @@ export class SoundEngine {
       // Set the total duration (in seconds) for later calculations.
       this.totalDuration = audioBuffer.duration;
       await this.device.setDataBuffer("world1", audioBuffer);
-      console.log(`[SoundEngine] Audio buffer fully loaded. Duration: ${this.totalDuration ? this.totalDuration.toFixed(2) : "unknown"}s`);
+      //console.log(`[SoundEngine] Audio buffer fully loaded. Duration: ${this.totalDuration ? this.totalDuration.toFixed(2) : "unknown"}s`);
     } catch (error) {
       console.error("[SoundEngine] Error loading audio buffer:", error);
     }
@@ -172,9 +172,9 @@ export class SoundEngine {
       }
       if (this.context.state !== "suspended") {
         await this.context.suspend();
-        console.log("[SoundEngine] Audio context suspended.");
+        //console.log("[SoundEngine] Audio context suspended.");
       } else {
-        console.log("[SoundEngine] Audio context was already suspended.");
+        //console.log("[SoundEngine] Audio context was already suspended.");
       }
     } catch (error) {
       console.error("[SoundEngine] Error during preload and suspend:", error);
@@ -193,7 +193,7 @@ setCursorPosition(newTimeMs) {
   if (this.totalDuration) {
     if (this.playMin) {
       this.playMin.value = newTimeMs;
-      console.log(`[SoundEngine] Updated playMin (cursor) to ${newTimeMs} ms`);
+      //console.log(`[SoundEngine] Updated playMin (cursor) to ${newTimeMs} ms`);
       
       // Force RNBO to process the parameter change
       this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [newTimeMs]));
@@ -209,7 +209,7 @@ setCursorPosition(newTimeMs) {
     try {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "play", [1]);
       this.device.scheduleEvent(messageEvent);
-      console.log("SoundEngine: Play command sent.");
+      //console.log("SoundEngine: Play command sent.");
     } catch (err) {
       console.error("SoundEngine: Failed to schedule play event:", err);
     }
@@ -229,7 +229,7 @@ setCursorPosition(newTimeMs) {
       }
       if (this.context.state === "suspended") {
         await this.context.resume();
-        console.log("[SoundEngine] Audio context resumed.");
+        //console.log("[SoundEngine] Audio context resumed.");
       }
       this._sendPlayEvent();
       this.playState = "playing"; // <--- Update state
@@ -247,7 +247,7 @@ setCursorPosition(newTimeMs) {
       this.playState = "paused"; // <--- Update state
       setPlaybackState("paused"); // Update global state
 
-      console.log("[SoundEngine] Pause command sent.");
+      //console.log("[SoundEngine] Pause command sent.");
     } catch (err) {
       console.error("[SoundEngine] Failed to schedule pause event:", err);
     }
@@ -274,7 +274,7 @@ setCursorPosition(newTimeMs) {
     this.playState = "stopped";
     setPlaybackState("stopped"); // Update global state
 
-    console.log("[SoundEngine] Stop command processed, sampler reset to 0.");
+    //console.log("[SoundEngine] Stop command processed, sampler reset to 0.");
   }
 
   setVolume(volume) {
@@ -284,7 +284,7 @@ setCursorPosition(newTimeMs) {
     }
     if (this.inputGain) {
       this.inputGain.value = volume;
-      console.log("SoundEngine: Volume set to", volume);
+      //console.log("SoundEngine: Volume set to", volume);
     }
   }
 
@@ -297,7 +297,7 @@ setCursorPosition(newTimeMs) {
     try {
       const msg = new RNBO.MessageEvent(RNBO.TimeNow, "play", [value]);
       this.device.scheduleEvent(msg);
-      console.log(`[SoundEngine] Nudging RNBO with play=${value} (no local state change)`);
+      //console.log(`[SoundEngine] Nudging RNBO with play=${value} (no local state change)`);
     } catch (err) {
       console.error("[SoundEngine] _forcePlayState error:", err);
     }
@@ -309,13 +309,13 @@ setCursorPosition(newTimeMs) {
  */
 setPlayRange(min = null, max = null, isFromUI = false) {
   if (this.playMin && this.playMax) {
-      console.log(`[SoundEngine] setPlayRange called with min=${min} ms, max=${max} ms`);
+      //console.log(`[SoundEngine] setPlayRange called with min=${min} ms, max=${max} ms`);
 
       if (isFromUI) {
-          console.log("[SoundEngine] Preventing loop: User-set play range.");
+          //console.log("[SoundEngine] Preventing loop: User-set play range.");
           this._isUpdatingFromUI = true;
       } else {
-          console.log("[SoundEngine] Preventing loop: Engine-set play range.");
+          //console.log("[SoundEngine] Preventing loop: Engine-set play range.");
           this._isUpdatingFromEngine = true;
       }
 
@@ -342,7 +342,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
     try {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "loop", [loopState]);
       this.device.scheduleEvent(messageEvent);
-      console.log(`[SoundEngine] Loop set to ${loopState}`);
+      //console.log(`[SoundEngine] Loop set to ${loopState}`);
     } catch (err) {
       console.error("[SoundEngine] Failed to schedule loop event:", err);
     }
@@ -350,7 +350,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
 
   loop() {
     this._sendLoopEvent(1);
-    console.log("[SoundEngine] Looping enabled.");
+    //console.log("[SoundEngine] Looping enabled.");
   }
 
   unloop() {
@@ -363,9 +363,9 @@ setPlayRange(min = null, max = null, isFromUI = false) {
     this.playMin.value = 0;
     this.playMax.value = this.totalDuration * 1000; // Convert seconds to milliseconds
   
-    console.log(`[SoundEngine] Unlooping: Resetting play range to full track.`);
-    console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
-    console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
+    //console.log(`[SoundEngine] Unlooping: Resetting play range to full track.`);
+    //console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
+    //console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
   
     // Ensure RNBO updates immediately
     this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [this.playMin.value]));
@@ -373,7 +373,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
   
     // Send loop off command
     this._sendLoopEvent(0);
-    console.log("[SoundEngine] Looping disabled.");
+    //console.log("[SoundEngine] Looping disabled.");
   }
 
   onParameterChanged(parameterName, value) {
@@ -421,17 +421,17 @@ setPlayRange(min = null, max = null, isFromUI = false) {
 
   cleanUp() {
     try {
-      console.log("[SoundEngine] Cleaning up resources...");
+      //console.log("[SoundEngine] Cleaning up resources...");
       const bufferDescriptions = this.device.dataBufferDescriptions;
       bufferDescriptions.forEach(async (desc) => {
         await this.device.releaseDataBuffer(desc.id);
-        console.log(`[SoundEngine] Released buffer with id ${desc.id}`);
+        //console.log(`[SoundEngine] Released buffer with id ${desc.id}`);
       });
       this.device.messageEvent.unsubscribe();
-      console.log("[SoundEngine] Unsubscribed from RNBO events.");
+      //console.log("[SoundEngine] Unsubscribed from RNBO events.");
       if (this.context && this.context.state !== "closed") {
         this.context.close();
-        console.log("[SoundEngine] Audio context closed.");
+        //console.log("[SoundEngine] Audio context closed.");
       }
     } catch (error) {
       console.error("[SoundEngine] Error during clean-up:", error);

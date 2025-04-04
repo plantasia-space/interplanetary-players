@@ -77,7 +77,7 @@ export class ButtonGroup {
    * @async
    */
   async init() {
-    console.log(`Initializing dropdowns for "${this.containerSelector}"`);
+   // //console.log(`Initializing dropdowns for "${this.containerSelector}"`);
 
     if (this.collapseInstance) {
       this.collapseInstance = bootstrap.Collapse.getOrCreateInstance(this.collapseElement);
@@ -164,7 +164,7 @@ export class ButtonGroup {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const selectedValue = item.getAttribute('data-value');
-        console.log(`[Dropdown] Item clicked: ${selectedValue}`);
+        //console.log(`[Dropdown] Item clicked: ${selectedValue}`);
         this.onSelectionChange(selectedValue);
       });
     });
@@ -184,7 +184,7 @@ export class ButtonGroup {
    * @private
    */
   onSelectionChange(selectedValue) {
-    console.log(`[Dropdown] Item clicked: ${selectedValue}`);
+    //console.log(`[Dropdown] Item clicked: ${selectedValue}`);
 
     // Precheck MIDI support and controller initialization
     const isMidiLearnAvailable = MIDI_SUPPORTED && this.midiController;
@@ -198,7 +198,7 @@ export class ButtonGroup {
     if (isMidiLearnAvailable && this.midiController.isMidiLearnModeActive) {
       const selectedItem = [...this.menuItems].find(item => item.getAttribute('data-value') === selectedValue);
       if (selectedItem) {
-        console.log(`[Dropdown] MIDI Learn active: Mapping dropdown item "${selectedValue}"`);
+        //console.log(`[Dropdown] MIDI Learn active: Mapping dropdown item "${selectedValue}"`);
         this.midiController.startMidiLearnForWidget(selectedItem);
       } else {
         console.warn(`[Dropdown] Selected item "${selectedValue}" not found.`);
@@ -248,7 +248,7 @@ export class ButtonGroup {
   // 1) Handles LFO Waveforms
   //----------------------------------------
   handleWaveformDropdown(groupType, selectedValue) {
-    console.log(`[Waveform Dropdown] Group: ${groupType}, Selected: ${selectedValue}`);
+    //console.log(`[Waveform Dropdown] Group: ${groupType}, Selected: ${selectedValue}`);
 
     // Check which axis we are controlling
     let lfo = null;
@@ -265,14 +265,14 @@ export class ButtonGroup {
     lfo.setWaveform(selectedValue);
 
     // Print wave + freq
-    console.log(`Axis=${lfo.axis}, Waveform="${selectedValue}", freq=${lfo.baseFrequency}`);
+    //console.log(`Axis=${lfo.axis}, Waveform="${selectedValue}", freq=${lfo.baseFrequency}`);
   }
 
   //----------------------------------------
   // 2) Handles LFO Exoplanet / freq changes
   //----------------------------------------
   handleExoplanetDropdown(groupType, selectedValue) {
-    console.log(`[Exoplanet Dropdown] Group: ${groupType}, Selected: ${selectedValue}`);
+    //console.log(`[Exoplanet Dropdown] Group: ${groupType}, Selected: ${selectedValue}`);
 
     let lfo = null;
     if (groupType.startsWith('x-')) lfo = cosmicLFOManager.x;
@@ -289,24 +289,24 @@ export class ButtonGroup {
       case 'doubleFreq':
         const doubled = lfo.baseFrequency * 2;
         lfo.setBaseFrequency(doubled);
-        console.log(`Axis=${lfo.axis}, freq doubled => ${doubled}`);
+        //console.log(`Axis=${lfo.axis}, freq doubled => ${doubled}`);
         break;
       case 'halfFreq':
         const halved = lfo.baseFrequency / 2;
         lfo.setBaseFrequency(halved);
-        console.log(`Axis=${lfo.axis}, freq halved => ${halved}`);
+        //console.log(`Axis=${lfo.axis}, freq halved => ${halved}`);
         break;
       default:
         // It's presumably an exoplanet name
         lfo.setCurrentExoplanet(selectedValue);
         // Optionally call lfo.initialize(...) or lfo.computeFrequenciesFromExoData(...)
-        console.log(`Axis=${lfo.axis}, exoplanet="${selectedValue}", freq=${lfo.baseFrequency}`);
+        //console.log(`Axis=${lfo.axis}, exoplanet="${selectedValue}", freq=${lfo.baseFrequency}`);
         break;
     }
   }
 
   handleMoreDropdown(selectedValue) {
-    console.log(`[More Dropdown] Selected: ${selectedValue}`);
+    //console.log(`[More Dropdown] Selected: ${selectedValue}`);
     switch (selectedValue) {
       case 'Share':
         notifications.showToast('Sharing functionality is under development!', 'info');
@@ -326,7 +326,7 @@ export class ButtonGroup {
   }
 
   handleInformationDropdown(selectedValue) {
-    console.log(`[Information Dropdown] Selected: ${selectedValue}`);
+    //console.log(`[Information Dropdown] Selected: ${selectedValue}`);
     const typeMap = {
       'Control Monitor': 'monitorInfo',
       'Track': 'trackInfo',
@@ -350,27 +350,27 @@ export class ButtonGroup {
   showGrid() {
     if (this.gridWrapper) {
       this.gridWrapper.style.display = 'grid';
-      console.log('[Grid] Grid is now visible.');
+      //console.log('[Grid] Grid is now visible.');
     }
     if (this.collapseInstance) {
       this.collapseInstance.show();
-      console.log('[Collapse] Collapsible menu expanded.');
+      //console.log('[Collapse] Collapsible menu expanded.');
     }
   }
 
   hideGrid() {
     if (this.gridWrapper) {
       this.gridWrapper.style.display = 'none';
-      console.log('[Grid] Grid hidden.');
+      //console.log('[Grid] Grid hidden.');
     }
     if (this.collapseInstance) {
       this.collapseInstance.hide();
-      console.log('[Collapse] Collapsible menu collapsed.');
+      //console.log('[Collapse] Collapsible menu collapsed.');
     }
   }
 
   handleTransportDropdown(selectedValue) {
-    console.log(`[Transport Dropdown] Selected: ${selectedValue}`);
+    //console.log(`[Transport Dropdown] Selected: ${selectedValue}`);
     switch (selectedValue.toLowerCase()) {
       case 'play':
         this.soundEngine.play();
@@ -387,7 +387,7 @@ export class ButtonGroup {
   }
 
   handleInteractionDropdown(selectedValue) {
-    console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
+    //console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
     switch (selectedValue) {
       case 'Jam':
         ModeManagerInstance.activateMode('JAM');
@@ -411,7 +411,7 @@ export class ButtonGroup {
 
   async adjustForHardwareSupport() {
     const sensorsAvailable = await SENSORS_SUPPORTED;
-    console.log(`[ButtonGroup] Sensors: ${sensorsAvailable ? 'Available' : 'Unavailable'}`);
+    //console.log(`[ButtonGroup] Sensors: ${sensorsAvailable ? 'Available' : 'Unavailable'}`);
 
     this.menuItems.forEach(item => {
       const value = item.getAttribute('data-value');
