@@ -177,6 +177,7 @@ async function initializeApp() {
       const ksteps = 255;
       user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps, rnbo);
   
+      
 
     // Attach the clean-up listener once the SoundEngine is created
     window.addEventListener('beforeunload', () => {
@@ -198,7 +199,15 @@ async function initializeApp() {
 
         // ✅ Mark UI as ready
         Constants.setLoadingState("uiReady", true);
-
+     
+     
+        const closeBtn = document.querySelector('.close-grid-btn');
+        if (closeBtn) {
+          setTimeout(() => {
+            closeBtn.click();
+            console.log('[DataManager] Grid closed programmatically after data loaded.');
+          }, 100);
+        }
   
     } catch (error) {
       console.error('[APP] Error during application initialization:', error);
@@ -431,6 +440,7 @@ function setupCollapseMenuAlignment() {
 
     // Align collapse menu on information button click to handle dynamic changes
     infoButton.addEventListener("click", alignCollapseMenu);
+    
 }
 
 // -----------------------------
@@ -454,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
+    
 
 });
 
