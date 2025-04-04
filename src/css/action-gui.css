@@ -40,7 +40,7 @@
 
 /* Update: Remove .xyz-balance entirely.
    And set .xyz-sensors-toggle to have the same dimensions as .xyz-cosmic-lfo */
-   .xyz-sensors-toggle {
+   .xyz-cosmic-lfo , .xyz-sensors-toggle {
     display: none; /* Hide by default */
     /* Default dimensions now match LFO buttons */
     width: 8vmin;

@@ -228,6 +228,9 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
         cosmicLFOManager.x.enterMode();
         cosmicLFOManager.y.enterMode();
         cosmicLFOManager.z.enterMode();
+        document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
+          el.style.display = 'block';
+      });
       },
       onExit: () => {
         notifications.showToast("Exited Cosmic LFO mode.");

@@ -410,8 +410,8 @@ function setupCollapseMenuAlignment() {
         return;
     }
 
-    const verticalOffsetVH = 2; // Vertical offset in viewport height units
-    const horizontalOffsetVW = -1; // Horizontal offset in viewport width units
+    const verticalOffsetVH = 3; // Vertical offset in viewport height units
+    const horizontalOffsetVW = 0; // Horizontal offset in viewport width units
 
     /**
      * Aligns the collapse menu relative to the information button.
