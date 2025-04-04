@@ -169,7 +169,7 @@ export class DataManager {
         };
 
         // If running inside an iframe, post the placeholder config to the parent window
-        if (window.parent && window.parent !== window) {
+/*         if (window.parent && window.parent !== window) {
             // Extract track id if available from TRACK_DATA
             console.log("[DataManager-TRACK-ID]",trackId);
 
@@ -185,7 +185,7 @@ export class DataManager {
             }, '*');
             const postMessageTime = new Date();
             console.log(`[DataManager] [Timing] PostMessage sent at: ${postMessageTime.toISOString()} with playerData.`);
-        }
+        } */
     }
     /**
      * Populates the UI placeholders with the configured data.
