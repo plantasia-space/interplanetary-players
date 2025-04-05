@@ -150,7 +150,7 @@ if (this.debug) {
    * @returns {number} The LFO output in [-1..1].
    */
   calculateLfoValue(phase) {
-    console.debug(`CosmicLFO (${this.axis}): Calculating LFO with waveform: ${this.waveform}`);
+   // console.debug(`CosmicLFO (${this.axis}): Calculating LFO with waveform: ${this.waveform}`);
     switch (this.waveform) {
       case 'sine':
         return Math.sin(phase);

@@ -150,30 +150,6 @@ async function initializeApp() {
   
       // Destructure the cached data
       const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
-      if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
-        const exoData = interplanetaryPlayer.exoplanetData;
-        // Assign minimum cosmic LFO values to the CosmicLFO instances:
-        // Assuming exoData is extracted from interplanetaryPlayer.exoplanetData:
-
-        if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
-            console.debug('[DEBUG] Exoplanet data loaded:', interplanetaryPlayer.exoplanetData);
-          } else {
-            console.error('[ERROR] Exoplanet data is missing or undefined.');
-          }
-          
-        cosmicLFOManager.x.setExoFrequencies(exoData);
-        cosmicLFOManager.y.setExoFrequencies(exoData);
-        cosmicLFOManager.z.setExoFrequencies(exoData);
-        
-        cosmicLFOManager.x.attachTriggerSwitch('xCosmic1');
-        cosmicLFOManager.x.attachTriggerSwitch('xCosmic2');
-        cosmicLFOManager.y.attachTriggerSwitch('yCosmic1');
-        cosmicLFOManager.y.attachTriggerSwitch('yCosmic2');
-        cosmicLFOManager.z.attachTriggerSwitch('zCosmic1');
-        cosmicLFOManager.z.attachTriggerSwitch('zCosmic2');
-
-        ////console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
-      }
   
       // Initialize root parameters, apply colors, update knobs, etc.
       initializeRootParams(user1Manager, cachedData);
@@ -214,7 +190,25 @@ async function initializeApp() {
             //console.log('[DataManager] Grid closed programmatically after data loaded.');
           }, 100);
         }
-  
+        if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
+            const exoData = interplanetaryPlayer.exoplanetData;
+            // Assign minimum cosmic LFO values to the CosmicLFO instances:
+            // Assuming exoData is extracted from interplanetaryPlayer.exoplanetData:
+    
+            cosmicLFOManager.x.setExoFrequencies(exoData);
+            cosmicLFOManager.y.setExoFrequencies(exoData);
+            cosmicLFOManager.z.setExoFrequencies(exoData);
+            
+            cosmicLFOManager.x.attachTriggerSwitch('xCosmic1');
+            cosmicLFOManager.x.attachTriggerSwitch('xCosmic2');
+            cosmicLFOManager.y.attachTriggerSwitch('yCosmic1');
+            cosmicLFOManager.y.attachTriggerSwitch('yCosmic2');
+            cosmicLFOManager.z.attachTriggerSwitch('zCosmic1');
+            cosmicLFOManager.z.attachTriggerSwitch('zCosmic2');
+    
+            ////console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
+          }
+    
     } catch (error) {
       console.error('[APP] Error during application initialization:', error);
     }
