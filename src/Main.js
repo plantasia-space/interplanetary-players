@@ -139,25 +139,35 @@ async function initializeApp() {
   
       // Fetch configuration data and update cache, then fetch RNBO library
       await dataManager.fetchAndUpdateConfig(trackId);
-      let cachedData = Constants.getTrackData(trackId);
+      const cachedData = Constants.getTrackData(trackId);
+  
       if (!cachedData) {
-        console.warn('[APP] Cached track data not found, falling back to Constants.TRACK_DATA.');
-        cachedData = Constants.TRACK_DATA;
+        throw new Error('Failed to fetch track data from cache.');
       }
-      if (!cachedData) {
-        throw new Error('Failed to fetch track data.');
-      }
+  
       // Load RNBO library based on patcher version
       const rnbo = await loadRNBOLibrary(cachedData.soundEngine.soundEngineJSONURL);
   
       // Destructure the cached data
       const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
-      console.log("[DEBUG] Full cachedData:", cachedData);
-      if (!interplanetaryPlayer) {
-        console.error('[ERROR] interplanetaryPlayer object is missing from cachedData');
-      } else if (!interplanetaryPlayer.exoplanetData) {
-        console.error('[ERROR] interplanetaryPlayer.exoplanetData is undefined');
+      if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
+        const exoData = interplanetaryPlayer.exoplanetData;
+        // Assign minimum cosmic LFO values to the CosmicLFO instances:
+        // Assuming exoData is extracted from interplanetaryPlayer.exoplanetData:
+        cosmicLFOManager.x.setExoFrequencies(exoData);
+        cosmicLFOManager.y.setExoFrequencies(exoData);
+        cosmicLFOManager.z.setExoFrequencies(exoData);
+        
+        cosmicLFOManager.x.attachTriggerSwitch('xCosmic1');
+        cosmicLFOManager.x.attachTriggerSwitch('xCosmic2');
+        cosmicLFOManager.y.attachTriggerSwitch('yCosmic1');
+        cosmicLFOManager.y.attachTriggerSwitch('yCosmic2');
+        cosmicLFOManager.z.attachTriggerSwitch('zCosmic1');
+        cosmicLFOManager.z.attachTriggerSwitch('zCosmic2');
+
+        ////console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
       }
+  
       // Initialize root parameters, apply colors, update knobs, etc.
       initializeRootParams(user1Manager, cachedData);
       applyColorsFromTrackData(cachedData);
@@ -168,6 +178,7 @@ async function initializeApp() {
       user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps, rnbo);
   
       
+
     // Attach the clean-up listener once the SoundEngine is created
     window.addEventListener('beforeunload', () => {
         if (user1SoundEngine) {
@@ -197,32 +208,7 @@ async function initializeApp() {
             //console.log('[DataManager] Grid closed programmatically after data loaded.');
           }, 100);
         }
-
-        if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
-            console.debug('[DEBUG] Exoplanet data loaded:', interplanetaryPlayer.exoplanetData);
-          } else {
-            console.error('[ERROR] Exoplanet data is missing or undefined.');
-          }
-          
-        if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
-            const exoData = interplanetaryPlayer.exoplanetData;
-            // Assign minimum cosmic LFO values to the CosmicLFO instances:
-            // Assuming exoData is extracted from interplanetaryPlayer.exoplanetData:
-    
-            cosmicLFOManager.x.setExoFrequencies(exoData);
-            cosmicLFOManager.y.setExoFrequencies(exoData);
-            cosmicLFOManager.z.setExoFrequencies(exoData);
-            
-            cosmicLFOManager.x.attachTriggerSwitch('xCosmic1');
-            cosmicLFOManager.x.attachTriggerSwitch('xCosmic2');
-            cosmicLFOManager.y.attachTriggerSwitch('yCosmic1');
-            cosmicLFOManager.y.attachTriggerSwitch('yCosmic2');
-            cosmicLFOManager.z.attachTriggerSwitch('zCosmic1');
-            cosmicLFOManager.z.attachTriggerSwitch('zCosmic2');
-    
-            ////console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
-          }
-    
+  
     } catch (error) {
       console.error('[APP] Error during application initialization:', error);
     }
