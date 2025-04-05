@@ -154,6 +154,13 @@ async function initializeApp() {
         const exoData = interplanetaryPlayer.exoplanetData;
         // Assign minimum cosmic LFO values to the CosmicLFO instances:
         // Assuming exoData is extracted from interplanetaryPlayer.exoplanetData:
+
+        if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
+            console.debug('[DEBUG] Exoplanet data loaded:', interplanetaryPlayer.exoplanetData);
+          } else {
+            console.error('[ERROR] Exoplanet data is missing or undefined.');
+          }
+          
         cosmicLFOManager.x.setExoFrequencies(exoData);
         cosmicLFOManager.y.setExoFrequencies(exoData);
         cosmicLFOManager.z.setExoFrequencies(exoData);
