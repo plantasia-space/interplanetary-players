@@ -63,7 +63,7 @@ export const ModeManagerInstance = new ModeManager();
 ModeManagerInstance.registerMode('JAM', {
     onEnter: () => {
       //console.log('[ModeManager] Entered JAM mode.');
-      notifications.showToast("Switched to Jam mode.");
+      //notifications.showToast("Switched to Jam mode.");
   
       // Hide dropdowns that are exclusive to Cosmic LFO mode.
       document.querySelectorAll('[data-group$="-waveform-dropdown"], [data-group$="-exo-lfo-dropdown"]').forEach(el => {
@@ -110,39 +110,39 @@ ModeManagerInstance.registerMode('JAM', {
   });
 
 ModeManagerInstance.registerMode('MIDI_LEARN', {
-    onEnter: async () => {
-      //console.log('[ModeManager] Entered MIDI_LEARN mode.');
-      try {
-        // Show sensor toggle buttons as part of MIDI Learn mode
-        document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-          console.log(`Showing sensor toggle button: ${button.id}`);
-          button.style.display = 'block';
-        });
+  onEnter: async () => {
+    try {
+      // Show both types of buttons in MIDI_LEARN mode
+      document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+        button.style.display = 'block';
+      });
+      const cosmicButtons = document.querySelectorAll('.xyz-cosmic-lfo');
+      console.log('Cosmic LFO buttons found:', cosmicButtons.length);
+      document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
+        el.style.display = 'block';
+    });
   
-        // **Show all Cosmic LFO–related elements**
-        document.querySelectorAll(
-          '[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"], ' +
-          'webaudio-monitor[id^="cosmic-lfo-"]'
-        ).forEach(el => {
-          console.log('Showing cosmic element:', el);
-          // Reset the display style to the default (or 'block' if needed)
-          el.style.display = '';
-        });
+      document.querySelectorAll(
+        '[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"], ' +
+        'webaudio-monitor[id^="cosmic-lfo-"]'
+      ).forEach(el => {
+        console.log('Showing cosmic element:', el);
+        el.style.display = '';
+      });
   
-        if (MIDIControllerInstance) {
-          await MIDIControllerInstance.activateMIDI();
-          MIDIControllerInstance.enableMidiLearn();
-          console.log('[ModeManager] MIDI Learn functionality enabled.');
-          notifications.showToast("MIDI Learn mode activated.");
-        } else {
-          console.error('[ModeManager] MIDIControllerInstance is not available.');
-          notifications.showToast("MIDI Controller is not available.", 'error');
-        }
-      } catch (error) {
-        console.error('[ModeManager] Error activating MIDI Learn mode:', error);
-        notifications.showToast("Error activating MIDI Learn mode.", 'error');
+      if (MIDIControllerInstance) {
+        await MIDIControllerInstance.activateMIDI();
+        MIDIControllerInstance.enableMidiLearn();
+        console.log('[ModeManager] MIDI Learn functionality enabled.');
+      } else {
+        console.error('[ModeManager] MIDIControllerInstance is not available.');
+        notifications.showToast("MIDI Controller is not available.", 'error');
       }
-    },
+    } catch (error) {
+      console.error('[ModeManager] Error activating MIDI Learn mode:', error);
+      notifications.showToast("Error activating MIDI Learn mode.", 'error');
+    }
+  },
     onExit: () => {
       //console.log('[ModeManager] Exited MIDI_LEARN mode.');
       if (MIDIControllerInstance) {
@@ -150,12 +150,14 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
         console.log('[ModeManager] MIDI Learn functionality disabled.');
       }
   
-      // Hide sensor toggle buttons when leaving MIDI Learn mode
-      document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-        console.log(`Hiding sensor toggle button: ${button.id}`);
-        button.style.display = 'none';
-      });
-  
+// Then hide again onExit:
+document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+  button.style.display = 'none';
+});
+document.querySelectorAll('.xyz-cosmic-lfo').forEach(button => {
+  button.style.display = 'none';
+});
+
       // **Hide all Cosmic LFO–related elements again**
       document.querySelectorAll(
         '[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"], ' +
@@ -165,7 +167,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
         el.style.display = 'none';
       });
   
-      notifications.showToast("Exited MIDI Learn mode.");
+      //notifications.showToast("Exited MIDI Learn mode.");
     }
   });
   
@@ -224,7 +226,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
 });
     ModeManagerInstance.registerMode('COSMIC_LFO', {
       onEnter: () => {
-        notifications.showToast("Cosmic LFO mode activated.");
+        //notifications.showToast("Cosmic LFO mode activated.");
         cosmicLFOManager.x.enterMode();
         cosmicLFOManager.y.enterMode();
         cosmicLFOManager.z.enterMode();
@@ -233,7 +235,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
       });
       },
       onExit: () => {
-        notifications.showToast("Exited Cosmic LFO mode.");
+        //notifications.showToast("Exited Cosmic LFO mode.");
         cosmicLFOManager.x.exitMode();
         cosmicLFOManager.y.exitMode();
         cosmicLFOManager.z.exitMode();
@@ -243,7 +245,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
   ModeManagerInstance.registerMode('PLAYBACK', {
     onEnter: () => {
         //console.log('[ModeManager] Entered PLAYBACK mode.');
-        notifications.showToast("Playback mode activated.");
+        //notifications.showToast("Playback mode activated.");
         
         // Show waveform and playback switches
         document.getElementById("waveform-container").style.display = "block";
@@ -256,7 +258,7 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
     },
     onExit: () => {
         //console.log('[ModeManager] Exited PLAYBACK mode.');
-        notifications.showToast("Exited Playback mode.");
+        //notifications.showToast("Exited Playback mode.");
 
         // Hide waveform and playback switches
         document.getElementById("waveform-container").style.display = "none";
