@@ -152,7 +152,12 @@ async function initializeApp() {
   
       // Destructure the cached data
       const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
-  
+      console.log("[DEBUG] Full cachedData:", cachedData);
+      if (!interplanetaryPlayer) {
+        console.error('[ERROR] interplanetaryPlayer object is missing from cachedData');
+      } else if (!interplanetaryPlayer.exoplanetData) {
+        console.error('[ERROR] interplanetaryPlayer.exoplanetData is undefined');
+      }
       // Initialize root parameters, apply colors, update knobs, etc.
       initializeRootParams(user1Manager, cachedData);
       applyColorsFromTrackData(cachedData);
