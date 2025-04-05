@@ -190,6 +190,13 @@ async function initializeApp() {
             //console.log('[DataManager] Grid closed programmatically after data loaded.');
           }, 100);
         }
+
+        if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
+            console.debug('[DEBUG] Exoplanet data loaded:', interplanetaryPlayer.exoplanetData);
+          } else {
+            console.error('[ERROR] Exoplanet data is missing or undefined.');
+          }
+          
         if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
             const exoData = interplanetaryPlayer.exoplanetData;
             // Assign minimum cosmic LFO values to the CosmicLFO instances:
