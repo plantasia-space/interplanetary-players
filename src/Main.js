@@ -141,9 +141,8 @@ async function initializeApp() {
       await dataManager.fetchAndUpdateConfig(trackId);
       let cachedData = Constants.getTrackData(trackId);
       if (!cachedData) {
-        console.warn('[APP] Cached track data not found, falling back to fetched config.');
-        // If your dataManager stores the fetched config in a property, use it:
-        cachedData = dataManager.fetchedConfig || dataManager.getConfig();
+        console.warn('[APP] Cached track data not found, falling back to Constants.TRACK_DATA.');
+        cachedData = Constants.TRACK_DATA;
       }
       if (!cachedData) {
         throw new Error('Failed to fetch track data.');
