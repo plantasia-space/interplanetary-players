@@ -178,7 +178,6 @@ async function initializeApp() {
       user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps, rnbo);
   
       
-
     // Attach the clean-up listener once the SoundEngine is created
     window.addEventListener('beforeunload', () => {
         if (user1SoundEngine) {
