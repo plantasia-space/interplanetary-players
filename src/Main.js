@@ -139,12 +139,15 @@ async function initializeApp() {
   
       // Fetch configuration data and update cache, then fetch RNBO library
       await dataManager.fetchAndUpdateConfig(trackId);
-      const cachedData = Constants.getTrackData(trackId);
-  
+      let cachedData = Constants.getTrackData(trackId);
       if (!cachedData) {
-        throw new Error('Failed to fetch track data from cache.');
+        console.warn('[APP] Cached track data not found, falling back to fetched config.');
+        // If your dataManager stores the fetched config in a property, use it:
+        cachedData = dataManager.fetchedConfig || dataManager.getConfig();
       }
-  
+      if (!cachedData) {
+        throw new Error('Failed to fetch track data.');
+      }
       // Load RNBO library based on patcher version
       const rnbo = await loadRNBOLibrary(cachedData.soundEngine.soundEngineJSONURL);
   
