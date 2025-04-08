@@ -112,15 +112,7 @@ ModeManagerInstance.registerMode('JAM', {
 ModeManagerInstance.registerMode('MIDI_LEARN', {
   onEnter: async () => {
     try {
-      // Show both types of buttons in MIDI_LEARN mode
-      document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
-        button.style.display = 'block';
-      });
-      const cosmicButtons = document.querySelectorAll('.xyz-cosmic-lfo');
-      console.log('Cosmic LFO buttons found:', cosmicButtons.length);
-      document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
-        el.style.display = 'block';
-    });
+
   
       document.querySelectorAll(
         '[id^="xCosmic"], [id^="yCosmic"], [id^="zCosmic"], ' +
@@ -129,7 +121,16 @@ ModeManagerInstance.registerMode('MIDI_LEARN', {
         console.log('Showing cosmic element:', el);
         el.style.display = '';
       });
-  
+        // Show both types of buttons in MIDI_LEARN mode
+        document.querySelectorAll('.xyz-sensors-toggle').forEach(button => {
+          button.style.display = 'block';
+        });
+        const cosmicButtons = document.querySelectorAll('.xyz-cosmic-lfo');
+        console.log('Cosmic LFO buttons found:', cosmicButtons.length);
+        document.querySelectorAll('.xyz-cosmic-lfo').forEach(el => {
+          el.style.display = 'block';
+      });
+      
       if (MIDIControllerInstance) {
         await MIDIControllerInstance.activateMIDI();
         MIDIControllerInstance.enableMidiLearn();
