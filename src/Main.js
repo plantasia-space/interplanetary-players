@@ -361,8 +361,12 @@ window.addEventListener('resize', () => {
 
     // Set the pixel ratio for high-DPI screens, capped at 2 for performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    sendPlayerSize();
 
     ////console.log('[APP] Renderer and camera updated on resize.');
+});
+window.addEventListener('orientationchange', () => {
+    onResize();
 });
 
 // -----------------------------
@@ -464,9 +468,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup collapse menu alignment
     setupCollapseMenuAlignment();
-    
+    sendPlayerSize();
 
 });
+
+function sendPlayerSize() {
+    // Only send if we're actually inside an iframe
+    if (window.self === window.top) {
+        return;
+    }
+    // Measure the renderer canvas if available
+    const mainContainer = renderer?.domElement || document.body;
+    const rect = mainContainer.getBoundingClientRect();
+  
+    const width = Math.floor(rect.width);
+    const height = Math.floor(rect.height);
+  
+    window.parent.postMessage({
+      type: 'ip-player-size',
+      trackId: Constants.TRACK_ID, // optional
+      width,
+      height
+    }, '*');
+  }
 
 /**
  * Initializes the CosmicLFO instances for x, y, and z axes,
