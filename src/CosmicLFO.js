@@ -138,10 +138,10 @@ if (this.debug) {
   if (!this.debugFrameCount) { this.debugFrameCount = 0; }
   this.debugFrameCount++;
   if (this.debugFrameCount % 30 === 0) {
-    console.debug(`CosmicLFO (${this.axis}): Debug Info -> Base Frequency: ${this.baseFrequency}, TwoPiFreq: ${twoPiFreq.toFixed(3)}, Phase: ${this.phase.toFixed(2)}, LFO Value: ${lfoValue.toFixed(3)}, Modulated Value: ${modulatedValue.toFixed(3)}`);
+    console.debug(`CosmicLFO (${this.axis}): Debug Info -> Base Frequency: ${this.baseFrequency}, TwoPiFreq: ${twoPiFreq.toFixed(2)}, Phase: ${this.phase.toFixed(2)}, LFO Value: ${lfoValue.toFixed(2)}, Modulated Value: ${modulatedValue.toFixed(2)}`);
   }
 }
-    // console.debug(`CosmicLFO (${this.axis}): LFO Value = ${lfoValue.toFixed(3)}`);
+    // console.debug(`CosmicLFO (${this.axis}): LFO Value = ${lfoValue.toFixed(2)}`);
   }
 
   /**

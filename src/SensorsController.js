@@ -357,10 +357,10 @@ normalizeAngle(angle) {
           rawAngles: { alpha: event.alpha, beta: event.beta, gamma: event.gamma },
           normalizedAngles: { rawAlpha, rawBeta, rawGamma },
           quaternion: {
-            x: this.currentQuaternion.x.toFixed(3),
-            y: this.currentQuaternion.y.toFixed(3),
-            z: this.currentQuaternion.z.toFixed(3),
-            w: this.currentQuaternion.w.toFixed(3)
+            x: this.currentQuaternion.x.toFixed(2),
+            y: this.currentQuaternion.y.toFixed(2),
+            z: this.currentQuaternion.z.toFixed(2),
+            w: this.currentQuaternion.w.toFixed(2)
           },
           finalNormalized: {
             x: this.currentYaw.toFixed(2),

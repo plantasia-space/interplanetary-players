@@ -155,7 +155,6 @@ export class SoundEngine {
       // Set the total duration (in seconds) for later calculations.
       this.totalDuration = audioBuffer.duration;
       await this.device.setDataBuffer("world1", audioBuffer);
-      //console.log(`[SoundEngine] Audio buffer fully loaded. Duration: ${this.totalDuration ? this.totalDuration.toFixed(2) : "unknown"}s`);
     } catch (error) {
       console.error("[SoundEngine] Error loading audio buffer:", error);
     }

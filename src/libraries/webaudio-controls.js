@@ -335,6 +335,8 @@ this.onFocus = () => {
     
 
 }
+
+
 /**
  * @class WebAudioKnob
  * @memberof 2DGUI
@@ -669,7 +671,7 @@ try {
     }
     redraw() {
       let ratio;
-      this.digits = 0;
+      this.digits = 3;
       if (this.step && this.step < 1) {
         for (let n = this.step; n < 1; n *= 10)
           ++this.digits;
@@ -689,47 +691,104 @@ try {
       this.drawKnob(ratio);
     }
 
+    drawCompassRoseStarOutline(ctx, cx, cy, outerRadius, color) {
+      ctx.save();
+      ctx.translate(cx, cy);
+    
+      const totalPoints = 16;           // 16 points => 8 outer tips + 8 inner tips
+      const innerRadius = outerRadius * 0.5;
+    
+      // 1) Draw the outer star boundary as one continuous path
+      ctx.beginPath();
+      for (let i = 0; i < totalPoints; i++) {
+        // Start from top (angle = -π/2) so first point is “up”
+        const angle = -Math.PI / 2 + (i * 2 * Math.PI) / totalPoints;
+        const r = (i % 2 === 0) ? outerRadius : innerRadius; // alternate tip/valley
+        const x = r * Math.cos(angle);
+        const y = r * Math.sin(angle);
+    
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    
+      // No fill – just an outline
+      ctx.fillStyle = 'rgba(0,0,0,0)';  // fully transparent
+      ctx.strokeStyle = color || '#000';
+      ctx.lineWidth = 1;
+    
+      // We still must call fill() (it won’t paint anything since fillStyle is transparent).
+      // But it closes the path properly in some browsers. Alternatively, you can skip fill().
+      // Here I’ll skip fill() entirely:
+      // ctx.fill();
+      ctx.stroke();
+    
+      // 2) Draw lines from the center to each “outer” tip if you like
+      //    (You can comment out if you just want the star outline)
+      for (let i = 0; i < totalPoints; i += 2) {
+        // Only outer tips are at even indices
+        const angle = -Math.PI / 2 + (i * 2 * Math.PI) / totalPoints;
+        const x = outerRadius * Math.cos(angle);
+        const y = outerRadius * Math.sin(angle);
+    
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+    
+      ctx.restore();
+    }
+
     /**
      * Draws the knob on the canvas based on the provided ratio.
      * @param {number} ratio - A value between 0 and 1 representing the current knob position.
      */
     drawKnob(ratio) {
       const ctx = this.canvas.getContext('2d');
-      const width = this.canvas.width / (window.devicePixelRatio || 1);
-      const height = this.canvas.height / (window.devicePixelRatio || 1);
+      const dpr = window.devicePixelRatio || 1;
+      const width = this.canvas.width / dpr;
+      const height = this.canvas.height / dpr;
       const radius = this.radius;
       const centerX = this.centerX;
       const centerY = this.centerY;
-
+    
       // Clear the canvas
       ctx.clearRect(0, 0, width, height);
-
-      // Draw background (col2)
+    
+      // 1) Draw the partial fill behind the needle
+      //    ratio=0 => no slice; ratio=1 => full circle.
+      const angleArc = 2 * Math.PI * ratio;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-      ctx.fillStyle = this.coltab[1]; // Background color
-      ctx.fill();
-
-      // Draw filled portion (col1) based on the ratio
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      const startAngle = 0; // Start at the bottom after 90-degree rotation
-      const endAngle = startAngle + (2 * Math.PI * ratio);
-      ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
+      ctx.arc(centerX, centerY, radius, 0, angleArc, false);
       ctx.closePath();
-      ctx.fillStyle = this.coltab[0]; // Fill color
+    
+      // Use same color as needle but with alpha transparency (e.g., 50%)
+      ctx.save();
+      ctx.globalAlpha = 0.5;                 // half transparent
+      ctx.fillStyle = this.coltab[0];        // same color as needle
       ctx.fill();
-
-      // Optional: Draw an outline around the knob
-      /*
+      ctx.restore();
+    
+      // 2) Draw your star outline on top (no fill, just outline).
+      //    For example, an 8-point star in the center:
+      this.drawCompassRoseStarOutline(ctx, centerX, centerY, radius * 0.9, this.coltab[1]);
+    
+      // 3) Draw the needle
+      //    The “needle angle” matches angleArc so the fill ends exactly at the needle.
+      const pointerLength = radius * 0.9;
+      const pointerX = centerX + pointerLength * Math.cos(angleArc);
+      const pointerY = centerY + pointerLength * Math.sin(angleArc);
+    
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-      ctx.strokeStyle = this.coltab[2]; // Outline color
-      ctx.lineWidth = 1;
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(pointerX, pointerY);
+      ctx.strokeStyle = this.coltab[0];  // same color as fill (non-transparent)
+      ctx.lineWidth = 1;                // or whatever size you want
       ctx.stroke();
-      */
     }
+    
 
     _setValue(v) {
       if (this.step)
@@ -842,12 +901,9 @@ try {
       if (this.drag) return;
       this.isBidirectional = false; // Pause bidirectional updates during interaction
 
-      if (typeof e.pointerId === 'undefined') {
-        console.warn('pointerId is undefined.');
-        return;
+      if (typeof e.pointerId !== 'undefined') {
+        this.elem.setPointerCapture(e.pointerId);
       }
-    
-      this.elem.setPointerCapture(e.pointerId);
       this.drag = true;
       this.startVal = this.value;
       this.startPosX = e.clientX;
@@ -1332,8 +1388,7 @@ try {
       }
 
       if (typeof this.convValue === "number") {
-        this.convValue = this.convValue.toFixed(this.digits);
-      }
+        this.convValue = parseFloat(this.convValue).toFixed(2);      }
 
       // Update ARIA attributes for accessibility
       this.elem.setAttribute('aria-valuenow', this._value);
@@ -1469,8 +1524,8 @@ try {
       v = Math.min(this._max, Math.max(this._min, v));
 
       // Round to avoid floating-point precision issues
-      const decimalPlaces = this.digits > 0 ? this.digits : 0;
-      v = parseFloat(v.toFixed(decimalPlaces));
+    //  const decimalPlaces = this.digits > 0 ? this.digits : 0;
+     // v = parseFloat(v.toFixed(decimalPlaces));
 
       // Determine if the value has changed
       const valueChanged = v !== this._value;
@@ -1554,6 +1609,15 @@ try {
     
       // Optional: You can add a visual indication or sound effect here if needed
      // console.log(`Slider reset to default value: ${this.defvalue}`);
+    }
+    
+    onTouchStart(e) {
+      const now = Date.now();
+      if (now - this.lastTapTime < 300) {
+        // Double-tap detected
+        this.handleDoubleClick(e);
+      }
+      this.lastTapTime = now;
     }
     /**
      * Handles wheel events for adjusting the slider value.
@@ -1767,8 +1831,7 @@ this.setValue(newValue, true);
         if (this.tooltip) {
           this.ttframe.style.opacity = 1;
           // Display '-∞' if value is at min
-          this.ttframe.textContent = this._value === this._min ? '-∞' : this.convValue;
-        }
+          this.ttframe.textContent = this._value === this._min ? '-∞' : parseFloat(this.convValue).toFixed(2);        }
       }, delay);
     }
 
@@ -1805,7 +1868,7 @@ this.setValue(newValue, true);
     setupLabel() {
       if (this.showLabel) {
         this.label.style.display = "block"; // Show label if show-label is set
-        this.label.textContent = this._value === this._min ? '-∞' : this.convValue;
+        this.label.textContent = this._value === this._min ? '-∞' : parseFloat(this.convValue).toFixed(2);
       } else {
         this.label.style.display = "none"; // Hide label if show-label is not set
       }
@@ -1916,7 +1979,7 @@ try {
               this._label = newValue || "Monitor";
               break;
             case "fontsize":
-              this.style.setProperty("--monitor-fontsize", newValue || "2.4vmin");
+              this.style.setProperty("--monitor-fontsize", newValue || "2.4 vmin");
               break;
             case "colors":
               const [bgColor, textColor] = (newValue || "").split(";");
@@ -1944,8 +2007,11 @@ try {
       }
 
       set value(val) {
-        this._value = parseFloat(val || "0").toFixed(2);
-        this.setAttribute("value", this._value);
+        this._rawValue = parseFloat(val || "0");
+        // And then only when updating the UI:
+        const formattedValue = this._rawValue.toFixed(2);
+        this._value = formattedValue;
+        this.setAttribute("value", formattedValue);
       }
 
       // Getter and setter for label
