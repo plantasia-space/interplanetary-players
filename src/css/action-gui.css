@@ -62,7 +62,9 @@
     height: 8vmin;
     margin: 0.5vmin;
 }
-
+.lfo-interaction-button.dropdown-toggle::after {
+    display: none !important;
+  }
 .freq-multiplier-btn-lfo {
     width: 5vmin;
     height: 5vmin;
