@@ -82,6 +82,9 @@ export function initScene(canvas) {
 
   let isAnimating = false;
 
+
+
+  
   function startAnimation(renderer) {
     function animate() {
       requestAnimationFrame(animate);
@@ -94,6 +97,8 @@ export function initScene(canvas) {
           isAnimating = true;
         }
 
+
+        
         // Apply updates only if playing
         spherical.theta += azimuthSpeed;
         spherical.phi   += polarSpeed;
@@ -114,6 +119,26 @@ export function initScene(canvas) {
   }
 
   return { scene, camera, startAnimation };
+}
+function drawRing(amplitude) {
+  // Verificamos que orbitGeometry esté definida
+  if (!orbitGeometry) {
+    console.warn("orbitGeometry no está definido.");
+    return;
+  }
+  const positions = orbitGeometry.attributes.position.array;
+  for (let i = 0; i < orbitSegments; i++) {
+    const theta = (i / orbitSegments) * 2 * Math.PI;
+    // Modulación: se incrementa el radio base en función de la amplitud recibida.
+    // El factor (0.5 en este caso) se puede ajustar según lo deseado.
+    const modulatedRadius = orbitRadius * (1 + amplitude * 0.5);
+    positions[i * 3] = modulatedRadius * Math.cos(theta);
+    // La componente Y se mantiene en 0 para que el anillo siga siendo plano
+    positions[i * 3 + 1] = 0;
+    positions[i * 3 + 2] = modulatedRadius * Math.sin(theta);
+  }
+  // Avisamos a Three.js que se actualizó el atributo de posición
+  orbitGeometry.attributes.position.needsUpdate = true;
 }
 
 /**

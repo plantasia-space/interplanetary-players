@@ -380,18 +380,28 @@ window.addEventListener('orientationchange', () => {
  */
 function animate() {
     requestAnimationFrame(animate);
-
-    // Apply rotation based on parameter values
+  
+    // --- NUEVO CÓDIGO: Debug de Amplitude ---
+    if (user1SoundEngine && typeof user1SoundEngine.getAmplitude === 'function') {
+      const currentAmp = user1SoundEngine.getAmplitude();
+      console.log("[Debug Main] Current amplitude:", currentAmp);
+      // Aquí, si es necesario, llamamos a otra función (por ejemplo, drawRing(currentAmp))
+      // drawRing(currentAmp);
+    } else {
+      console.warn("[Debug Main] SoundEngine instance not ready or getAmplitude undefined.");
+    }
+    // --- FIN NUEVO CÓDIGO ---
+  
+    // Actualizar rotaciones según parámetros
     scene.rotation.x += rotationSpeedX;
     scene.rotation.y += rotationSpeedY;
-
-    // Apply distance mapping
+  
+    // Actualizar la posición de la cámara
     camera.position.z = THREE.MathUtils.lerp(controls.minDistance, controls.maxDistance, distanceZ);
-
+  
     controls.update();
     renderer.render(scene, camera);
-}
-
+  }
 
 // -----------------------------
 // Collapse Menu Alignment Function

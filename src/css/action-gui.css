@@ -8,11 +8,11 @@
 
 
 /* ICON FROM BUTTON GROUPS */
-.icon-svg {
+ .icon-svg {
     width: 80%;
     height: 80%;
-    fill: currentColor; /* Dynamic color */
-}
+    fill: currentColor;  
+} 
 
 /* Remove the default dropdown arrow */
 .btn.dropdown-toggle::after {
@@ -436,11 +436,11 @@
     color: #4CAF50; /* Green for connected */
 }
 
-.status-button .button-icon svg {
+/* .status-button .button-icon svg {
     width: 24px;
     height: 24px;
     fill: currentColor;
-}
+} */
 
 /* Ensure .waveform fits inside the container */
 .waveform-container {
