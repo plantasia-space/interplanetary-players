@@ -1427,7 +1427,7 @@ try {
       try {
         // Draw centered track line
         ctx.strokeStyle = "#ffffff"; // Track color
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         if (this.isHorizontal) {
           const centerY = this.trackY + this.trackHeight / 2;
@@ -1442,7 +1442,7 @@ try {
 
         // Draw filled portion
         ctx.strokeStyle = this.coltab[3] || '#e00'; // Fill color
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         if (this.isHorizontal) {
           const centerY = this.trackY + this.trackHeight / 2;
@@ -1458,7 +1458,7 @@ try {
         // Draw equilateral triangular knob/pointer
         ctx.fillStyle = this.coltab[2] || '#fff'; // Knob color
         ctx.strokeStyle = this.coltab[3] || '#777'; // Knob border color
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
 
         ctx.beginPath();
         const side = this.knobSize; // Length of each side of the triangle
@@ -2555,7 +2555,7 @@ try {
         ctx.fillStyle = this.isActive() ? this.coltab[1] : this.coltab[0]; // Fill with stroke color if active
         ctx.fill();
         ctx.strokeStyle = this.coltab[1];
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.stroke();
 
         // Log active state
@@ -2569,7 +2569,7 @@ try {
         ctx.fillStyle = this.isActive() ? this.coltab[1] : this.coltab[0]; // Background or fill with stroke color
         ctx.fill();
         ctx.strokeStyle = this.coltab[1]; // Stroke color
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.stroke();
 
         // Log active state
