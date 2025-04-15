@@ -1,6 +1,6 @@
 /* Define size variables for responsiveness */
 :root {
-    --size-knobs: calc(6vmin + 2vmax); 
+    --size-knobs: calc(7vmin + 3vmax); 
     --bs-border-radius: 0.2rem;
     --waveform-height: 80%; /* Default value, overridden dynamically */
 
@@ -43,9 +43,11 @@
    .xyz-cosmic-lfo , .xyz-sensors-toggle {
     display: none; /* Hide by default */
     /* Default dimensions now match LFO buttons */
-    width: 8vmin;
-    height: 8vmin;
+    width: 10vmin;
+    height: 10vmin;
     margin: 0.5vmin;
+    margin-bottom: 2vh !important;
+
 }
 
 /* Default (Extra-large screens: xl ≥1200px) */
@@ -57,9 +59,9 @@
 
 /* Removed .xyz-balance; .xyz-sensors-toggle now stands alone */
  
-.lfo-interaction-button, .xyz-cosmic-lfo {
-    width: 8vmin;
-    height: 8vmin;
+.lfo-interaction-button {
+    width: 10vmin;
+    height: 10vmin;
     margin: 0.5vmin;
 }
 .lfo-interaction-button.dropdown-toggle::after {
@@ -72,14 +74,14 @@
 }
 
 .xyz-param {
-    width: 8vmin;
-    height: 2vmin;
+    width: 9vmin;
+    height: 3vmin;
     font-size: 1.7vmin;
 }
 
 .transport-button, .interaction-button {
-    width: 13vmin;
-    height: 13vmin;
+    width: 14vmin;
+    height: 14vmin;
     margin-right: 3vw !important;
     margin-left: 1vw !important;
 }
@@ -100,17 +102,17 @@
         height: calc(var(--size-knobs) + 2vmin);
     }
     /* Removed .xyz-balance; update .xyz-sensors-toggle */
-    .xyz-sensors-toggle {
-        width: 5vmin;
-        height: 5vmin;
+    .xyz-sensors-toggle, .xyz-cosmic-lfo {
+        width: 8vmin;
+        height: 8vmin;
     }
     .playback-switch {
         width: 8vmin;
         height: 8vmin;
     }
-    .lfo-interaction-button, .xyz-cosmic-lfo {
-        width: 8vmin;
-        height: 5vmin;
+    .lfo-interaction-button {
+        width: 9vmin;
+        height: 6vmin;
     }
     .xyz-param {
         width: 8vmin;
@@ -131,7 +133,7 @@
         height: calc(var(--size-knobs) + 5vmin);
     }
     /* Removed .xyz-balance; update .xyz-sensors-toggle */
-    .xyz-sensors-toggle {
+    .xyz-sensors-toggle, .xyz-cosmic-lfo {
         width: 8vmin;
         height: 8vmin;
     }
@@ -139,7 +141,7 @@
         width: 16vmin;
         height: 16vmin;
     }
-    .lfo-interaction-button, .xyz-cosmic-lfo {
+    .lfo-interaction-button {
         width: 13vmin;
         height: 8vmin;
     }
@@ -159,6 +161,11 @@
         height: 90%;
 
       }
+      .freq-multiplier-btn-lfo {
+        width: 8vmin;
+        height: 8vmin;
+        padding: 0%;
+    }
 }
 
 /* Extra small screens (xs: <576px) */
@@ -168,17 +175,17 @@
         height: calc(var(--size-knobs) + 6vmin);
     }
     /* Removed .xyz-balance; update .xyz-sensors-toggle */
-    .xyz-sensors-toggle {
-        width: 8vmin;
-        height: 8vmin;
+    .xyz-sensors-toggle, .xyz-cosmic-lfo {
+        width: 10vmin;
+        height: 10vmin;
     }
     .playback-switch {
         width: 16vmin;
         height: 16vmin;
     }
-    .lfo-interaction-button, .xyz-cosmic-lfo {
-        width: 13vmin;
-        height: 8vmin;
+    .lfo-interaction-button {
+        width: 18vmin;
+        height: 12vmin;
     }
     .xyz-param {
         width: 12vmin;
@@ -196,7 +203,11 @@
         height: 100%;
 
       }
-
+      .freq-multiplier-btn-lfo {
+        width: 8vmin;
+        height: 8vmin;
+        padding: 0%;
+    }
       
 }
 
