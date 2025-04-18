@@ -37,12 +37,15 @@ const INITIAL_CAMERA_POSITION = new THREE.Vector3(0, 0, 2);
 const CAMERA_RADIUS_MIN       = 1;
 const CAMERA_RADIUS_MAX       = 4;
 
+// ----- History settings -----
+const MAX_HISTORY_RINGS = 1024;   // keep last 64 orbits (~64 × 6 KiB ≈ 384 KiB GPU)
+const HISTORY_INTERVAL = 2;   // copy current ring to pool every 2 updates
 
 // Spiral groove rotation per layer
 // Oscilloscope ring settings
 const ORBIT_RADIUS            = 1.0;  // base radius of the ring
 const ORBIT_SEGMENTS          = 512;  // number of segments (higher = smoother)
-const AMPLITUDE_SCALE         = 5.30;  // height of waveform deviation
+const AMPLITUDE_SCALE         = 10;  // height of waveform deviation
 // — global reference for layering history —
 let globalScene = null;
 // — store past ring meshes for histogram effect —
@@ -52,6 +55,8 @@ let drawRingFrameCounter = 0;
 const LAYER_OFFSET = 0.0001;  // adjust smaller for slower inward movement
 // how much the ring radius shrinks per frame (spiral effect)
 let spiralOffset = 0;
+const ringPool = [];
+let ringPoolIndex = 0;
 
 // Read CSS variable --color1 for orbit color
 const _rootStyles = getComputedStyle(document.documentElement);
@@ -117,6 +122,18 @@ export function initScene(canvas) {
   });
   const orbitLine     = new THREE.LineLoop(orbitGeometry, orbitMaterial);
   scene.add(orbitLine);
+  
+  // pre‑allocate history rings (reused in a circular pool)
+  for (let i = 0; i < MAX_HISTORY_RINGS; i++) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ORBIT_SEGMENTS * 3), 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(new Float32Array(ORBIT_SEGMENTS * 3), 3));
+    const mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.25 });
+    const mesh = new THREE.LineLoop(geo, mat);
+    mesh.visible = false;        // invisible until used
+    ringPool.push(mesh);
+    scene.add(mesh);
+  }
 
 
 
@@ -256,6 +273,18 @@ function drawRing(amplitude) {
       colors[i * 3 + 2] = orbitColor.b;
     }
 
+  // --------- commit to history pool on interval ---------
+  if (drawRingFrameCounter % HISTORY_INTERVAL === 0) {
+    const histMesh = ringPool[ringPoolIndex];
+    histMesh.visible = true;
+    // copy current ring into pooled geometry
+    histMesh.geometry.attributes.position.array.set(positions);
+    histMesh.geometry.attributes.color.array.set(colors);
+    histMesh.geometry.attributes.position.needsUpdate = true;
+    histMesh.geometry.attributes.color.needsUpdate = true;
+    ringPoolIndex = (ringPoolIndex + 1) % MAX_HISTORY_RINGS;
+  }
+  // --------------------------------------------------
   // upload updates
   orbitGeometry.attributes.position.needsUpdate = true;
   orbitGeometry.attributes.color.needsUpdate    = true;
