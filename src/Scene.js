@@ -53,6 +53,7 @@ const AMPLITUDE_SCALE         = 0.30;  // height of waveform deviation
 let globalScene = null;
 // — store past ring meshes for histogram effect —
 const ringHistory = [];
+let drawRingFrameCounter = 0;
 
 // inward step per history layer; positive value shrinks inward each cycle
 const LAYER_OFFSET = 0.0001;  // adjust smaller for slower inward movement
@@ -210,6 +211,10 @@ export function initScene(canvas) {
   return { scene, camera, startAnimation };
 }
 function drawRing(amplitude) {
+  if (getPlaybackState() !== "playing") return;
+  drawRingFrameCounter++;
+  if (drawRingFrameCounter % 2 !== 0) return; // Skip every other frame
+
   // record the latest amplitude
   ampHistory.push(amplitude);
   if (ampHistory.length > ORBIT_SEGMENTS) ampHistory.shift();
@@ -279,12 +284,12 @@ function drawRing(amplitude) {
   const histLine = new THREE.LineLoop(histGeo, histMat);
   globalScene.add(histLine);
   ringHistory.push(histLine);
-  // if (ringHistory.length > MAX_HISTORY) {
-  //   const old = ringHistory.shift();
-  //   globalScene.remove(old);
-  //   old.geometry.dispose();
-  //   old.material.dispose();
-  // }
+  if (ringHistory.length > MAX_HISTORY) {
+    const old = ringHistory.shift();
+    globalScene.remove(old);
+    old.geometry.dispose();
+    old.material.dispose();
+  }
 }
 
 /**
