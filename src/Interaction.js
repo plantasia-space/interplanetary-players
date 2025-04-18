@@ -16,6 +16,7 @@ import { MIDI_SUPPORTED, SENSORS_SUPPORTED, INTERNAL_SENSORS_USABLE, EXTERNAL_SE
 import notifications from './AppNotifications.js';
 import { SensorController } from './SensorsController.js'; // Import the class instead of instance
 import { PlaybackController } from "./PlaybackController.js";
+import { updateOrbitColor } from './Scene.js';
 /**
  * Sets up interactions for dynamic placeholder updates.
  * Initializes ButtonGroups and Single Buttons, registers MIDI controllers if supported.
@@ -107,6 +108,9 @@ export function applyColorsFromTrackData(trackData) {
         //console.log(`[COLORS] Set --color2 to ${color2}`);
     }
 
+    // sync 3D orbit color from CSS
+ 
+
     // Update all knobs, sliders, and switches
     document.querySelectorAll('webaudio-knob').forEach(knob => knob.setupImage());
     document.querySelectorAll('webaudio-slider').forEach(slider => {
@@ -117,7 +121,7 @@ export function applyColorsFromTrackData(trackData) {
         webSwitch.setupCanvas();
         webSwitch.redraw();
     });
-
+    updateOrbitColor();
     //console.log('[COLORS] Applied colors from track data to UI components.');
 }
 

@@ -44,7 +44,7 @@
 // -----------------------------
 
 // Import scene setup and space elements
-import { initScene, initRenderer, addLights } from './Scene.js';
+import { initScene, initRenderer, addLights, drawRing } from './Scene.js';
 import { initSpaceScene } from './SceneSpace.js'; // ✅ This handles the cubemap loading!
 
 // Model loader
@@ -378,15 +378,15 @@ window.addEventListener('orientationchange', () => {
  * Updates controls and renders the scene.
  * @function animate
  */
-function animate() {
+/* function animate() {
     requestAnimationFrame(animate);
-  
+
     // --- NUEVO CÓDIGO: Debug de Amplitude ---
     if (user1SoundEngine && typeof user1SoundEngine.getAmplitude === 'function') {
       const currentAmp = user1SoundEngine.getAmplitude();
-      console.log("[Debug Main] Current amplitude:", currentAmp);
-      // Aquí, si es necesario, llamamos a otra función (por ejemplo, drawRing(currentAmp))
-      // drawRing(currentAmp);
+       drawRing(currentAmp);
+       console.log("[Debug Main] Current amplitude:", currentAmp);
+
     } else {
       console.warn("[Debug Main] SoundEngine instance not ready or getAmplitude undefined.");
     }
@@ -401,7 +401,7 @@ function animate() {
   
     controls.update();
     renderer.render(scene, camera);
-  }
+  } */
 
 // -----------------------------
 // Collapse Menu Alignment Function
@@ -473,7 +473,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize the app
     initializeApp().then(() => {
         //console.log("[APP] Starting animation loop.");
-        startAnimation(renderer); // ✅ Start animation here!
+        startAnimation(renderer, () => {
+            if (user1SoundEngine && typeof user1SoundEngine.getAmplitude === 'function') {
+                const currentAmp = user1SoundEngine.getAmplitude();
+                 drawRing(currentAmp); // Uncomment if drawRing is globally accessible
+            } else {
+                console.warn("[Debug Main] SoundEngine instance not ready or getAmplitude undefined.");
+            }
+        });
     });
 
     // Setup collapse menu alignment
