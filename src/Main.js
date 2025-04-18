@@ -44,7 +44,7 @@
 // -----------------------------
 
 // Import scene setup and space elements
-import { initScene, initRenderer, addLights, drawRing } from './Scene.js';
+import { initScene, initRenderer, addLights, drawRing, harvestMoons } from './Scene.js';
 import { initSpaceScene } from './SceneSpace.js'; // ✅ This handles the cubemap loading!
 
 // Model loader
@@ -144,10 +144,15 @@ async function initializeApp() {
       if (!cachedData) {
         throw new Error('Failed to fetch track data from cache.');
       }
-  
+
       // Load RNBO library based on patcher version
       const rnbo = await loadRNBOLibrary(cachedData.soundEngine.soundEngineJSONURL);
-  
+      console.log(cachedData.interplanetaryPlayer.moonAmount);
+
+
+        harvestMoons(scene, cachedData.interplanetaryPlayer.moonAmount);
+    
+
       // Destructure the cached data
       const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
       if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
@@ -167,6 +172,9 @@ async function initializeApp() {
 
         ////console.log(`[APP] Set Cosmic LFO minimum values: X = ${exoData.currentExoplanet.minimum_cosmic_lfo}, Y = ${exoData.closestNeighbor1.minimum_cosmic_lfo}, Z = ${exoData.closestNeighbor2.minimum_cosmic_lfo}`);
       }
+
+
+
   
       // Initialize root parameters, apply colors, update knobs, etc.
       initializeRootParams(user1Manager, cachedData);
@@ -368,40 +376,6 @@ window.addEventListener('resize', () => {
 window.addEventListener('orientationchange', () => {
     onResize();
 });
-
-// -----------------------------
-// Animation Loop Function
-// -----------------------------
-
-/**
- * Animation loop for the application.
- * Updates controls and renders the scene.
- * @function animate
- */
-/* function animate() {
-    requestAnimationFrame(animate);
-
-    // --- NUEVO CÓDIGO: Debug de Amplitude ---
-    if (user1SoundEngine && typeof user1SoundEngine.getAmplitude === 'function') {
-      const currentAmp = user1SoundEngine.getAmplitude();
-       drawRing(currentAmp);
-       console.log("[Debug Main] Current amplitude:", currentAmp);
-
-    } else {
-      console.warn("[Debug Main] SoundEngine instance not ready or getAmplitude undefined.");
-    }
-    // --- FIN NUEVO CÓDIGO ---
-  
-    // Actualizar rotaciones según parámetros
-    scene.rotation.x += rotationSpeedX;
-    scene.rotation.y += rotationSpeedY;
-  
-    // Actualizar la posición de la cámara
-    camera.position.z = THREE.MathUtils.lerp(controls.minDistance, controls.maxDistance, distanceZ);
-  
-    controls.update();
-    renderer.render(scene, camera);
-  } */
 
 // -----------------------------
 // Collapse Menu Alignment Function

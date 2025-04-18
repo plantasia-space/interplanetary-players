@@ -354,3 +354,98 @@ export function handleWindowResize(camera, renderer) {
 }
 
 export { drawRing };
+
+/**
+ * Initializes moon objects based on the given number and adds them to the scene.
+ * @param {THREE.Scene} scene - The scene to which moons will be added.
+ * @param {number} numMoons - The number of moons to create.
+ */
+// TEMP DEV OVERRIDE — set to null to disable override
+const DEV_OVERRIDE_NUM_MOONS = 120;
+
+export function harvestMoons(scene, numMoons) {
+  const finalNumMoons = DEV_OVERRIDE_NUM_MOONS ?? numMoons;
+
+  // Shared geometry and material with per-instance colors enabled
+  const moonGeometry = new THREE.SphereGeometry(0.1, 24, 24);
+  const moonMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.5,
+    metalness: 0.2,
+    emissive: new THREE.Color(0xE1E1E1),
+    emissiveIntensity: 0.2,
+    flatShading: true
+  });
+
+  // Create an InstancedMesh for performance with many moons
+  const instancedMesh = new THREE.InstancedMesh(moonGeometry, moonMaterial, finalNumMoons);
+
+  // Helper objects for setting transforms and colors
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  const orbitRadius = 1.5;
+
+  // Define a fixed color palette for moons
+  const palette = [
+    new THREE.Color('#f8f8f8'),
+    new THREE.Color('#f0f0f0'),
+    new THREE.Color('#e8e8e8'),
+    new THREE.Color('#e0e0e0'),
+    new THREE.Color('#d8d8d8'),
+    new THREE.Color('#d0d0d0'),
+    new THREE.Color('#c8c8c8'),
+    new THREE.Color('#c0c0c0'),
+    new THREE.Color('#b8b8b8'),
+    new THREE.Color('#b0b0b0'),
+    new THREE.Color('#a8a8a8'),
+    new THREE.Color('#a0a0a0'),
+    new THREE.Color('#989898'),
+    new THREE.Color('#909090'),
+    new THREE.Color('#888888'),
+    new THREE.Color('#808080'),
+    new THREE.Color('#787878'),
+    new THREE.Color('#707070'),
+    new THREE.Color('#686868'),
+    new THREE.Color('#606060'),
+    new THREE.Color('#585858'),
+    new THREE.Color('#505050'),
+    new THREE.Color('#484848'),
+    new THREE.Color('#404040')
+  ];
+
+  for (let i = 0; i < finalNumMoons; i++) {
+    // Base angular placement around a circle
+    const angle = (i / finalNumMoons) * Math.PI * 2;
+    // Add slight random variation to orbital radius and vertical offset
+    const radiusVar = orbitRadius + (Math.random() - 0.5) * 0.3;
+    const yOffset = (Math.random() - 0.5) * 0.2;
+    const x = radiusVar * Math.cos(angle);
+    const z = radiusVar * Math.sin(angle);
+
+    // Position and random scale for size variation
+    dummy.position.set(x, yOffset, z);
+    const scaleValue = 0.05 + Math.random() * 0.15;
+    dummy.scale.set(scaleValue, scaleValue, scaleValue);
+    dummy.updateMatrix();
+
+    // Apply transform to instance
+    instancedMesh.setMatrixAt(i, dummy.matrix);
+
+    // Assign a color from the fixed palette, cycling through in order, with random alpha multiplier
+    const baseColor = palette[i % palette.length];
+    const alpha = 0.5 + Math.random() * 0.5; // random alpha between 0.5 and 1
+    const paletteColor = baseColor.clone();
+    paletteColor.multiplyScalar(alpha);
+    instancedMesh.setColorAt(i, paletteColor);
+  }
+
+  // Flag the buffers for update
+  instancedMesh.instanceMatrix.needsUpdate = true;
+  if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
+
+  // Wrap instancedMesh in a group and apply global tilt
+  const moonGroup = new THREE.Group();
+  moonGroup.rotation.x = THREE.MathUtils.degToRad(ORBIT_TILT_DEG);
+  moonGroup.add(instancedMesh);
+  scene.add(moonGroup);
+}
