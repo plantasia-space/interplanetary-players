@@ -38,34 +38,28 @@ const CAMERA_RADIUS_MIN       = 1;
 const CAMERA_RADIUS_MAX       = 4;
 
 
-
-// History layering settings
-const MAX_HISTORY             = 4096;   // how many frames to keep in memory
-// Orbit head speed: how many history writes (frames) constitute one full revolution
-const ORBITAL_SPEED_FRAMES    = 2048;  // at 30fps, 240 frames ≈ 8s per orbit
 // Spiral groove rotation per layer
-const ROTATION_STEP           = (4 * Math.PI) / ORBITAL_SPEED_FRAMES;
 // Oscilloscope ring settings
-const ORBIT_RADIUS            = 1.5;  // base radius of the ring
-const ORBIT_SEGMENTS          = 512;  // number of segments (higher = smoother) 
-const AMPLITUDE_SCALE         = 0.30;  // height of waveform deviation
+const ORBIT_RADIUS            = 1.0;  // base radius of the ring
+const ORBIT_SEGMENTS          = 512;  // number of segments (higher = smoother)
+const AMPLITUDE_SCALE         = 5.30;  // height of waveform deviation
 // — global reference for layering history —
 let globalScene = null;
 // — store past ring meshes for histogram effect —
-const ringHistory = [];
 let drawRingFrameCounter = 0;
 
 // inward step per history layer; positive value shrinks inward each cycle
 const LAYER_OFFSET = 0.0001;  // adjust smaller for slower inward movement
+// how much the ring radius shrinks per frame (spiral effect)
+let spiralOffset = 0;
 
 // Read CSS variable --color1 for orbit color
 const _rootStyles = getComputedStyle(document.documentElement);
 const cssColor1 = _rootStyles.getPropertyValue('--color1').trim();
 const orbitColor = new THREE.Color(cssColor1);
 // Apply fixed alpha to orbit material
-let orbitAlpha = 0.1;
+let orbitAlpha = 1.0;  // fully opaque for testing
 
-console.log("ROTATION STEP", ROTATION_STEP);
 /**
  * Refresh the orbitColor and orbitAlpha from the CSS variable --color1.
  */
@@ -101,6 +95,9 @@ export function initScene(canvas) {
   /* ---------- create initial oscilloscope line ---------- */
   orbitGeometry = new THREE.BufferGeometry();
   const positions = new Float32Array(ORBIT_SEGMENTS * 3);
+  positions.fill(0);
+  const colors = new Float32Array(ORBIT_SEGMENTS * 3);
+  colors.fill(1); // initialize white
   for (let i = 0; i < ORBIT_SEGMENTS; i++) {
       const theta = (i / ORBIT_SEGMENTS) * Math.PI * 2;
       positions[i * 3]     = ORBIT_RADIUS * Math.cos(theta);
@@ -110,11 +107,16 @@ export function initScene(canvas) {
   orbitGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   orbitGeometry.computeBoundingSphere();
       // add per-vertex color buffer
-      const colors = new Float32Array(ORBIT_SEGMENTS * 3);
       orbitGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-  const orbitMaterial = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: orbitAlpha });
+  const orbitMaterial = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: orbitAlpha,
+    linewidth: 2  // thicker line for visibility
+  });
   const orbitLine     = new THREE.LineLoop(orbitGeometry, orbitMaterial);
+  scene.add(orbitLine);
 
 
 
@@ -176,6 +178,7 @@ export function initScene(canvas) {
     function animate() {
       requestAnimationFrame(animate);
 
+
       const playbackState = getPlaybackState();
 
       if (playbackState === "playing") {
@@ -224,23 +227,28 @@ function drawRing(amplitude) {
     return;
   }
 
+  // update spiral offset for inward spiral effect
+  spiralOffset += LAYER_OFFSET;
+  // reset when reaching inner radius
+  if (spiralOffset > ORBIT_RADIUS - 0.1) spiralOffset = 0;
+  const currentRadius = ORBIT_RADIUS - spiralOffset;
+
   const positions = orbitGeometry.attributes.position.array;
   const colors    = orbitGeometry.attributes.color.array;
   const angleInc  = (2 * Math.PI) / ORBIT_SEGMENTS;
   // amplitude deviation height
   const scale     = AMPLITUDE_SCALE;
-  // — how much to step each old ring inward (world units)
-  // (layerOffset now declared globally)
 
     for (let i = 0; i < ORBIT_SEGMENTS; i++) {
       const amp   = ampHistory[i] ?? 0;
       const theta = i * angleInc;
-      const yDev  = amp * scale; // vertical deviation
+      // vary radius (horizontal axis) instead of vertical displacement
+      const radial = currentRadius + amp * scale;  // push inward/outward
 
       // update vertex position: fixed-radius circle + vertical wiggle
-      positions[i * 3]     = ORBIT_RADIUS * Math.cos(theta);
-      positions[i * 3 + 1] = yDev;
-      positions[i * 3 + 2] = ORBIT_RADIUS * Math.sin(theta);
+      positions[i * 3]     = radial * Math.cos(theta);
+      positions[i * 3 + 1] = 0; // keep on the X‑Z plane
+      positions[i * 3 + 2] = radial * Math.sin(theta);
 
       // use single CSS color for orbit
       colors[i * 3]     = orbitColor.r;
@@ -251,45 +259,8 @@ function drawRing(amplitude) {
   // upload updates
   orbitGeometry.attributes.position.needsUpdate = true;
   orbitGeometry.attributes.color.needsUpdate    = true;
-  // — clone for histogram layering —
-    // — clone for histogram layering —
-    const histPositions = orbitGeometry.attributes.position.array.slice();
-    const histColors    = orbitGeometry.attributes.color.array.slice();
-    // — radial decrement + rotation per layer (spiral groove) —
-    const historyIndex = ringHistory.length;  // 0 = newest
-    // clamp to max history so rings never expand again
-    const layerIndex = Math.min(historyIndex, MAX_HISTORY - 1);
-    for (let i = 0; i < histPositions.length; i += 3) {
-      const x         = histPositions[i];
-      const y         = histPositions[i + 1];
-      const z         = histPositions[i + 2];
-      const baseAngle = Math.atan2(z, x);
-      const r0        = Math.hypot(x, z);
-      // newest at full ORBIT_RADIUS, then shrink inward per layerIndex
-      const r1        = ORBIT_RADIUS - LAYER_OFFSET * layerIndex;
-      const spAngle   = baseAngle + ROTATION_STEP * layerIndex;
-      histPositions[i]     = r1 * Math.cos(spAngle);
-      histPositions[i + 1] = y;
-      histPositions[i + 2] = r1 * Math.sin(spAngle);
-    }
-    // — create history mesh —
-    const histGeo = new THREE.BufferGeometry();
-    histGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(histPositions), 3));
-    histGeo.setAttribute('color',    new THREE.BufferAttribute(new Float32Array(histColors),    3));
-  const histMat = new THREE.LineBasicMaterial({
-    vertexColors: true,
-    transparent:  true,
-    opacity:      orbitAlpha
-  });
-  const histLine = new THREE.LineLoop(histGeo, histMat);
-  globalScene.add(histLine);
-  ringHistory.push(histLine);
-  if (ringHistory.length > MAX_HISTORY) {
-    const old = ringHistory.shift();
-    globalScene.remove(old);
-    old.geometry.dispose();
-    old.material.dispose();
-  }
+ // drawIndex = (drawIndex + 1) % ORBIT_SEGMENTS;
+  orbitGeometry.setDrawRange(0, ORBIT_SEGMENTS);
 }
 
 /**
@@ -301,11 +272,12 @@ export function initRenderer(canvas) {
     const renderer = new THREE.WebGLRenderer({
         canvas,
         antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true, // Prevent downscaling
+        alpha: true
     });
-
-    renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1);
+    renderer.autoClear = true;        // clear framebuffer each frame
+    renderer.setClearColor(0x000000, 125); // transparent black
+    
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     return renderer;
 }
