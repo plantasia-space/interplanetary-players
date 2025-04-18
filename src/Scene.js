@@ -48,6 +48,11 @@ const ORBIT_SEGMENTS          = 256;  // number of segments (higher = smoother)
 const AMPLITUDE_SCALE         = 7;  // height of waveform deviation
 // — global reference for layering history —
 let globalScene = null;
+// tilt & visibility control
+let ringGroup = null;
+const ORBIT_TILT_DEG = 15; // tilt angle in degrees
+let firstDrawDone = false;
+let orbitLineRef = null;
 // — store past ring meshes for histogram effect —
 let drawRingFrameCounter = 0;
 
@@ -96,6 +101,9 @@ const ampHistory = [];
 export function initScene(canvas) {
   const scene = new THREE.Scene();
   globalScene = scene;
+  // setup tilted group for ring + history
+  ringGroup = new THREE.Group();
+  ringGroup.rotation.x = THREE.MathUtils.degToRad(ORBIT_TILT_DEG);
 
   /* ---------- create initial oscilloscope line ---------- */
   orbitGeometry = new THREE.BufferGeometry();
@@ -121,7 +129,9 @@ export function initScene(canvas) {
     linewidth: 2  // thicker line for visibility
   });
   const orbitLine     = new THREE.LineLoop(orbitGeometry, orbitMaterial);
-  scene.add(orbitLine);
+  orbitLine.visible = false; // hide until first play
+  orbitLineRef = orbitLine;
+  ringGroup.add(orbitLine);
   
   // pre‑allocate history rings (reused in a circular pool)
   for (let i = 0; i < MAX_HISTORY_RINGS; i++) {
@@ -132,8 +142,10 @@ export function initScene(canvas) {
     const mesh = new THREE.LineLoop(geo, mat);
     mesh.visible = false;        // invisible until used
     ringPool.push(mesh);
-    scene.add(mesh);
+    ringGroup.add(mesh);
   }
+  // add the tilted group once
+  scene.add(ringGroup);
 
 
 
@@ -232,6 +244,11 @@ export function initScene(canvas) {
 }
 function drawRing(amplitude) {
   if (getPlaybackState() !== "playing") return;
+  // reveal the live ring on first frame of playback
+  if (!firstDrawDone) {
+    orbitLineRef.visible = true;
+    firstDrawDone = true;
+  }
   drawRingFrameCounter++;
   if (drawRingFrameCounter % 2 !== 0) return; // Skip every other frame
 
