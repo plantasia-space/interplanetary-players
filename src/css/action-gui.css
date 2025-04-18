@@ -327,7 +327,6 @@
     /*border-color: var(--color2);  Highlighted stroke */
     color: var(--color2); /* Highlighted color */
     outline: none; /* Remove default outline on focus */
-    background-color: rgba(66, 66, 66, 0.8);
 
 }
 
@@ -359,7 +358,6 @@
     /*border-color: var(--color2);  Highlighted stroke */
     color: var(--color2); /* Highlighted color */
     outline: none; /* Remove default outline on focus */
-    background-color: rgba(66, 66, 66, 0.8);
 
 }
 
