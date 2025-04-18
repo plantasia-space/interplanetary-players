@@ -38,21 +38,21 @@ const CAMERA_RADIUS_MIN       = 1;
 const CAMERA_RADIUS_MAX       = 4;
 
 // ----- History settings -----
-const MAX_HISTORY_RINGS = 1024;   // keep last 64 orbits (~64 × 6 KiB ≈ 384 KiB GPU)
-const HISTORY_INTERVAL = 2;   // copy current ring to pool every 2 updates
+const MAX_HISTORY_RINGS = 64;   // keep last 64 orbits (~64 × 6 KiB ≈ 384 KiB GPU)
+const HISTORY_INTERVAL = 4;   // copy current ring to pool every 2 updates
 
 // Spiral groove rotation per layer
 // Oscilloscope ring settings
 const ORBIT_RADIUS            = 1.0;  // base radius of the ring
-const ORBIT_SEGMENTS          = 512;  // number of segments (higher = smoother)
-const AMPLITUDE_SCALE         = 10;  // height of waveform deviation
+const ORBIT_SEGMENTS          = 256;  // number of segments (higher = smoother)
+const AMPLITUDE_SCALE         = 7;  // height of waveform deviation
 // — global reference for layering history —
 let globalScene = null;
 // — store past ring meshes for histogram effect —
 let drawRingFrameCounter = 0;
 
 // inward step per history layer; positive value shrinks inward each cycle
-const LAYER_OFFSET = 0.0001;  // adjust smaller for slower inward movement
+const LAYER_OFFSET = 0.000001;  // adjust smaller for slower inward movement
 // how much the ring radius shrinks per frame (spiral effect)
 let spiralOffset = 0;
 const ringPool = [];
@@ -102,7 +102,7 @@ export function initScene(canvas) {
   const positions = new Float32Array(ORBIT_SEGMENTS * 3);
   positions.fill(0);
   const colors = new Float32Array(ORBIT_SEGMENTS * 3);
-  colors.fill(1); // initialize white
+ // colors.fill(1); // initialize white
   for (let i = 0; i < ORBIT_SEGMENTS; i++) {
       const theta = (i / ORBIT_SEGMENTS) * Math.PI * 2;
       positions[i * 3]     = ORBIT_RADIUS * Math.cos(theta);
@@ -304,7 +304,7 @@ export function initRenderer(canvas) {
         alpha: true
     });
     renderer.autoClear = true;        // clear framebuffer each frame
-    renderer.setClearColor(0x000000, 125); // transparent black
+    renderer.setClearColor(0x000000, .7); // transparent black
     
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
