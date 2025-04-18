@@ -361,13 +361,13 @@ export { drawRing };
  * @param {number} numMoons - The number of moons to create.
  */
 // TEMP DEV OVERRIDE — set to null to disable override
-const DEV_OVERRIDE_NUM_MOONS = 120;
+const DEV_OVERRIDE_NUM_MOONS = null;
 
 export function harvestMoons(scene, numMoons) {
   const finalNumMoons = DEV_OVERRIDE_NUM_MOONS ?? numMoons;
 
   // Shared geometry and material with per-instance colors enabled
-  const moonGeometry = new THREE.SphereGeometry(0.1, 24, 24);
+  const moonGeometry = new THREE.SphereGeometry(0.1, 16, 16);
   const moonMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true,
     roughness: 0.5,
