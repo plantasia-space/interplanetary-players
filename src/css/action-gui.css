@@ -404,36 +404,6 @@
 
 }
 
-.calibration-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    transition: color 0.3s ease;
-    pointer-events: auto;
-
-}
-.status-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    color: #F44336; /* Default: Red for disconnected */
-    cursor: pointer;
-    font-size: 14px;
-    transition: color 0.3s ease;
-    pointer-events: auto;
-
-}
-
-.status-button.connected {
-    color: #4CAF50; /* Green for connected */
-}
-
 /* .status-button .button-icon svg {
     width: 24px;
     height: 24px;

@@ -1,26 +1,28 @@
-/* Define size variables for button groups */
+/* Define size variables for button groups and icons */
 :root {
-    --size-upper-buttons: clamp(10vmin, 10vmin, 100vmin); /* Upper part (info, radio group) 90 */
-    --size-vertical-menu-buttons: clamp(7vmin, 7vmin, 70vmin); /* Upper part (info, radio group) 90 */
-    --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin); /* Side buttons (Play, cosmic-lfo) */
+    --size-upper-buttons: clamp(10vmin, 10vmin, 100vmin);
+    --size-vertical-menu-buttons: clamp(7vmin, 7vmin, 70vmin);
+    --size-lower-buttons-side: clamp(12vmin, 15vmin, 100vmin);
+    --icon-size: 5vmin;                         /* Unified icon size */
+    --close-icon-size: 20px;                    /* Grid close button icon */
 }
 
 /* Collapse Info Menu */
 #collapseInfoMenu {
-    position: absolute; /* Positioned relative to the header-row */
-    left: 0; /* Align to the left edge of the container */
-    z-index: 10; /* Ensure it's above other elements */
-    max-height: 80vh; /* Prevent overflow */
-    overflow-y: auto; /* Enable scrolling if content exceeds height */
-    transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth expand/collapse */
-    opacity: 0; /* Hidden by default */
-    transform: scaleY(0); /* Collapsed state */
-    transform-origin: top; /* Expand from the top down */
+    position: absolute;
+    left: 0;
+    z-index: 10;
+    max-height: 80vh;
+    overflow-y: auto;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    transform: scaleY(0);
+    transform-origin: top;
 }
 
 #collapseInfoMenu.show {
     opacity: 1;
-    transform: scaleY(1); /* Fully expanded */
+    transform: scaleY(1);
 }
 
 /* Header Row */
@@ -30,99 +32,121 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 94%; /* Keep aligned within container */
-    max-width: 94vw; /* Responsive */
-    height: 10vh; /* Fixed height */
+    width: 94%;
+    max-width: 94vw;
+    height: 10vh;
     box-sizing: border-box;
+}
+
+/* Header buttons */
+.header-row button {
+    width: var(--size-upper-buttons);
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: var(--color1);
+    transition: transform 0.2s ease;
+}
+
+/* Icons inside buttons */
+.button-icon,
+#connectionStatusIcon.button-icon {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    display: inline-block;
+}
+
+#connectionStatusIcon.button-icon svg {
+    width: 80%;
+    height: 80%;
+    display: block;
 }
 
 /* Title in Header */
 h1.responsive-title {
     font-family: 'Orbit', sans-serif;
     font-weight: 200;
-    font-size: 3vmin; /* Responsive scaling */
+    font-size: 3vmin;
     color: var(--color2);
     margin: 0;
     text-align: center;
 }
 
-/* Buttons */
-.info-button, .more-button {
-    width: 13vmin;
+/* Info & More buttons */
+.info-button,
+.more-button {
+    width: var(--icon-size);
     height: 100%;
     background-color: transparent;
-    color: var(--color1); /* Dynamic color */
+    color: var(--color1);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease; /* Smooth hover effect */
+    transition: transform 0.2s ease;
 }
 
-.info-button:hover, .info-button:focus,
-.more-button:hover, .more-button:focus {
+.info-button:hover,
+.info-button:focus,
+.more-button:hover,
+.more-button:focus {
     transform: scale(1.05);
-    color: var(--color2); /* Highlight color */
-    outline: none; /* Remove default outline */
+    color: var(--color2);
+    outline: none;
 }
 
-
-
-/* Styling for the close button */
+/* Close-mode styling for More button */
 .more-button.close-mode {
-    color: var(--highlight-color); /* Contrast text color */
-    border-radius: 50%; /* Optional: Make it circular for close mode */
-    padding: 0.5em; /* Adjust padding for a more compact look */
+    color: var(--highlight-color);
+    border-radius: 50%;
+    padding: 0.5em;
 }
 
-/* Styling for removing the dropdown arrow */
 .more-button.close-mode::after {
-    content: none; /* Remove dropdown arrow */
+    content: none;
 }
 
-
-
-/* Grid Row */
+/* Grid layout */
 .grid-row {
     display: flex;
     flex-direction: column;
 }
 
-/* Grid Wrapper */
 .grid-wrapper {
-    position: relative; /* For close button alignment */
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 0% 4vw; /* Left/right margin for grid */
+    padding: 0 4vw;
     background-color: transparent;
-    box-sizing: border-box; /* Include padding in size */
+    box-sizing: border-box;
 }
 
-/* Grid Content */
 .grid-content {
     display: grid;
-    grid-template-columns: max-content 1fr; /* First column adjusts to content */
-    gap: clamp(0.5em, 1vmin, 3vw); /* Adjustable spacing */
+    grid-template-columns: max-content 1fr;
+    gap: clamp(0.5em, 1vmin, 3vw);
     align-items: start;
     width: 100%;
-    box-sizing: border-box; /* Include padding in size */
+    box-sizing: border-box;
 }
 
-/* Grid Cells */
 .grid-content div {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: flex-start;
-    background-color: none;
     font-family: 'SpaceMono', sans-serif;
-    font-weight: 250; /* Default for larger screens */
-    font-size: clamp(10px, 2.0vmin, 36px); /* Responsive */
-    padding: clamp(2px, 0.5vmin, 10px); /* Padding */
+    font-weight: 250;
+    font-size: clamp(10px, 2vmin, 36px);
+    padding: clamp(2px, 0.5vmin, 10px);
     color: var(--color1);
     border-radius: 0.5vmin;
-    white-space: normal; /* Allow wrapping */
-    overflow-wrap: break-word; /* Ensure text wraps */
+    white-space: normal;
+    overflow-wrap: break-word;
     transition: transform 0.3s ease, color 0.3s ease;
     box-sizing: border-box;
 }
@@ -130,21 +154,56 @@ h1.responsive-title {
 /* Close Button for Grid */
 .close-grid-btn {
     pointer-events: auto;
-    position: absolute; /* Positioned relative to the grid-wrapper */
-    top: 10px; /* Fine-tune positioning */
-    right: 10px; /* Align to the top-right */
-    border: none; /* No border */
-    padding: 0em; /* Consistent padding */
-    cursor: pointer; /* Pointer cursor */
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
 }
 
 /* Close Button Icon */
 .close-grid-icon {
     pointer-events: auto;
     color: var(--color1);
-    width: 20px; /* Fixed size */
-    height: 20px;
+    width: var(--close-icon-size);
+    height: var(--close-icon-size);
     display: block;
-    margin: 0 auto; /* Center icon */
+    margin: 0 auto;
 }
 
+
+
+.calibration-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    width: 13vmin;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.3s ease;
+    pointer-events: auto;
+
+}
+.status-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    width: 13vmin;
+    height: 100%;
+
+    color: #F44336; /* Default: Red for disconnected */
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.3s ease;
+    pointer-events: auto;
+
+}
+
+.status-button.connected {
+    color: #4CAF50; /* Green for connected */
+}
