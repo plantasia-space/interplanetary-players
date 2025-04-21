@@ -52,6 +52,7 @@
     transition: transform 0.2s ease;
 }
 
+
 /* Icons inside buttons */
 .button-icon,
 #connectionStatusIcon.button-icon {
@@ -59,7 +60,6 @@
     height: var(--icon-size);
     display: inline-block;
 }
-
 #connectionStatusIcon.button-icon svg {
     width: 80%;
     height: 80%;
