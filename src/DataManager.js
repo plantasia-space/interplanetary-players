@@ -116,7 +116,13 @@ export class DataManager {
             },
             trackInfo: {
                 placeholder_1: "Artist:",
-                placeholder_2: track?.artists || "Unknown Artist",
+                placeholder_2: Array.isArray(track?.artists) && track.artists.length > 0
+                    ? track.artists.map((artist) =>
+                        typeof artist === 'object'
+                            ? (artist.displayName || artist.username || "Unknown Artist")
+                            : "Unknown Artist"
+                      ).join(", ")
+                    : "Unknown Artist",
                 placeholder_3: "Track name:",
                 placeholder_4: track?.trackName || "Unknown Track",
                 placeholder_5: "Release:",
