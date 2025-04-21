@@ -48,7 +48,7 @@ h1.responsive-title {
 
 /* Buttons */
 .info-button, .more-button {
-    width: 50%;
+    width: 13vmin;
     height: 100%;
     background-color: transparent;
     color: var(--color1); /* Dynamic color */
@@ -148,33 +148,3 @@ h1.responsive-title {
     margin: 0 auto; /* Center icon */
 }
 
-/* Uniform sizing for header row buttons */
-.header-row > div.d-flex > button.btn {
-    width: 8vmin;
-    height: 8vmin;
-    padding: 0;
-}
-
-/* Adjust sizing for screens <= 1199.98px */
-@media (max-width: 1199.98px) {
-    .header-row > div.d-flex > button.btn {
-        width: 7.5vmin;
-        height: 7.5vmin;
-    }
-}
-
-/* Adjust sizing for screens <= 991.98px */
-@media (max-width: 991.98px) {
-    .header-row > div.d-flex > button.btn {
-        width: 7vmin;
-        height: 7vmin;
-    }
-}
-
-/* Adjust sizing for screens <= 575.98px */
-@media (max-width: 575.98px) {
-    .header-row > div.d-flex > button.btn {
-        width: 5vmin!important;;
-        height: 5vmin!important;;
-    }
-}
