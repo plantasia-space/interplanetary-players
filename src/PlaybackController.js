@@ -107,6 +107,25 @@ export class PlaybackController {
         interact: true,
         plugins: [this.regions],
       });
+      
+      // Inject scrollbar style workaround directly into the wrapper
+      const style = document.createElement("style");
+      style.textContent = `
+        ::-webkit-scrollbar {
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: hsla(0, 0.00%, 0.00%, 0.50);
+        }
+        ::-webkit-scrollbar-thumb {
+          background: ${waveColor};
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+        background: ${progressColor}; // add alpha for 80% opacity
+        }
+      `;
+      this.wavesurfer.getWrapper().appendChild(style);
 
       //console.debug("[PlaybackController] Loading peaks with approximateDuration:", approximateDuration);
       // Load the waveform data.
