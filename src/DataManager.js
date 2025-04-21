@@ -143,10 +143,14 @@ export class DataManager {
                 placeholder_2: interplanetaryPlayer?.sciName || "Unknown Name",
                 placeholder_3: "Artistic Name:",
                 placeholder_4: interplanetaryPlayer?.artName || "Unknown Name",
-                placeholder_5: "Creator:",
-                placeholder_6: interplanetaryPlayer?.owner || "Unknown Owner",
-                placeholder_7: "3D Artist:",
-                placeholder_8: interplanetaryPlayer?.dddArtist || "Unknown Artist",
+                placeholder_5: "Creator username:",
+                placeholder_6: typeof interplanetaryPlayer?.owner === 'object'
+                    ? (interplanetaryPlayer.owner.displayName || interplanetaryPlayer.owner.username || "Unknown Owner")
+                    : (interplanetaryPlayer?.owner || "Unknown Owner"),
+                placeholder_7: "3D Artist username:",
+                placeholder_8: typeof interplanetaryPlayer?.dddArtist === 'object'
+                    ? (interplanetaryPlayer.dddArtist.displayName || interplanetaryPlayer.dddArtist.username || "Unknown Artist")
+                    : (interplanetaryPlayer?.dddArtist || "Unknown Artist"),
                 placeholder_9: "Orbital Period:",
                 placeholder_10: interplanetaryPlayer?.orbitalPeriod || "Unknown Period",
                 placeholder_11: "",
@@ -158,9 +162,13 @@ export class DataManager {
                 placeholder_1: "Name:",
                 placeholder_2: soundEngine?.soundEngineName || "Unknown Engine",
                 placeholder_3: "Developer:",
-                placeholder_4: soundEngine?.developerUsername || "Unknown Developer",
+                placeholder_4: typeof soundEngine?.developer === 'object'
+                    ? (soundEngine.developer.displayName || soundEngine.developer.username || "Unknown Developer")
+                    : (soundEngine?.developer || "Unknown Developer"),
                 placeholder_5: "Availability:",
-                placeholder_6: soundEngine?.availability || "Private",
+                placeholder_6: typeof soundEngine?.availability === 'boolean'
+                    ? (soundEngine.availability ? "Public" : "Private")
+                    : "Private",
                 placeholder_7: "Credits:",
                 placeholder_8: soundEngine?.credits || "No Credits",
                 placeholder_9: "",
