@@ -8,7 +8,7 @@
  */
 
 import { Constants } from './Constants.js';
-
+ 
 /**
  * Class representing a data manager for handling track data and UI placeholders.
  * @class
@@ -24,8 +24,8 @@ export class DataManager {
          * @description Cache expiry time in minutes, derived from Constants or defaulting to 10 minutes.
          */
         this.cacheExpiryMinutes = Constants.CACHE_EXPIRY_MINUTES || 10;
-
-        /**
+        this.parameterManager = null;
+                    /**
          * @type {object}
          * @description Configuration object for UI placeholders, initialized as empty.
          */
@@ -81,40 +81,38 @@ export class DataManager {
     
         // We'll safely dig into exoplanetData:
         const exoData = interplanetaryPlayer?.exoplanetData;
+        console.log("debug exoData", exoData);
+
         const currentExo = exoData?.currentExoplanet;
         const neighbor1 = exoData?.closestNeighbor1;
         const neighbor2 = exoData?.closestNeighbor2;
-    
+        console.log("debug", Constants.TRACK_DATA);
         // Configure placeholders for different sections
         this.placeholderConfig = {
             monitorInfo: {
-                placeholder_1: "Distance:",
+                // X param
+                placeholder_1: soundEngine?.soundEngineParams?.x?.label+":" || "Unknown",
                 placeholder_2: "-",
               
-                // X param
-                placeholder_3: soundEngine?.soundEngineParams?.x?.label+":" || "Unknown",
+                // Y param
+                placeholder_3: soundEngine?.soundEngineParams?.y?.label+":" || "Unknown",
                 placeholder_4: "-",
               
-                // Y param
-                placeholder_5: soundEngine?.soundEngineParams?.y?.label+":" || "Unknown",
+                // Z param
+                placeholder_5: soundEngine?.soundEngineParams?.z?.label+":" || "Unknown",
                 placeholder_6: "-",
               
-                // Z param
-                placeholder_7: soundEngine?.soundEngineParams?.z?.label+":" || "Unknown",
-                placeholder_8: "-",
-              
-    
                 // Orbit A (current exoplanet)
-                placeholder_9: currentExo?.sciName+":" || "-",
-                placeholder_10: currentExo?.period_earthdays+" earth days" || "-",
-    
+                placeholder_7: currentExo?.sciName+":" || "-",
+                placeholder_8: currentExo?.period_earthdays+" earth days" || "-",
+              
                 // Orbit B (closestNeighbor1)
-                placeholder_11: neighbor1?.sciName+":" || "-",
-                placeholder_12: neighbor1?.period_earthdays+" earth days" || "-",
-    
+                placeholder_9: neighbor1?.sciName+":" || "-",
+                placeholder_10: neighbor1?.period_earthdays+" earth days" || "-",
+              
                 // Orbit C (closestNeighbor2)
-                placeholder_13: neighbor2?.sciName+":" || "-",
-                placeholder_14: neighbor2?.period_earthdays+" earth days" || "-",
+                placeholder_11: neighbor2?.sciName+":" || "-",
+                placeholder_12: neighbor2?.period_earthdays+" earth days" || "-",
             },
             trackInfo: {
                 placeholder_1: "Artist:",
@@ -168,6 +166,30 @@ export class DataManager {
             },
         };
 
+        // Subscribe to root parameters X, Y, Z and update monitor placeholders
+        const parameterManager = this.parameterManager || null;
+        if (parameterManager) {
+          const placeholderMap = {
+            x: "placeholder_4",
+            y: "placeholder_6",
+            z: "placeholder_8"
+          };
+
+          ["x", "y", "z"].forEach((paramKey) => {
+            parameterManager.subscribe({
+              onParameterChanged: (name, value) => {
+                const id = placeholderMap[name];
+                const el = document.getElementById(id);
+                if (el) el.textContent = typeof value === "number" ? value.toFixed(2) : value;
+              },
+              onRangeChanged: () => {},
+              onScaleChanged: () => {}
+            }, paramKey);
+          });
+        } else {
+          console.warn("[DataManager] parameterManager not available in window context.");
+        }
+
         // If running inside an iframe, post the placeholder config to the parent window
 /*         if (window.parent && window.parent !== window) {
             // Extract track id if available from TRACK_DATA
@@ -187,6 +209,35 @@ export class DataManager {
             console.log(`[DataManager] [Timing] PostMessage sent at: ${postMessageTime.toISOString()} with playerData.`);
         } */
     }
+
+    /**
+ * Sets the ParameterManager instance for subscribing to parameter updates.
+ * @public
+ * @param {ParameterManager} manager - The ParameterManager instance to assign.
+ */
+setParameterManager(manager) {
+    this.parameterManager = manager;
+
+    // Subscribe to root parameters X, Y, Z and update monitor placeholders
+    const placeholderMap = {
+        x: "placeholder_2",
+        y: "placeholder_4",
+        z: "placeholder_6"
+    };
+
+    ["x", "y", "z"].forEach((paramKey) => {
+        this.parameterManager.subscribe({
+            onParameterChanged: (name, value) => {
+                const id = placeholderMap[name];
+                const el = document.getElementById(id);
+                if (el) el.textContent = typeof value === "number" ? value.toFixed(2) : value;
+            },
+            onRangeChanged: () => {},
+            onScaleChanged: () => {}
+        }, paramKey);
+    });
+}
+
     /**
      * Populates the UI placeholders with the configured data.
      * @public

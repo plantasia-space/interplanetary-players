@@ -201,6 +201,9 @@ async function initializeApp() {
       setupInteractions(dataManager, user1SoundEngine, user1Manager);
       dataManager.populatePlaceholders('monitorInfo');
   
+      // 👉 Pass the ParameterManager AFTER placeholders are populated
+        dataManager.setParameterManager(user1Manager);
+
       // Load and display the 3D model (your other initialization logic)
       await loadAndDisplayModel(scene, cachedData);
       //console.log('[APP] Model loaded successfully.');
