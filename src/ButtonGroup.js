@@ -389,8 +389,8 @@ export class ButtonGroup {
   handleInteractionDropdown(selectedValue) {
     //console.log(`[Interaction Dropdown] Selected: ${selectedValue}`);
     switch (selectedValue) {
-      case 'Jam':
-        ModeManagerInstance.activateMode('JAM');
+      case 'JAMMING':
+        ModeManagerInstance.activateMode('JAMMING');
         break;
       case 'MIDI':
         ModeManagerInstance.activateMode('MIDI_LEARN');

@@ -9,7 +9,7 @@ import { cosmicLFOManager } from './Main.js';  // Import the manager
 
 export class ModeManager {
     constructor() {
-        this.currentMode = 'JAM'; // default mode
+        this.currentMode = 'JAMMING'; // default mode
         this.subscribers = [];
         this.modes = {};
     }
@@ -35,6 +35,11 @@ export class ModeManager {
     
         // Set the new mode
         this.currentMode = newMode;
+        // Dynamically update the page title based on current mode
+        const titleElement = document.querySelector('.responsive-title');
+        if (titleElement) {
+            titleElement.textContent = newMode.toLowerCase().replace('_', ' ');
+        }
     
         // Enter new mode
         if (this.modes[newMode] && this.modes[newMode].onEnter) {
@@ -60,10 +65,10 @@ export class ModeManager {
 export const ModeManagerInstance = new ModeManager();
 
 // Register all modes here
-ModeManagerInstance.registerMode('JAM', {
+ModeManagerInstance.registerMode('JAMMING', {
     onEnter: () => {
       //console.log('[ModeManager] Entered JAM mode.');
-      //notifications.showToast("Switched to Jam mode.");
+      //notifications.showToast("Switched to Jamming mode.");
   
       // Hide dropdowns that are exclusive to Cosmic LFO mode.
       document.querySelectorAll('[data-group$="-waveform-dropdown"], [data-group$="-exo-lfo-dropdown"]').forEach(el => {
@@ -275,7 +280,7 @@ document.querySelectorAll('.xyz-cosmic-lfo').forEach(button => {
 // ModeManagerInstance.user1Manager = user1Manager; // Set it when user1Manager is available
 
 // Initially start in JAM mode
-ModeManagerInstance.activateMode('JAM');
+ModeManagerInstance.activateMode('JAMMING');
 
 // Subscribe to mode changes if needed elsewhere
 ModeManagerInstance.subscribe((newMode) => {

@@ -1024,11 +1024,11 @@ class MIDIController {
     // Find the interaction button, its icon, and the JAM mode item.
     const interactionButton = document.getElementById('interactionMenuButton');
     const interactionIcon = interactionButton?.querySelector('.button-icon');
-    const jamItem = document.getElementById('jam-item');
+    const jammingItem = document.getElementById('jamming-item');
   
-    if (interactionButton && interactionIcon && jamItem) {
-      const jamIconSrc = jamItem.getAttribute('data-icon');
-      const jamLabel = jamItem.getAttribute('data-value');
+    if (interactionButton && interactionIcon && jammingItem) {
+      const jamIconSrc = jammingItem.getAttribute('data-icon');
+      const jamLabel = jammingItem.getAttribute('data-value');
   
       // Update the button's aria-label so it shows the JAM mode label.
       interactionButton.setAttribute('aria-label', jamLabel);
@@ -1045,7 +1045,7 @@ class MIDIController {
     // Use a slight delay (e.g., 100ms) so that the asynchronous icon update has time to finish,
     // then activate JAM mode via the Mode Manager.
     setTimeout(() => {
-      ModeManagerInstance.activateMode('JAM');
+      ModeManagerInstance.activateMode('JAMMING');
     }, 100);
   }
 
