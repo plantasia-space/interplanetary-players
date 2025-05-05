@@ -97,7 +97,7 @@ export const Constants = {
      */
         LOADING_STATE: {
             trackLoaded: false,
-            soundEngineLoaded: false,
+            orbiterLoaded: false,
             modelLoaded: false,
             uiReady: false,
         },
@@ -224,7 +224,7 @@ export const PRIORITY_MAP = {
 };
 /**
  * @constant
- * @description Tracks the current playback state of the sound engine.
+ * @description Tracks the current playback state of the orbiter.
  */
 export let PLAYBACK_STATE = "stopped"; // Can be "playing", "paused", "stopped"
 

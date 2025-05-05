@@ -1,5 +1,5 @@
 /**
- * @file SoundEngine.js
+ * @file Orbiter.js
  * @description Manages audio playback, synthesis, and processing using the RNBO library and the Web Audio API.
  * Provides functionality to initialize, play, pause, stop, loop, and update audio playback parameters.
  * @version 1.0.1
@@ -9,10 +9,10 @@
 import { Constants, setPlaybackState } from "./Constants.js";
 import { ModeManagerInstance } from "./ModeManager.js"; // Import ModeManager
 
-export class SoundEngine {
-  constructor(soundEngineData, trackData, userManager, ksteps, rnbo) {
-    if (!soundEngineData || !trackData || !userManager || !ksteps || !rnbo) {
-      console.error("SoundEngine Error: Missing required data.");
+export class Orbiter {
+  constructor(orbiterData, trackData, userManager, ksteps, rnbo) {
+    if (!orbiterData || !trackData || !userManager || !ksteps || !rnbo) {
+      console.error("Orbiter Error: Missing required data.");
       return;
     }
     
@@ -20,7 +20,7 @@ export class SoundEngine {
     this._isUpdatingFromUI = false;
     this.currentCursorMs = 0; 
 
-    this.soundEngineData = soundEngineData;
+    this.orbiterData = orbiterData;
     this.trackData = trackData;
     this.userManager = userManager;
     this.ksteps = ksteps;
@@ -39,25 +39,25 @@ export class SoundEngine {
 
     ModeManagerInstance.subscribe((newMode) => {
       this.currentMode = newMode;
-      //console.log(`[SoundEngine] Mode updated to: ${this.currentMode}`);
+      //console.log(`[Orbiter] Mode updated to: ${this.currentMode}`);
     });
-    Constants.setLoadingState("soundEngineLoaded", false);
+    Constants.setLoadingState("orbiterLoaded", false);
 
   }
 
   /**
-   * Allows PlaybackController to pass itself to SoundEngine.
+   * Allows PlaybackController to pass itself to Orbiter.
    */
   setPlaybackController(playbackController) {
     this.playbackController = playbackController;
-    //console.log("[SoundEngine] Connected to PlaybackController.");
+    //console.log("[Orbiter] Connected to PlaybackController.");
   }
 
   async init() {
     if (this.initialized) return;
     try {
-      const patchExportURL = this.soundEngineData.soundEngineJSONURL;
-      //console.log("[SoundEngine] Fetching RNBO patch from:", patchExportURL);
+      const patchExportURL = this.orbiterData.orbiterJSONURL;
+      //console.log("[Orbiter] Fetching RNBO patch from:", patchExportURL);
 
       const WAContext = window.AudioContext || window.webkitAudioContext;
       this.context = new WAContext();
@@ -84,7 +84,7 @@ export class SoundEngine {
       if (this.playMin && this.playMax && this.totalDuration) {
         this.playMin.value = 0;
         this.playMax.value = this.totalDuration * 1000;
-        //console.log(`[SoundEngine] Set playMin to ${this.playMin.value}, playMax to ${this.playMax.value} ms`);
+        //console.log(`[Orbiter] Set playMin to ${this.playMin.value}, playMax to ${this.playMax.value} ms`);
       }
 
       // Subscribe to RNBO message events.
@@ -110,10 +110,10 @@ export class SoundEngine {
                     if (this.playbackController) {
                         this.playbackController.setPlayHead(this.currentCursorMs);
                     } else {
-                        console.warn("[SoundEngine] PlaybackController is not available.");
+                        console.warn("[Orbiter] PlaybackController is not available.");
                     }
                 } else {
-                    //console.log("[SoundEngine] Ignoring playHead update due to manual user seek.");
+                    //console.log("[Orbiter] Ignoring playHead update due to manual user seek.");
                 }
             } else {
                 console.error(`Unexpected payload format from '${ev.tag}' message:`, ev.payload);
@@ -129,13 +129,13 @@ export class SoundEngine {
       this.userManager.subscribe(this, "z", 1);
 
       this.initialized = true;
-      //console.log("[SoundEngine] Initialized successfully.");
+      //console.log("[Orbiter] Initialized successfully.");
           // Track initialization completion
-    Constants.setLoadingState("soundEngineLoaded", true);
+    Constants.setLoadingState("orbiterLoaded", true);
 
 
     } catch (error) {
-      console.error("[SoundEngine] Error in init():", error);
+      console.error("[Orbiter] Error in init():", error);
     }
   }
 
@@ -143,12 +143,12 @@ export class SoundEngine {
     try {
       const audioURL = this.trackData.audioFileMP3URL || this.trackData.audioFileWAVURL;
       if (!audioURL) {
-        throw new Error("[SoundEngine] No audio file URL provided.");
+        throw new Error("[Orbiter] No audio file URL provided.");
       }
-      //console.log("[SoundEngine] Fetching audio file:", audioURL);
+      //console.log("[Orbiter] Fetching audio file:", audioURL);
       const response = await fetch(audioURL, { cache: "reload" });
       if (!response.ok) {
-        throw new Error(`[SoundEngine] Network response was not OK. Status: ${response.status}`);
+        throw new Error(`[Orbiter] Network response was not OK. Status: ${response.status}`);
       }
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
@@ -156,7 +156,7 @@ export class SoundEngine {
       this.totalDuration = audioBuffer.duration;
       await this.device.setDataBuffer("world1", audioBuffer);
     } catch (error) {
-      console.error("[SoundEngine] Error loading audio buffer:", error);
+      console.error("[Orbiter] Error loading audio buffer:", error);
     }
   }
 
@@ -171,12 +171,12 @@ export class SoundEngine {
       }
       if (this.context.state !== "suspended") {
         await this.context.suspend();
-        //console.log("[SoundEngine] Audio context suspended.");
+        //console.log("[Orbiter] Audio context suspended.");
       } else {
-        //console.log("[SoundEngine] Audio context was already suspended.");
+        //console.log("[Orbiter] Audio context was already suspended.");
       }
     } catch (error) {
-      console.error("[SoundEngine] Error during preload and suspend:", error);
+      console.error("[Orbiter] Error during preload and suspend:", error);
     }
   }
 
@@ -192,7 +192,7 @@ setCursorPosition(newTimeMs) {
   if (this.totalDuration) {
     if (this.playMin) {
       this.playMin.value = newTimeMs;
-      //console.log(`[SoundEngine] Updated playMin (cursor) to ${newTimeMs} ms`);
+      //console.log(`[Orbiter] Updated playMin (cursor) to ${newTimeMs} ms`);
       
       // Force RNBO to process the parameter change
       this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [newTimeMs]));
@@ -208,9 +208,9 @@ setCursorPosition(newTimeMs) {
     try {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "play", [1]);
       this.device.scheduleEvent(messageEvent);
-      //console.log("SoundEngine: Play command sent.");
+      //console.log("Orbiter: Play command sent.");
     } catch (err) {
-      console.error("SoundEngine: Failed to schedule play event:", err);
+      console.error("Orbiter: Failed to schedule play event:", err);
     }
   }
 
@@ -228,14 +228,14 @@ setCursorPosition(newTimeMs) {
       }
       if (this.context.state === "suspended") {
         await this.context.resume();
-        //console.log("[SoundEngine] Audio context resumed.");
+        //console.log("[Orbiter] Audio context resumed.");
       }
       this._sendPlayEvent();
       this.playState = "playing"; // <--- Update state
       setPlaybackState("playing"); // Update global state
 
     } catch (error) {
-      console.error("[SoundEngine] Error during play:", error);
+      console.error("[Orbiter] Error during play:", error);
     }
   }
 
@@ -246,9 +246,9 @@ setCursorPosition(newTimeMs) {
       this.playState = "paused"; // <--- Update state
       setPlaybackState("paused"); // Update global state
 
-      //console.log("[SoundEngine] Pause command sent.");
+      //console.log("[Orbiter] Pause command sent.");
     } catch (err) {
-      console.error("[SoundEngine] Failed to schedule pause event:", err);
+      console.error("[Orbiter] Failed to schedule pause event:", err);
     }
   }
 
@@ -273,17 +273,17 @@ setCursorPosition(newTimeMs) {
     this.playState = "stopped";
     setPlaybackState("stopped"); // Update global state
 
-    //console.log("[SoundEngine] Stop command processed, sampler reset to 0.");
+    //console.log("[Orbiter] Stop command processed, sampler reset to 0.");
   }
 
   setVolume(volume) {
     if (volume < 0 || volume > 1) {
-      console.warn("SoundEngine Warning: Volume should be between 0.0 and 1.0");
+      console.warn("Orbiter Warning: Volume should be between 0.0 and 1.0");
       return;
     }
     if (this.inputGain) {
       this.inputGain.value = volume;
-      //console.log("SoundEngine: Volume set to", volume);
+      //console.log("Orbiter: Volume set to", volume);
     }
   }
 
@@ -296,9 +296,9 @@ setCursorPosition(newTimeMs) {
     try {
       const msg = new RNBO.MessageEvent(RNBO.TimeNow, "play", [value]);
       this.device.scheduleEvent(msg);
-      //console.log(`[SoundEngine] Nudging RNBO with play=${value} (no local state change)`);
+      //console.log(`[Orbiter] Nudging RNBO with play=${value} (no local state change)`);
     } catch (err) {
-      console.error("[SoundEngine] _forcePlayState error:", err);
+      console.error("[Orbiter] _forcePlayState error:", err);
     }
   }
 
@@ -308,13 +308,13 @@ setCursorPosition(newTimeMs) {
  */
 setPlayRange(min = null, max = null, isFromUI = false) {
   if (this.playMin && this.playMax) {
-      //console.log(`[SoundEngine] setPlayRange called with min=${min} ms, max=${max} ms`);
+      //console.log(`[Orbiter] setPlayRange called with min=${min} ms, max=${max} ms`);
 
       if (isFromUI) {
-          //console.log("[SoundEngine] Preventing loop: User-set play range.");
+          //console.log("[Orbiter] Preventing loop: User-set play range.");
           this._isUpdatingFromUI = true;
       } else {
-          //console.log("[SoundEngine] Preventing loop: Engine-set play range.");
+          //console.log("[Orbiter] Preventing loop: Engine-set play range.");
           this._isUpdatingFromEngine = true;
       }
 
@@ -334,27 +334,27 @@ setPlayRange(min = null, max = null, isFromUI = false) {
           this._isUpdatingFromEngine = false;
       }, 100);
   } else {
-      console.error("[SoundEngine] Cannot set play range. playMin or playMax is not defined.");
+      console.error("[Orbiter] Cannot set play range. playMin or playMax is not defined.");
   }
 }
   _sendLoopEvent(loopState) {
     try {
       const messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, "loop", [loopState]);
       this.device.scheduleEvent(messageEvent);
-      //console.log(`[SoundEngine] Loop set to ${loopState}`);
+      //console.log(`[Orbiter] Loop set to ${loopState}`);
     } catch (err) {
-      console.error("[SoundEngine] Failed to schedule loop event:", err);
+      console.error("[Orbiter] Failed to schedule loop event:", err);
     }
   }
 
   loop() {
     this._sendLoopEvent(1);
-    //console.log("[SoundEngine] Looping enabled.");
+    //console.log("[Orbiter] Looping enabled.");
   }
 
   unloop() {
     if (!this.playMin || !this.playMax || !this.totalDuration) {
-      console.warn("[SoundEngine] Cannot unloop: playMin, playMax, or totalDuration not available.");
+      console.warn("[Orbiter] Cannot unloop: playMin, playMax, or totalDuration not available.");
       return;
     }
   
@@ -362,9 +362,9 @@ setPlayRange(min = null, max = null, isFromUI = false) {
     this.playMin.value = 0;
     this.playMax.value = this.totalDuration * 1000; // Convert seconds to milliseconds
   
-    //console.log(`[SoundEngine] Unlooping: Resetting play range to full track.`);
-    //console.log(`[SoundEngine] Updated playMin to ${this.playMin.value} ms`);
-    //console.log(`[SoundEngine] Updated playMax to ${this.playMax.value} ms`);
+    //console.log(`[Orbiter] Unlooping: Resetting play range to full track.`);
+    //console.log(`[Orbiter] Updated playMin to ${this.playMin.value} ms`);
+    //console.log(`[Orbiter] Updated playMax to ${this.playMax.value} ms`);
   
     // Ensure RNBO updates immediately
     this.device.scheduleEvent(new this.rnbo.MessageEvent(this.rnbo.TimeNow, "sampler/playMin", [this.playMin.value]));
@@ -372,7 +372,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
   
     // Send loop off command
     this._sendLoopEvent(0);
-    //console.log("[SoundEngine] Looping disabled.");
+    //console.log("[Orbiter] Looping disabled.");
   }
 
   onParameterChanged(parameterName, value) {
@@ -382,7 +382,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         if (this.inputGain !== null) {
           this.inputGain.value = normValue;
         } else {
-          console.warn("SoundEngine: inputGain is not defined.");
+          console.warn("Orbiter: inputGain is not defined.");
         }
         break;
       }
@@ -391,7 +391,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         if (this.inputX !== null) {
           this.inputX.value = rawValue;
         } else {
-          console.warn("SoundEngine: inputX is not defined.");
+          console.warn("Orbiter: inputX is not defined.");
         }
         break;
       }
@@ -400,7 +400,7 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         if (this.inputY !== null) {
           this.inputY.value = rawValue;
         } else {
-          console.warn("SoundEngine: inputY is not defined.");
+          console.warn("Orbiter: inputY is not defined.");
         }
         break;
       }
@@ -409,31 +409,31 @@ setPlayRange(min = null, max = null, isFromUI = false) {
         if (this.inputZ !== null) {
           this.inputZ.value = rawValue;
         } else {
-          console.warn("SoundEngine: inputZ is not defined.");
+          console.warn("Orbiter: inputZ is not defined.");
         }
         break;
       }
       default:
-        console.warn("SoundEngine: Unknown parameter", parameterName);
+        console.warn("Orbiter: Unknown parameter", parameterName);
     }
   }
 
   cleanUp() {
     try {
-      //console.log("[SoundEngine] Cleaning up resources...");
+      //console.log("[Orbiter] Cleaning up resources...");
       const bufferDescriptions = this.device.dataBufferDescriptions;
       bufferDescriptions.forEach(async (desc) => {
         await this.device.releaseDataBuffer(desc.id);
-        //console.log(`[SoundEngine] Released buffer with id ${desc.id}`);
+        //console.log(`[Orbiter] Released buffer with id ${desc.id}`);
       });
       this.device.messageEvent.unsubscribe();
-      //console.log("[SoundEngine] Unsubscribed from RNBO events.");
+      //console.log("[Orbiter] Unsubscribed from RNBO events.");
       if (this.context && this.context.state !== "closed") {
         this.context.close();
-        //console.log("[SoundEngine] Audio context closed.");
+        //console.log("[Orbiter] Audio context closed.");
       }
     } catch (error) {
-      console.error("[SoundEngine] Error during clean-up:", error);
+      console.error("[Orbiter] Error during clean-up:", error);
     }
   }
 }

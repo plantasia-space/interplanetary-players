@@ -77,7 +77,7 @@ export class DataManager {
             return;
         }
     
-        const { track, soundEngine, interplanetaryPlayer } = Constants.TRACK_DATA;
+        const { track, orbiter, interplanetaryPlayer } = Constants.TRACK_DATA;
     
         // We'll safely dig into exoplanetData:
         const exoData = interplanetaryPlayer?.exoplanetData;
@@ -91,15 +91,15 @@ export class DataManager {
         this.placeholderConfig = {
             monitorInfo: {
                 // X param
-                placeholder_1: soundEngine?.soundEngineParams?.x?.label+":" || "Unknown",
+                placeholder_1: orbiter?.orbiterParams?.x?.label+":" || "Unknown",
                 placeholder_2: "-",
               
                 // Y param
-                placeholder_3: soundEngine?.soundEngineParams?.y?.label+":" || "Unknown",
+                placeholder_3: orbiter?.orbiterParams?.y?.label+":" || "Unknown",
                 placeholder_4: "-",
               
                 // Z param
-                placeholder_5: soundEngine?.soundEngineParams?.z?.label+":" || "Unknown",
+                placeholder_5: orbiter?.orbiterParams?.z?.label+":" || "Unknown",
                 placeholder_6: "-",
               
                 // Orbit A (current exoplanet)
@@ -158,19 +158,19 @@ export class DataManager {
                 placeholder_13: "",
                 placeholder_14: "",
             },
-            soundEngineInfo: {
+            orbiterInfo: {
                 placeholder_1: "Name:",
-                placeholder_2: soundEngine?.soundEngineName || "Unknown Engine",
+                placeholder_2: orbiter?.orbiterName || "Unknown Engine",
                 placeholder_3: "Developer:",
-                placeholder_4: typeof soundEngine?.developer === 'object'
-                    ? (soundEngine.developer.displayName || soundEngine.developer.username || "Unknown Developer")
-                    : (soundEngine?.developer || "Unknown Developer"),
+                placeholder_4: typeof orbiter?.developer === 'object'
+                    ? (orbiter.developer.displayName || orbiter.developer.username || "Unknown Developer")
+                    : (orbiter?.developer || "Unknown Developer"),
                 placeholder_5: "Availability:",
-                placeholder_6: typeof soundEngine?.availability === 'boolean'
-                    ? (soundEngine.availability ? "Public" : "Private")
+                placeholder_6: typeof orbiter?.availability === 'boolean'
+                    ? (orbiter.availability ? "Public" : "Private")
                     : "Private",
                 placeholder_7: "Credits:",
-                placeholder_8: soundEngine?.credits || "No Credits",
+                placeholder_8: orbiter?.credits || "No Credits",
                 placeholder_9: "",
                 placeholder_10: "",
                 placeholder_11: "",
@@ -216,7 +216,7 @@ export class DataManager {
                     monitorInfo: this.placeholderConfig.monitorInfo,
                     trackInfo: this.placeholderConfig.trackInfo,
                     interplanetaryPlayerInfo: this.placeholderConfig.interplanetaryPlayerInfo,
-                    soundEngineInfo: this.placeholderConfig.soundEngineInfo
+                    orbiterInfo: this.placeholderConfig.orbiterInfo
                 }
             }, '*');
             const postMessageTime = new Date();

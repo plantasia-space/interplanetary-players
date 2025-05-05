@@ -37,7 +37,7 @@
 /**
  * @namespace AudioEngine
  * @description Encapsulates the core logic for audio processing, synthesis, and playback. 
- * This namespace manages the Web Audio API and RNBO, sound engines, and audio parameters to create a dynamic sound environment.
+ * This namespace manages the Web Audio API and RNBO, orbiters, and audio parameters to create a dynamic sound environment.
  */
 // -----------------------------
 // Import Statements
@@ -63,7 +63,7 @@ import lscache from 'lscache';
 import { setupInteractions, updateKnobsFromTrackData, applyColorsFromTrackData } from './Interaction.js';
 
 // Audio player module
-import { SoundEngine } from './SoundEngine.js';
+import { Orbiter } from './Orbiter.js';
 
 // Button group module
 import { ButtonGroup } from './ButtonGroup.js';
@@ -108,8 +108,8 @@ addLights(scene);
 // Instantiate the DataManager for handling track data
 const dataManager = new DataManager();
 
-// Instantiate the SoundEngine for managing audio playback
-let user1SoundEngine;
+// Instantiate the Orbiter for managing audio playback
+let user1Orbiter;
 
 // Instantiate the ParameterManager for managing adjustable parameters for user 1
 const user1Manager = new ParameterManager();
@@ -146,7 +146,7 @@ async function initializeApp() {
       }
 
       // Load RNBO library based on patcher version
-      const rnbo = await loadRNBOLibrary(cachedData.soundEngine.soundEngineJSONURL);
+      const rnbo = await loadRNBOLibrary(cachedData.orbiter.orbiterJSONURL);
       console.log(cachedData.interplanetaryPlayer.moonAmount);
 
 
@@ -154,7 +154,7 @@ async function initializeApp() {
     
 
       // Destructure the cached data
-      const { track: trackData, soundEngine: soundEngineData, interplanetaryPlayer } = cachedData;
+      const { track: trackData, orbiter: orbiterData, interplanetaryPlayer } = cachedData;
       if (interplanetaryPlayer && interplanetaryPlayer.exoplanetData) {
         const exoData = interplanetaryPlayer.exoplanetData;
         // Assign minimum cosmic LFO values to the CosmicLFO instances:
@@ -181,24 +181,24 @@ async function initializeApp() {
       applyColorsFromTrackData(cachedData);
       updateKnobsFromTrackData(cachedData);
   
-      // Create the SoundEngine instance with the loaded RNBO library
+      // Create the Orbiter instance with the loaded RNBO library
       const ksteps = 255;
-      user1SoundEngine = new SoundEngine(soundEngineData, trackData, user1Manager, ksteps, rnbo);
+      user1Orbiter = new Orbiter(orbiterData, trackData, user1Manager, ksteps, rnbo);
   
       
 
-    // Attach the clean-up listener once the SoundEngine is created
+    // Attach the clean-up listener once the Orbiter is created
     window.addEventListener('beforeunload', () => {
-        if (user1SoundEngine) {
-            user1SoundEngine.cleanUp();
+        if (user1Orbiter) {
+            user1Orbiter.cleanUp();
         }
         });
         
       // Start preloading the audio buffer (but don’t play yet)
-      await user1SoundEngine.preloadAndSuspend();
+      await user1Orbiter.preloadAndSuspend();
   
-      // Now pass the SoundEngine instance into your UI setup.
-      setupInteractions(dataManager, user1SoundEngine, user1Manager);
+      // Now pass the Orbiter instance into your UI setup.
+      setupInteractions(dataManager, user1Orbiter, user1Manager);
       dataManager.populatePlaceholders('monitorInfo');
   
       // 👉 Pass the ParameterManager AFTER placeholders are populated
@@ -269,14 +269,14 @@ async function loadRNBOLibrary(patchExportURL) {
  * @function initializeRootParams
  * @param {ParameterManager} parameterManager - Instance of the ParameterManager to configure.
  * @param {Object} trackData - Data for the current track.
- * @param {Object} trackData.soundEngine - Sound engine data for the track.
- * @param {Object} trackData.soundEngine.soundEngineParams - Parameters for the sound engine.
+ * @param {Object} trackData.orbiter - Orbiter data for the track.
+ * @param {Object} trackData.orbiter.orbiterParams - Parameters for the orbiter.
  */
 function initializeRootParams(parameterManager, trackData) {
     const rootParams = ['x', 'y', 'z', 'body-level', 'body-envelope', 'cosmic-radio-xyz'];
 
     // Destructure x, y, z parameters from trackData
-    const { x, y, z } = trackData.soundEngine.soundEngineParams;
+    const { x, y, z } = trackData.orbiter.orbiterParams;
 
     // Configuration object for parameters
     const paramConfigs = {
@@ -451,11 +451,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp().then(() => {
         //console.log("[APP] Starting animation loop.");
         startAnimation(renderer, () => {
-            if (user1SoundEngine && typeof user1SoundEngine.getAmplitude === 'function') {
-                const currentAmp = user1SoundEngine.getAmplitude();
+            if (user1Orbiter && typeof user1Orbiter.getAmplitude === 'function') {
+                const currentAmp = user1Orbiter.getAmplitude();
                  drawRing(currentAmp); // Uncomment if drawRing is globally accessible
             } else {
-                console.warn("[Debug Main] SoundEngine instance not ready or getAmplitude undefined.");
+                console.warn("[Debug Main] Orbiter instance not ready or getAmplitude undefined.");
             }
         });
     });
@@ -544,7 +544,7 @@ function updateLoadingScreen() {
     // Determine current step message
     let message = "Initializing...";
     if (!loadingStates.trackLoaded) message = "Loading Track Data...";
-    else if (!loadingStates.soundEngineLoaded) message = "Loading Sound Engine...";
+    else if (!loadingStates.orbiterLoaded) message = "Loading Orbiter...";
     else if (!loadingStates.modelLoaded) message = "Loading 3D Model...";
     else if (!loadingStates.uiReady) message = "Finalizing User Interface...";
 

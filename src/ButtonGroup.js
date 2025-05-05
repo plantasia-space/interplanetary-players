@@ -21,7 +21,7 @@ export class ButtonGroup {
    * @param {string} buttonSelector - CSS selector for the main button within the container.
    * @param {string} menuItemsSelector - CSS selector for the menu items within the dropdown.
    * @param {string} iconSelector - CSS selector for the icon within the main button.
-   * @param {SoundEngine} soundEngine - Instance of SoundEngine for managing audio controls.
+   * @param {Orbiter} orbiter - Instance of Orbiter for managing audio controls.
    * @param {DataManager} [dataManager=null] - DataManager for managing data (optional).
    * @param {User1Manager} [user1Manager=null] - User1Manager for managing user parameters (optional).
    */
@@ -31,11 +31,11 @@ export class ButtonGroup {
     buttonSelector,
     menuItemsSelector,
     iconSelector,
-    soundEngine,
+    orbiter,
     dataManager = null,
     user1Manager = null
   ) {
-    this.soundEngine = soundEngine;
+    this.orbiter = orbiter;
     this.dataManager = dataManager;
     this.user1Manager = user1Manager;
 
@@ -331,7 +331,7 @@ export class ButtonGroup {
       'Control Monitor': 'monitorInfo',
       'Track': 'trackInfo',
       'Interplanetary Player': 'interplanetaryPlayerInfo',
-      'Sound Engine': 'soundEngineInfo',
+      'Orbiter': 'orbiterInfo',
     };
 
     const target = typeMap[selectedValue];
@@ -373,13 +373,13 @@ export class ButtonGroup {
     //console.log(`[Transport Dropdown] Selected: ${selectedValue}`);
     switch (selectedValue.toLowerCase()) {
       case 'play':
-        this.soundEngine.play();
+        this.orbiter.play();
         break;
       case 'pause':
-        this.soundEngine.pause();
+        this.orbiter.pause();
         break;
       case 'stop':
-        this.soundEngine.stop();
+        this.orbiter.stop();
         break;
       default:
         console.warn(`[Transport Dropdown] Unknown action: ${selectedValue}`);

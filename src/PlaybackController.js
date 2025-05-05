@@ -1,7 +1,7 @@
 /**
  * @file PlaybackController.js
  * @description Manages playback functionality, including button states, WaveSurfer visualization, region selection, 
- * and controlling the SoundEngine. Supports both loop mode (min and max) and seek mode (cursor).
+ * and controlling the Orbiter. Supports both loop mode (min and max) and seek mode (cursor).
  * @version 1.1.0
  * @license MIT
  */
@@ -11,16 +11,16 @@ import WaveSurfer from "https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesu
 import RegionsPlugin from "https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/plugins/regions.esm.js";
 
 export class PlaybackController {
-  constructor(soundEngine) {
-    this.soundEngine = soundEngine;
+  constructor(orbiter) {
+    this.orbiter = orbiter;
     this.wavesurfer = null;
     this._isUpdatingFromEngine = false;
 
-    //console.debug("[PlaybackController] Constructor - SoundEngine:", soundEngine);
+    //console.debug("[PlaybackController] Constructor - Orbiter:", orbiter);
 
-    // Pass PlaybackController reference to SoundEngine
-    if (this.soundEngine) {
-      this.soundEngine.setPlaybackController(this);
+    // Pass PlaybackController reference to Orbiter
+    if (this.orbiter) {
+      this.orbiter.setPlaybackController(this);
     }
 
     // Initialize WaveSurfer + events
@@ -56,7 +56,7 @@ export class PlaybackController {
   async initWaveSurferPeaks() {
     //console.debug("[PlaybackController] initWaveSurferPeaks() called.");
     try {
-      const waveformJSONURL = this.soundEngine?.trackData?.waveformJSONURL;
+      const waveformJSONURL = this.orbiter?.trackData?.waveformJSONURL;
       if (!waveformJSONURL) {
         console.warn("[PlaybackController] No waveformJSONURL provided.");
         return;
@@ -156,24 +156,24 @@ export class PlaybackController {
       resizeObserver.observe(waveformContainer);
 
       this.wavesurfer.on("interaction", (newTime) => {
-        if (!this.soundEngine) {
-          console.warn("[PlaybackController] SoundEngine is not available.");
+        if (!this.orbiter) {
+          console.warn("[PlaybackController] Orbiter is not available.");
           return;
         }
       
         const newTimeMs = Math.round(newTime * 1000);
         //console.log(`[PlaybackController] User clicked at ${newTimeMs} ms`);
       
-        // Prevent SoundEngine from overriding our manual seek
-        this.soundEngine._isUpdatingFromUI = true;
+        // Prevent Orbiter from overriding our manual seek
+        this.orbiter._isUpdatingFromUI = true;
       
-        if (this.soundEngine.isPlaying()) {
+        if (this.orbiter.isPlaying()) {
           // ─────────────────────────────────────────────────
           // CASE A: Playing => "jump-to-end" workaround
           // ─────────────────────────────────────────────────
           this.doPlayingSeek(newTimeMs);
       
-        } else if (this.soundEngine.playState === "paused") {
+        } else if (this.orbiter.playState === "paused") {
           // ─────────────────────────────────────────────────
           // CASE B: Paused => short "play→pause" trick
           // ─────────────────────────────────────────────────
@@ -215,66 +215,66 @@ export class PlaybackController {
 
 
   doPlayingSeek(newTimeMs) {
-    this.soundEngine.setPlayRange(
-      this.soundEngine.totalDuration * 1000,
-      this.soundEngine.totalDuration * 1000
+    this.orbiter.setPlayRange(
+      this.orbiter.totalDuration * 1000,
+      this.orbiter.totalDuration * 1000
     );
   
     setTimeout(() => {
-      this.soundEngine.setPlayRange(
+      this.orbiter.setPlayRange(
         newTimeMs,
-        this.soundEngine.totalDuration * 1000
+        this.orbiter.totalDuration * 1000
       );
-      this.soundEngine.loop();
+      this.orbiter.loop();
   
       setTimeout(() => {
-        this.soundEngine.unloop();
-        this.soundEngine.loop();
-        this.soundEngine.setPlayRange(0, this.soundEngine.totalDuration * 1000);
+        this.orbiter.unloop();
+        this.orbiter.loop();
+        this.orbiter.setPlayRange(0, this.orbiter.totalDuration * 1000);
   
         // Force WaveSurfer UI cursor to newTime
         this.setPlayHead(newTimeMs);
   
-        this.soundEngine._isUpdatingFromUI = false;
+        this.orbiter._isUpdatingFromUI = false;
       }, 100);
     }, 50);
   }
   doPausedSeek(newTimeMs) {
     // 1) Stop just to clear any leftover constraints or loops
-    this.soundEngine.stop();
+    this.orbiter.stop();
   
     // 2) Set new range so RNBO knows "start reading from newTimeMs"
-    this.soundEngine.setPlayRange(
+    this.orbiter.setPlayRange(
       newTimeMs,
-      this.soundEngine.totalDuration * 1000
+      this.orbiter.totalDuration * 1000
     );
   
     // 3) Kick RNBO into "play" for 100ms so it actually *moves* pointer
-    this.soundEngine.play();
+    this.orbiter.play();
     setTimeout(() => {
       // 4) Return to "pause" immediately
-      this.soundEngine.pause();
+      this.orbiter.pause();
   
       // 5) WaveSurfer cursor to newTimeMs 
       this.setPlayHead(newTimeMs);
   
-      this.soundEngine._isUpdatingFromUI = false;
+      this.orbiter._isUpdatingFromUI = false;
     }, 1);
   }
 
 
   doStoppedSeek(newTimeMs) {
     // Just set newTime → end
-    this.soundEngine.setPlayRange(
+    this.orbiter.setPlayRange(
       newTimeMs,
-      this.soundEngine.totalDuration * 1000
+      this.orbiter.totalDuration * 1000
     );
   
     // Visually place the WaveSurfer cursor
     this.setPlayHead(newTimeMs);
   
     setTimeout(() => {
-      this.soundEngine._isUpdatingFromUI = false;
+      this.orbiter._isUpdatingFromUI = false;
     }, 50);
   }
   
@@ -315,7 +315,7 @@ initPlaybackSelector() {
   
     // ✅ Ensure region is visually active and looping
     this.setRegionLoopState(region, this.isLooping);
-    this.updateSoundEngineLoop(this.isLooping, region.start, region.end);
+    this.updateOrbiterLoop(this.isLooping, region.start, region.end);
   });
 
   // ✅ Update loop when the user adjusts the region
@@ -325,7 +325,7 @@ initPlaybackSelector() {
     }
 
     //console.log(`[PlaybackController] Loop region updated: start=${region.start}s, end=${region.end}s`);
-    this.updateSoundEngineLoopRange(region.start, region.end);
+    this.updateOrbiterLoopRange(region.start, region.end);
   });
 
   // ✅ Toggle loop mode when clicking on a region
@@ -336,9 +336,9 @@ initPlaybackSelector() {
 
     //console.log(`[PlaybackController] Loop mode ${this.isLooping ? "activated" : "deactivated"} for region.`);
     
-    // Update region color and SoundEngine loop state
+    // Update region color and Orbiter loop state
     this.setRegionLoopState(region, this.isLooping);
-    this.updateSoundEngineLoop(this.isLooping, region.start, region.end);
+    this.updateOrbiterLoop(this.isLooping, region.start, region.end);
   });
 
   
@@ -347,7 +347,7 @@ initPlaybackSelector() {
     if (!event.target.closest(".wavesurfer-region")) {
       if (this.activeRegion) {
         //console.log("[PlaybackController] Loop region removed.");
-        this.soundEngine.unloop();
+        this.orbiter.unloop();
         this.activeRegion.remove();
         this.activeRegion = null;
       }
@@ -373,25 +373,25 @@ setRegionLoopState(region, isLooping) {
 }
 
 /**
- * Sends loop state to the SoundEngine.
+ * Sends loop state to the Orbiter.
  * @param {boolean} isLooping - Whether looping is active.
  * @param {number} startSec - Start time in seconds.
  * @param {number} endSec - End time in seconds.
  */
-updateSoundEngineLoop(isLooping, startSec, endSec) {
-  if (!this.soundEngine) {
-    console.warn("[PlaybackController] SoundEngine not available.");
+updateOrbiterLoop(isLooping, startSec, endSec) {
+  if (!this.orbiter) {
+    console.warn("[PlaybackController] Orbiter not available.");
     return;
   }
 
   if (isLooping) {
     //console.log(`[PlaybackController] Activating loop: ${startSec}s - ${endSec}s`);
-    this.soundEngine.setPlayRange(startSec * 1000, endSec * 1000);
-    this.soundEngine.loop();
+    this.orbiter.setPlayRange(startSec * 1000, endSec * 1000);
+    this.orbiter.loop();
 
   } else {
     //console.log("[PlaybackController] Deactivating loop.");
-    this.soundEngine.unloop();
+    this.orbiter.unloop();
   }
 }
 
@@ -443,7 +443,7 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
   }
 
   // ----------------------------------------------------------------
-  // Cursor and Play Range Communication with SoundEngine
+  // Cursor and Play Range Communication with Orbiter
   // ----------------------------------------------------------------
 
   /**
@@ -464,17 +464,17 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
 
   /**
    * When the user selects a loop region (providing both a min and max),
-   * update the SoundEngine with both values (in ms) and set the cursor to the loop start.
+   * update the Orbiter with both values (in ms) and set the cursor to the loop start.
    * This is used in "loop" mode.
    */
-  updateSoundEngineLoopRange(startSec, endSec) {
-    if (!this.wavesurfer || !this.soundEngine) return;
+  updateOrbiterLoopRange(startSec, endSec) {
+    if (!this.wavesurfer || !this.orbiter) return;
   
     // 🔹 Ensure values are in milliseconds
     const startMs = Math.round(startSec * 1000);
     const endMs = Math.round(endSec * 1000);
   
-    //console.log(`[PlaybackController] Updating SoundEngine loop range:`);
+    //console.log(`[PlaybackController] Updating Orbiter loop range:`);
     //console.log(`    Start Time (seconds): ${startSec}s`);
     //console.log(`    End Time (seconds): ${endSec}s`);
     //console.log(`    Converted Start (ms): ${startMs} ms`);
@@ -486,8 +486,8 @@ updateSoundEngineLoop(isLooping, startSec, endSec) {
       this.activeRegion.end = endSec;
     }
   
-    // 🔹 Send to SoundEngine
-    this.soundEngine.setPlayRange(startMs, endMs);
+    // 🔹 Send to Orbiter
+    this.orbiter.setPlayRange(startMs, endMs);
   }
 
 
@@ -511,20 +511,20 @@ setPlayHead(msValue) {
   // ----------------------------------------------------------------
 
   play() {
-    if (this.soundEngine && typeof this.soundEngine.play === "function") {
-      //console.debug("[PlaybackController] play() => calling soundEngine.play()");
-      this.soundEngine.play();
+    if (this.orbiter && typeof this.orbiter.play === "function") {
+      //console.debug("[PlaybackController] play() => calling orbiter.play()");
+      this.orbiter.play();
     } else {
-      console.warn("[PlaybackController] soundEngine.play() not available.");
+      console.warn("[PlaybackController] orbiter.play() not available.");
     }
   }
 
   pause() {
-    if (this.soundEngine && typeof this.soundEngine.pause === "function") {
-      //console.debug("[PlaybackController] pause() => calling soundEngine.pause()");
-      this.soundEngine.pause();
+    if (this.orbiter && typeof this.orbiter.pause === "function") {
+      //console.debug("[PlaybackController] pause() => calling orbiter.pause()");
+      this.orbiter.pause();
     } else {
-      console.warn("[PlaybackController] soundEngine.pause() not available.");
+      console.warn("[PlaybackController] orbiter.pause() not available.");
     }
   }
 

@@ -23,11 +23,11 @@ import { updateOrbitColor } from './Scene.js';
  * @memberof CoreModule 
  * @function setupInteractions
  * @param {DataManager} dataManager - The shared DataManager instance.
- * @param {SoundEngine} soundEngine - The shared SoundEngine instance.
+ * @param {Orbiter} orbiter - The shared Orbiter instance.
  * @param {User1Manager} user1Manager - The user manager instance.
  */
 
-export function setupInteractions(dataManager, soundEngine, user1Manager) {
+export function setupInteractions(dataManager, orbiter, user1Manager) {
     if (typeof bootstrap === 'undefined') {
       console.error('Bootstrap is not loaded. Ensure bootstrap.bundle.min.js is included.');
       return;
@@ -46,14 +46,14 @@ export function setupInteractions(dataManager, soundEngine, user1Manager) {
         'button.dropdown-toggle',
         'a.dropdown-item',
         '.button-icon',
-        soundEngine,
+        orbiter,
         dataManager,
         user1Manager
       );
       buttonGroups.push(btnGroupInstance);
     });
     // 2) Initialize PlaybackController here
-    const playbackController = new PlaybackController(soundEngine);
+    const playbackController = new PlaybackController(orbiter);
 
   }
 /**
@@ -90,12 +90,12 @@ function registerMenuItemsWithMIDIController(buttonGroups) {
  * @returns {void}
  */
 export function applyColorsFromTrackData(trackData) {
-    if (!trackData || !trackData.soundEngine || !trackData.soundEngine.soundEngineColors) {
+    if (!trackData || !trackData.orbiter || !trackData.orbiter.orbiterColors) {
         console.warn('[COLORS] No color data available in track data.');
         return;
     }
 
-    const { color1, color2 } = trackData.soundEngine.soundEngineColors;
+    const { color1, color2 } = trackData.orbiter.orbiterColors;
 
     // Update CSS variables for colors
     if (color1) {
@@ -127,21 +127,21 @@ export function applyColorsFromTrackData(trackData) {
 
 /**
  * Dynamically creates and updates knobs based on track data.
- * Configures UI components for sound engine parameters.
+ * Configures UI components for orbiter parameters.
  * @memberof CoreModule 
  * @function updateKnobsFromTrackData
- * @param {object} trackData - The track data containing sound engine parameters.
+ * @param {object} trackData - The track data containing orbiter parameters.
  * @returns {void}
- * @throws Will log an error if track data or sound engine information is missing.
+ * @throws Will log an error if track data or orbiter information is missing.
  */
 export function updateKnobsFromTrackData(trackData) {
-    if (!trackData || !trackData.soundEngine) {
-        console.error('No valid track data or sound engine information found.');
+    if (!trackData || !trackData.orbiter) {
+        console.error('No valid track data or orbiter information found.');
         return;
     }
 
     // Extract x, y, z parameters from the track data
-    const { x, y, z } = trackData.soundEngine.soundEngineParams;
+    const { x, y, z } = trackData.orbiter.orbiterParams;
 
     // Map parameters to their respective containers
     const paramsToContainers = {
@@ -162,7 +162,7 @@ export function updateKnobsFromTrackData(trackData) {
         container.innerHTML = '';
 
         if (!param) {
-            console.warn(`Parameter '${paramKey}' is missing or undefined in sound engine data.`);
+            console.warn(`Parameter '${paramKey}' is missing or undefined in orbiter data.`);
             return;
         }
 
