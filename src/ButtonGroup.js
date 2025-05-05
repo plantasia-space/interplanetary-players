@@ -109,16 +109,31 @@ export class ButtonGroup {
     }
 
     this.menuItems.forEach(item => {
-      const iconImg = item.querySelector('img');
       const src = item.getAttribute('data-icon');
-      if (src && iconImg) {
-        iconImg.src = src;
-        iconImg.alt = item.getAttribute('data-value') || 'Menu Item';
-        iconImg.style.filter = 'brightness(0) saturate(100%)';
-        iconImg.style.marginRight = '8px';
-        iconImg.style.width = '16px';
-        iconImg.style.height = '16px';
-      }
+      if (!src) return;
+      const iconImg = item.querySelector('img');
+      fetch(src)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to load SVG: ${src}`);
+          return response.text();
+        })
+        .then(svgContent => {
+          const parser = new DOMParser();
+          const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+          const svgElement = svgDoc.documentElement;
+          svgElement.setAttribute('fill', 'currentColor');
+          svgElement.setAttribute('role', 'img');
+          svgElement.classList.add('menu-icon-svg');
+          // preserve sizing
+          svgElement.style.marginRight = '8px';
+          svgElement.style.width = '16px';
+          svgElement.style.height = '16px';
+          // replace the <img> with inline SVG
+          if (iconImg && iconImg.parentNode) {
+            iconImg.parentNode.replaceChild(svgElement, iconImg);
+          }
+        })
+        .catch(error => console.error(`Error loading menu SVG from ${src}:`, error));
     });
   }
 

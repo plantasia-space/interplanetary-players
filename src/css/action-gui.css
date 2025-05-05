@@ -301,6 +301,8 @@
   }
   .dropdown-menu,
   .dropup-center-menu {
+    background-color: #000000;
+    border: 1px solid var(--color1);     
     pointer-events: auto;
     min-width: 60px; /* Customize width */
   }
@@ -391,33 +393,43 @@
     padding: 0.5rem 1rem;
     display: flex;
     align-items: center;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: #000000 0.3s ease, color 0.3s ease;
     
 }
 
 /* Default State for Dropdown Items */
 .dropdown-item {
-    background-color: transparent;
-    color: #000000; /* White text */
+    background-color: #000000;
+    color: #ffffff; /* White text */
     border-radius: 0px; /* Optional rounded corners */
 
 }
 
 /* Hover State for Dropdown Items */
 .dropdown-item:hover {
-    background-color:  #d9d9d9; /* Small grey background */
+    background-color:  #ffffff; /* Small grey background */
     border-radius: 0%; /* Optional rounded corners */
+    color: #000000; /* White text */
+
 }
 
-/* Dropdown Menu Icon Styling */
+/* Default: show the original (black) icon */
 .menu-item-icon {
     display: inline-block;
     width: 1rem;
     height: 1rem;
     margin-right: 8px;
+  
+    filter: invert(100%);
+    transition: filter 0.3s ease;
+  }
+  
+  /* On hover (parent .dropdown-item): invert to white */
+  .dropdown-item:hover .menu-item-icon {
+    filter: invert(100%);
+  }
 
-}
-
+  
 /* .status-button .button-icon svg {
     width: 24px;
     height: 24px;
