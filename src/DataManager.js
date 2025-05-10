@@ -25,11 +25,48 @@ export class DataManager {
          */
         this.cacheExpiryMinutes = Constants.CACHE_EXPIRY_MINUTES || 10;
         this.parameterManager = null;
-                    /**
+        /**
          * @type {object}
          * @description Configuration object for UI placeholders, initialized as empty.
          */
         this.placeholderConfig = {};
+        /**
+         * @type {string|null}
+         * @description Currently active view for conditional parameter updates.
+         */
+        this.activeView = null;
+        /**
+         * Stores latest root parameter values.
+         * @private
+         */
+        this.lastParamValues = {};
+    }
+
+    /**
+     * Retrieves and formats the current value of a root parameter.
+     * @private
+     * @param {string} name - The name of the parameter ('x','y','z').
+     * @returns {string} Formatted parameter value or hyphen.
+     */
+    _getParamValueFormatted(name) {
+        // Use cached value if available
+        if (name in this.lastParamValues) {
+            const cached = this.lastParamValues[name];
+            const formatted = typeof cached === 'number' ? cached.toFixed(2) : String(cached);
+            return formatted;
+        }
+        if (!this.parameterManager) return "-";
+        let val;
+        if (typeof this.parameterManager.getParameterValue === 'function') {
+            val = this.parameterManager.getParameterValue(name);
+        } else if (typeof this.parameterManager.getParameter === 'function') {
+            val = this.parameterManager.getParameter(name)?.value;
+        }
+        if (val != null) {
+            const formatted = typeof val === 'number' ? val.toFixed(2) : String(val);
+            return formatted;
+        }
+        return "-";
     }
 
     /**
@@ -76,43 +113,44 @@ export class DataManager {
             console.error("[DataManager] TRACK_DATA is not available for placeholder configuration.");
             return;
         }
+        console.log("[DataManager] [DEBUG] updatePlaceholderConfig payload:", Constants.TRACK_DATA);
     
         const { track, orbiter, interplanetaryPlayer } = Constants.TRACK_DATA;
-    
+        console.log("[DataManager] [DEBUG] track object:", track);
+            console.log("[DataManager] [DEBUG] track object:", orbiter);
+
         // We'll safely dig into exoplanetData:
         const exoData = interplanetaryPlayer?.exoplanetData;
-        console.log("debug exoData", exoData);
 
         const currentExo = exoData?.currentExoplanet;
         const neighbor1 = exoData?.closestNeighbor1;
         const neighbor2 = exoData?.closestNeighbor2;
-        console.log("debug", Constants.TRACK_DATA);
         // Configure placeholders for different sections
         this.placeholderConfig = {
             monitorInfo: {
                 // X param
                 placeholder_1: orbiter?.orbiterParams?.x?.label+":" || "Unknown",
-                placeholder_2: "-",
+                placeholder_2: () => this._getParamValueFormatted('x'),
               
                 // Y param
                 placeholder_3: orbiter?.orbiterParams?.y?.label+":" || "Unknown",
-                placeholder_4: "-",
+                placeholder_4: () => this._getParamValueFormatted('y'),
               
                 // Z param
                 placeholder_5: orbiter?.orbiterParams?.z?.label+":" || "Unknown",
-                placeholder_6: "-",
+                placeholder_6: () => this._getParamValueFormatted('z'),
               
                 // Orbit A (current exoplanet)
-                placeholder_7: currentExo?.sciName+":" || "-",
-                placeholder_8: currentExo?.period_earthdays+" earth days" || "-",
-              
+                placeholder_7: () => currentExo?.sciName ? `${currentExo.sciName}:` : "",
+                placeholder_8: () => currentExo?.period_earthdays != null ? `${currentExo.period_earthdays} earth days` : "",
+
                 // Orbit B (closestNeighbor1)
-                placeholder_9: neighbor1?.sciName+":" || "-",
-                placeholder_10: neighbor1?.period_earthdays+" earth days" || "-",
-              
+                placeholder_9: () => neighbor1?.sciName ? `${neighbor1.sciName}:` : "",
+                placeholder_10: () => neighbor1?.period_earthdays != null ? `${neighbor1.period_earthdays} earth days` : "",
+
                 // Orbit C (closestNeighbor2)
-                placeholder_11: neighbor2?.sciName+":" || "-",
-                placeholder_12: neighbor2?.period_earthdays+" earth days" || "-",
+                placeholder_11: () => neighbor2?.sciName ? `${neighbor2.sciName}:` : "",
+                placeholder_12: () => neighbor2?.period_earthdays != null ? `${neighbor2.period_earthdays} earth days` : "",
             },
             trackInfo: {
                 placeholder_1: "Artist:",
@@ -129,8 +167,8 @@ export class DataManager {
                 placeholder_6: track?.releaseDate
                     ? new Date(track.releaseDate).toLocaleDateString("en-GB")
                     : "Unknown Date",
-                placeholder_7: "Tags:",
-                placeholder_8: track?.tags || "No Tags",
+                placeholder_7: () => (track?.tags || track?.additionalTags) ? "Tags:" : "",
+                placeholder_8: () => (track?.tags || track?.additionalTags) ? (track.tags || track.additionalTags) : "",
                 placeholder_9: "Plays count:",
                 placeholder_10: track?.playsCount || "0",
                 placeholder_11: "Shares:",
@@ -169,8 +207,8 @@ export class DataManager {
                 placeholder_6: typeof orbiter?.availability === 'boolean'
                     ? (orbiter.availability ? "Public" : "Private")
                     : "Private",
-                placeholder_7: "Credits:",
-                placeholder_8: orbiter?.credits || "No Credits",
+                placeholder_7: () => orbiter?.credits ? "Credits:" : "",
+                placeholder_8: () => orbiter?.credits ? orbiter.credits : "",
                 placeholder_9: "",
                 placeholder_10: "",
                 placeholder_11: "",
@@ -180,29 +218,16 @@ export class DataManager {
             },
         };
 
-        // Subscribe to root parameters X, Y, Z and update monitor placeholders
-        const parameterManager = this.parameterManager || null;
-        if (parameterManager) {
-          const placeholderMap = {
-            x: "placeholder_4",
-            y: "placeholder_6",
-            z: "placeholder_8"
-          };
+        // Debug: Log all placeholderConfig sections and values
+        Object.entries(this.placeholderConfig).forEach(([section, cfg]) => {
+            console.log(`[DataManager] ${section} placeholders debug:`);
+            Object.entries(cfg).forEach(([key, val]) => {
+                const content = typeof val === 'function' ? val() : val;
+                console.log(`  ${key}:`, content);
+            });
+        });
 
-          ["x", "y", "z"].forEach((paramKey) => {
-            parameterManager.subscribe({
-              onParameterChanged: (name, value) => {
-                const id = placeholderMap[name];
-                const el = document.getElementById(id);
-                if (el) el.textContent = typeof value === "number" ? value.toFixed(2) : value;
-              },
-              onRangeChanged: () => {},
-              onScaleChanged: () => {}
-            }, paramKey);
-          });
-        } else {
-          console.warn("[DataManager] parameterManager not available in window context.");
-        }
+        // If running inside an iframe, post the placeholder config to the parent window
 
         // If running inside an iframe, post the placeholder config to the parent window
 /*         if (window.parent && window.parent !== window) {
@@ -229,28 +254,38 @@ export class DataManager {
  * @public
  * @param {ParameterManager} manager - The ParameterManager instance to assign.
  */
-setParameterManager(manager) {
-    this.parameterManager = manager;
+    setParameterManager(manager) {
+        this.parameterManager = manager;
 
-    // Subscribe to root parameters X, Y, Z and update monitor placeholders
-    const placeholderMap = {
-        x: "placeholder_2",
-        y: "placeholder_4",
-        z: "placeholder_6"
-    };
+        // Subscribe to root parameters X, Y, Z and update monitor placeholders
+        const placeholderMap = {
+            x: "placeholder_2",
+            y: "placeholder_4",
+            z: "placeholder_6"
+        };
 
-    ["x", "y", "z"].forEach((paramKey) => {
-        this.parameterManager.subscribe({
-            onParameterChanged: (name, value) => {
-                const id = placeholderMap[name];
-                const el = document.getElementById(id);
-                if (el) el.textContent = typeof value === "number" ? value.toFixed(2) : value;
-            },
-            onRangeChanged: () => {},
-            onScaleChanged: () => {}
-        }, paramKey);
-    });
-}
+        ["x", "y", "z"].forEach((paramKey) => {
+            this.parameterManager.subscribe({
+                onParameterChanged: (name, value) => {
+                    // Cache the latest value
+                    this.lastParamValues[name] = value;
+                    // Only update placeholders in Control Monitor view
+                    if (this.activeView !== "monitorInfo") {
+                        return;
+                    }
+                    const id = placeholderMap[name];
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = typeof value === "number" ? value.toFixed(2) : value;
+                },
+                onRangeChanged: () => {},
+                onScaleChanged: () => {}
+            }, paramKey);
+        });
+        // Force initial placeholder refresh if Control Monitor is active
+        if (this.activeView === 'monitorInfo') {
+            this.populatePlaceholders('monitorInfo');
+        }
+    }
 
     /**
      * Populates the UI placeholders with the configured data.
@@ -260,6 +295,9 @@ setParameterManager(manager) {
      * @throws Will log an error if the target is invalid or missing.
      */
     populatePlaceholders(target) {
+        // Track the currently active view for parameter updates
+        this.activeView = target;
+
         if (!target || !this.placeholderConfig[target]) {
             console.error(`[DataManager] Invalid or no active information type provided: ${target}`);
             this.clearPlaceholders(); // Clear placeholders if configuration is missing
@@ -267,19 +305,38 @@ setParameterManager(manager) {
         }
         
         const config = this.placeholderConfig[target];
+
         Object.entries(config).forEach(([placeholderId, value]) => {
             const element = document.getElementById(placeholderId);
-            if (element) {
-                // If the value is a function, execute it to get the content
-                const content = typeof value === 'function' ? value() : value;
-                element.textContent = content;
+            if (!element) return;
+            // Determine placeholder content
+            const content = typeof value === 'function' ? value() : value;
+            // Hide if undefined, null, empty string, hyphen, or 'Unknown'
+            if (content == null || content === '' || content === '-' || content === 'Unknown') {
+                element.style.display = 'none';
             } else {
-                console.warn(`[DataManager] Element with ID ${placeholderId} not found.`);
+                element.style.display = '';
+                element.textContent = content;
             }
         });
-        
-        // Optionally log the update (commented out to reduce console noise)
-        // console.log(`[DataManager] Placeholders updated for target: ${target}`);
+
+        // Immediately refresh root parameter values when entering Control Monitor view
+        if (target === 'monitorInfo' && this.parameterManager) {
+            const rootMap = { x: 'placeholder_2', y: 'placeholder_4', z: 'placeholder_6' };
+            Object.entries(rootMap).forEach(([name, id]) => {
+                let value;
+                if (typeof this.parameterManager.getParameter === 'function') {
+                    const paramObj = this.parameterManager.getParameter(name);
+                    value = paramObj?.value;
+                } else if (typeof this.parameterManager.getParameterValue === 'function') {
+                    value = this.parameterManager.getParameterValue(name);
+                }
+                if (value != null) {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = typeof value === 'number' ? value.toFixed(2) : value;
+                }
+            });
+        }
     }
 
     /**
