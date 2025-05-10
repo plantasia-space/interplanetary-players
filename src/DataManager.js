@@ -113,11 +113,8 @@ export class DataManager {
             console.error("[DataManager] TRACK_DATA is not available for placeholder configuration.");
             return;
         }
-        console.log("[DataManager] [DEBUG] updatePlaceholderConfig payload:", Constants.TRACK_DATA);
     
         const { track, orbiter, interplanetaryPlayer } = Constants.TRACK_DATA;
-        console.log("[DataManager] [DEBUG] track object:", track);
-            console.log("[DataManager] [DEBUG] track object:", orbiter);
 
         // We'll safely dig into exoplanetData:
         const exoData = interplanetaryPlayer?.exoplanetData;
@@ -220,10 +217,10 @@ export class DataManager {
 
         // Debug: Log all placeholderConfig sections and values
         Object.entries(this.placeholderConfig).forEach(([section, cfg]) => {
-            console.log(`[DataManager] ${section} placeholders debug:`);
+            //console.log(`[DataManager] ${section} placeholders debug:`);
             Object.entries(cfg).forEach(([key, val]) => {
                 const content = typeof val === 'function' ? val() : val;
-                console.log(`  ${key}:`, content);
+                //console.log(`  ${key}:`, content);
             });
         });
 
