@@ -388,6 +388,7 @@ export class DataManager {
         try {
             // Embedded token-based auth support
             const embedToken = getEmbedToken();
+            console.log('[DataManager] embedToken:', embedToken);
             const headers = { 'Accept': 'application/json' };
             if (embedToken) {
               headers['Authorization'] = `Bearer ${embedToken}`;
