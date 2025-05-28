@@ -8,7 +8,18 @@
  */
 
 import { Constants } from './Constants.js';
- 
+import notifications from './AppNotifications.js';
+
+// For embedded token-based auth
+function getEmbedToken() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('token') || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Class representing a data manager for handling track data and UI placeholders.
  * @class
@@ -375,18 +386,35 @@ export class DataManager {
         const BASE_URL =
           (typeof window !== 'undefined' && window.API_BASE) || '/api';
         try {
+            // Embedded token-based auth support
+            const embedToken = getEmbedToken();
+            const headers = { 'Accept': 'application/json' };
+            if (embedToken) {
+              headers['Authorization'] = `Bearer ${embedToken}`;
+            }
             // Fetch data from the server
             const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`, {
-                credentials: 'include',               // send cookies if present
-                headers: { 'Accept': 'application/json' }
+                credentials: 'include',
+                headers
             });
             if (!response.ok) {
+                if (response.status === 403) {
+                    let msg = 'Track is private.';
+                    try {
+                        const errResult = await response.json();
+                        if (errResult?.message) msg = errResult.message;
+                    } catch (_) { /* ignore JSON parse errors */ }
+                    notifications.showToast(msg, 'error');
+                    throw new Error(msg);
+                }
                 throw new Error(`[DataManager] Server error: ${response.statusText} (${response.status})`);
             }
 
             const result = await response.json();
             if (!result.success || !result.data) {
-                throw new Error('[DataManager] Invalid track data from server.');
+                const msg = result.message || 'Failed to retrieve track data.';
+                notifications.showToast(msg, 'error');
+                throw new Error(msg);
             }
 
             // Cache the retrieved data for future use
