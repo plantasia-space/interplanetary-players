@@ -110,6 +110,7 @@ const dataManager = new DataManager();
 
 // Instantiate the Orbiter for managing audio playback
 let user1Orbiter;
+let orbiterWarningShown = false;
 
 // Instantiate the ParameterManager for managing adjustable parameters for user 1
 const user1Manager = new ParameterManager();
@@ -454,8 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (user1Orbiter && typeof user1Orbiter.getAmplitude === 'function') {
                 const currentAmp = user1Orbiter.getAmplitude();
                  drawRing(currentAmp); // Uncomment if drawRing is globally accessible
-            } else {
+            } else if (!orbiterWarningShown) {
                 console.warn("[Debug Main] Orbiter instance not ready or getAmplitude undefined.");
+                orbiterWarningShown = true;
             }
         });
     });
