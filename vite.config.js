@@ -8,6 +8,13 @@ export default defineConfig({
     server: {
         host: true, 
         open: true,
+        proxy: {
+            '/api': {
+                target: 'http://local.plantasia.space', // nginx on port 80
+                changeOrigin: true,
+                secure: false
+            }
+        },
     },
     build: {
         outDir: 'dist',

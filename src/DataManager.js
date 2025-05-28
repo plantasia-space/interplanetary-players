@@ -369,10 +369,11 @@ export class DataManager {
             return cachedData;
         }
 
-        // Determine API base: prefer global window.API_BASE injected by host; fallback to same‑origin /api or prod URL
+        // Determine API base
+        // 1. If the embedding page injects window.API_BASE, use that
+        // 2. Otherwise always call relative "/api" (works with Vite proxy, nginx, and prod)
         const BASE_URL =
-          (typeof window !== 'undefined' && window.API_BASE) ||
-          (window.location && window.location.origin ? `${window.location.origin}/api` : 'https://api.plantasia.space/api');
+          (typeof window !== 'undefined' && window.API_BASE) || '/api';
         try {
             // Fetch data from the server
             const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`, {
