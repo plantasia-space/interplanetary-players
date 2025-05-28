@@ -20,6 +20,16 @@ function getEmbedToken() {
   }
 }
 
+// Embedded auth handshake via postMessage
+// Initialize from URL param, then allow override from parent
+let embeddedToken = getEmbedToken();
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'authToken' && event.data.token) {
+    embeddedToken = event.data.token;
+    console.log('[DataManager] Received embedded authToken via postMessage:', embeddedToken);
+  }
+});
+
 /**
  * Class representing a data manager for handling track data and UI placeholders.
  * @class
@@ -386,12 +396,10 @@ export class DataManager {
         const BASE_URL =
           (typeof window !== 'undefined' && window.API_BASE) || '/api';
         try {
-            // Embedded token-based auth support
-            const embedToken = getEmbedToken();
-            console.log('[DataManager] embedToken:', embedToken);
+            // Determine authentication header: handshake token or cookie
             const headers = { 'Accept': 'application/json' };
-            if (embedToken) {
-              headers['Authorization'] = `Bearer ${embedToken}`;
+            if (embeddedToken) {
+              headers['Authorization'] = `Bearer ${embeddedToken}`;
             }
             // Fetch data from the server
             const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`, {
