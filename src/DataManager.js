@@ -369,10 +369,16 @@ export class DataManager {
             return cachedData;
         }
 
-        const BASE_URL = 'https://api.plantasia.space:443/api';
+        // Determine API base: prefer global window.API_BASE injected by host; fallback to same‑origin /api or prod URL
+        const BASE_URL =
+          (typeof window !== 'undefined' && window.API_BASE) ||
+          (window.location && window.location.origin ? `${window.location.origin}/api` : 'https://api.plantasia.space/api');
         try {
             // Fetch data from the server
-            const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`);
+            const response = await fetch(`${BASE_URL}/tracks/player/${trackId}`, {
+                credentials: 'include',               // send cookies if present
+                headers: { 'Accept': 'application/json' }
+            });
             if (!response.ok) {
                 throw new Error(`[DataManager] Server error: ${response.statusText} (${response.status})`);
             }
