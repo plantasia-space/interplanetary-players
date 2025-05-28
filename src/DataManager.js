@@ -25,11 +25,19 @@ function getEmbedToken() {
 let embeddedToken = getEmbedToken();
 window.addEventListener('message', (event) => {
   if (event.data?.type === 'authToken' && event.data.token) {
+    const firstToken = !embeddedToken;
     embeddedToken = event.data.token;
     console.log('[DataManager] Received embedded authToken via postMessage:', embeddedToken);
+
+    // If this was the first token and we still have no cached track, retry fetch
+    const currentId = Constants.TRACK_ID;
+    if (firstToken && currentId && !Constants.getTrackData(currentId) && window.dataManagerInstance) {
+      setTimeout(() => {
+        window.dataManagerInstance.fetchAndUpdateConfig(currentId);
+      }, 100);
+    }
   }
 });
-
 /**
  * Class representing a data manager for handling track data and UI placeholders.
  * @class
@@ -61,6 +69,8 @@ export class DataManager {
          * @private
          */
         this.lastParamValues = {};
+        // expose this instance for the postMessage retry logic
+        window.dataManagerInstance = this;
     }
 
     /**
