@@ -1285,10 +1285,17 @@
     crossorigin="anonymous"></script>
   <!-- Custom JS -->
 
+<!-- Set the API base: use /api in local dev (port 5173) so Vite proxy works;
+     use VITE_API_BASE only in production build -->
 <script>
-  window.API_BASE = "%VITE_API_BASE%" || "/api";
+  (function () {
+    const prodBase = "%VITE_API_BASE%";          // replaced by Vite at build time
+    const isDev = window.location.hostname === "local.plantasia.space" &&
+                  window.location.port && window.location.port !== "80";
+    window.API_BASE = isDev ? "/api" : (prodBase || "/api");
+  })();
 </script>
   <script type="module" src="/src/Main.js"></script>
 </body>
 
-</html>
+</html> 
