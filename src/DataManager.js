@@ -23,18 +23,16 @@ function getEmbedToken() {
 // Embedded auth handshake via postMessage
 // Initialize from URL param, then allow override from parent
 let embeddedToken = getEmbedToken();
+// track whether we've already asked the parent for a token
+let embedAuthRequested = false;
 window.addEventListener('message', (event) => {
   if (event.data?.type === 'authToken' && event.data.token) {
-    const firstToken = !embeddedToken;
     embeddedToken = event.data.token;
     console.log('[DataManager] Received embedded authToken via postMessage:', embeddedToken);
 
-    // If this was the first token and we still have no cached track, retry fetch
     const currentId = Constants.TRACK_ID;
-    if (firstToken && currentId && !Constants.getTrackData(currentId) && window.dataManagerInstance) {
-      setTimeout(() => {
-        window.dataManagerInstance.fetchAndUpdateConfig(currentId);
-      }, 100);
+    if (currentId && window.dataManagerInstance) {
+      window.dataManagerInstance.fetchAndUpdateConfig(currentId);
     }
   }
 });
@@ -418,6 +416,15 @@ export class DataManager {
             });
             if (!response.ok) {
                 if (response.status === 403) {
+                    // If we’re in an iframe and don’t yet have a token, ask parent once
+                    if (!embeddedToken && !embedAuthRequested && window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'needAuth' }, '*');
+                        embedAuthRequested = true;
+                        console.log('[DataManager] Posted needAuth to parent');
+                        // Exit silently; retry will occur when token arrives
+                        return;
+                    }
+                    // Otherwise, treat as real auth failure
                     let msg = 'Track is private.';
                     try {
                         const errResult = await response.json();
