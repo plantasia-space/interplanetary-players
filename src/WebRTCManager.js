@@ -70,7 +70,7 @@ export class WebRTCManager {
             return; // Do nothing for mobile, no external sensor needed
         }
 
-        this.ws = new WebSocket('wss://connect.maar.world/ws/');
+        this.ws = new WebSocket('wss://connect.plantasia.space/ws/');
 
         this.ws.onopen = () => {
             console.log('[WebRTCManager] Connected to WebSocket server.');
@@ -241,8 +241,8 @@ export class WebRTCManager {
             this.modalGenerated = true;
         }
 
-        const baseUrl = 'https://connect.maar.world/';
-        const wsUrl = 'wss://connect.maar.world/ws/';
+        const baseUrl = 'https://connect.plantasia.space/';
+        const wsUrl = 'wss://connect.plantasia.space/ws/';
         const uniqueId = UNIQUE_ID;
 
         const pairingInfo = `${baseUrl}?uniqueId=${uniqueId}&wsUrl=${encodeURIComponent(wsUrl)}`;
@@ -287,8 +287,8 @@ export class WebRTCManager {
             return;
         }
 
-        const baseUrl = 'https://connect.maar.world/';
-        const wsUrl = 'wss://connect.maar.world/ws/';
+        const baseUrl = 'https://connect.plantasia.space/';
+        const wsUrl = 'wss://connect.plantasia.space/ws/';
         const uniqueId = UNIQUE_ID;
 
         const pairingInfo = `${baseUrl}?uniqueId=${uniqueId}&wsUrl=${encodeURIComponent(wsUrl)}`;
